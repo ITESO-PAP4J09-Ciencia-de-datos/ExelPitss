@@ -11,6 +11,7 @@ library(dplyr)
 library(spData)
 library(tmap)
 library(ggplot2)
+library(shiny)
 
 localidades <- read_xlsx("localidades.xlsx",col_names=c("is","zonas"),skip=1) %>%
   mutate(Apellidos = word(is,1,2)) %>%
@@ -39,19 +40,3 @@ datos <- datos %>%
   relocate(zonas, .after = IS) %>% 
   select(everything(),-c("is","Apellidos"))
 
-  
-
-#MAPA
-
-# carga del plano base
-#leaflet()  %>%  addTiles() 
-
-names(datos)
-
-leaflet() %>% 
-  addTiles() %>% 
-  addMarkers(data = datos,
-             label = datos$zonas,
-             )
-
-tm_shape(mx)
