@@ -1,5 +1,5 @@
 
-# LIBRER?AS ---------------------------------------------------------------
+# LIBRERIAS ---------------------------------------------------------------
 
 library(tidyverse)
 library(readxl)
@@ -15,7 +15,10 @@ library(dplyr)
 library(spData)
 library(tmap)
 library(ggplot2)
-
+library(bslib)
+library(shinydashboard)
+library(rgdal)
+library(shinythemes)
 
 # DATOS -------------------------------------------------------------------
 
@@ -64,12 +67,27 @@ is <- datos %>%
     distinct(IS) %>% 
     pull()
 
+# DATOS MAPA --------------------------------------------------------------
+
+tmp <- tempdir()
+url <- "http://personal.tcu.edu/kylewalker/data/mexico.zip"
+file <- basename(url)
+download.file(url, file)
+unzip(file, exdir = tmp)
+mexico <- readOGR(dsn = tmp, layer = "mexico", encoding = "UTF-8")
+
+pal <- colorQuantile("YlGn", NULL, n = 5)
+state_popup <- paste0("<strong>Estado: </strong>", 
+                      mexico$name, 
+                      "<br><strong>PIB per c?pita, miles de pesos, 2008: </strong>", 
+                      mexico$gdp08)
 # UI CODE -----------------------------------------------------------------
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
+    theme = shinytheme("superhero"),
     #Assign Dasbhoard title 
-    titlePanel("Mapa cobertura ExelPitss"),
+    titlePanel(h1("Cobertura ExelPitss")),
     sidebarPanel(
         selectInput(inputId  = "marcas",
                     label    = h4("Marca"),
@@ -80,20 +98,38 @@ ui <- fluidPage(
         
     ),
     mainPanel( 
-        #this will create a space for us to display our map
-        leafletOutput(outputId = "Mexico"), 
-        #this allows me to put the checkmarks ontop of the map to allow people to view earthquake depth or overlay a heatmap
-        absolutePanel(top = 60, left = 20, 
-                      checkboxInput("markers", "Depth", FALSE),
-                      checkboxInput("heat", "Heatmap", FALSE)
-        )
-    ))
+        shinydashboard::box(
+            width = 12
+            , title = "Mapa"
+            # separate the box by a column
+            , column(
+                width = 10
+                , shiny::actionButton( inputId = "clearHighlight"
+                                       , icon = icon( name = "eraser")
+                                       , label = "Reestablecer mapa"
+                                       , style = "color: #fff; background-color: #D75453; border-color: #C73232"
+                ),
+            )
+            # separate the box by a column
+            , column(
+                width = 9
+                , leaflet::leafletOutput( outputId = "myMap"
+                                          , height = 500,
+                                          width = 600
+                )
+            )
+        ) # end of the box
+     # end of fluid page
+        
+    )
+)
 
 
 # SERVER ------------------------------------------------------------------
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
+    
     datos_fil <- reactive({
         datos %>% 
             filter(Marca == input$marcas)
@@ -111,6 +147,70 @@ server <- function(input, output, session) {
                     choices = modelos(),
                     multiple = TRUE)
     })
+    foundational.map <- function(){
+        leaflet() %>%
+            #addTiles( urlTemplate = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png") %>%
+            #setView( lng = -87.567215
+            #         , lat = 41.822582
+            #         , zoom = 11 ) %>%
+            addProviderTiles("CartoDB.Positron") %>%
+            addPolygons( data = mexico
+                         , fillOpacity = 0
+                         , opacity = 0.2
+                         , color = "#000000"
+                         , weight = 2
+                         , layerId = mexico$state
+                         , group = "click.list")
+    }
+    
+    # reactiveVal for the map object, and corresponding output object.
+    myMap_reval <- reactiveVal(foundational.map())
+    output$myMap <- renderLeaflet({
+        myMap_reval()
+    }) 
+    
+    # To hold the selected map region id.
+    click.list <- shiny::reactiveValues( ids = vector() )
+    
+    shiny::observeEvent( input$myMap_shape_click, ignoreNULL = T,ignoreInit = T, {
+        
+        # If already selected, first remove previous selection
+        if(length(click.list)>0)
+        {
+            remove_id = click.list$ids
+            lines.of.interest <- mexico[ which( mexico$state %in% remove_id) , ]
+            leaflet::leafletProxy( mapId = "myMap" ) %>%
+                addPolylines( data = lines.of.interest
+                              , layerId = lines.of.interest@data$id
+                              , color = "#000000"
+                              , weight = 2
+                              , opacity = 0.2)
+        }
+        
+        # add current selection
+        click <- input$myMap_shape_click
+        click.list$ids <- click$id  # we only store the last click now!
+        lines.of.interest <- mexico[ which( mexico$state %in% click.list$ids ) , ]
+        print(click)
+        if( is.null( click$id ) ){
+            req( click$id )
+        } else if( !click$id %in% lines.of.interest@data$id ){
+            leaflet::leafletProxy( mapId = "myMap" ) %>%
+                addPolylines( data = lines.of.interest
+                              , layerId = lines.of.interest@data$id
+                              , color = "#6cb5bc"
+                              , weight = 5
+                              , opacity = 1
+                ) 
+        }
+        
+    }) # end of shiny::observeEvent({})
+    
+    # oberver for the clearHighlight button.
+    shiny::observeEvent( input$clearHighlight, {
+        click.list$ids <- NULL
+        myMap_reval(foundational.map()) # reset map.
+    }) 
     
 }
 
