@@ -19,6 +19,7 @@ library(bslib)
 library(shinydashboard)
 library(rgdal)
 library(shinythemes)
+library(shinyWidgets)
 
 # DATOS -------------------------------------------------------------------
 
@@ -49,7 +50,7 @@ datos <- datos %>%
     relocate(zonas, .after = IS) %>% 
     dplyr::select(everything(),-c("is","Apellidos"))
 
-names(datos) <- c("IS","Zonas","Modelo","Marca","Virtual","Requerido","Mes","Certificaci?n")
+names(datos) <- c("IS","Zonas","Modelo","Marca","Virtual","Requerido","Fecha","Certificacion")
 
 marcas <- datos %>% 
     distinct(Marca) %>% 
@@ -66,6 +67,14 @@ zonas <- datos %>%
 is <- datos %>% 
     distinct(IS) %>% 
     pull()
+
+fechas <- datos %>%
+    drop_na(Fecha) %>% 
+    distinct(Fecha) %>% 
+    pull()
+
+fechas <- format(as.Date(fechas), "%Y-%m")
+fechascompletas <- seq(min(fechas), max(fechas), by="months")
 
 # DATOS MAPA --------------------------------------------------------------
 
@@ -94,7 +103,15 @@ ui <- fluidPage(
                     choices  = marcas,
                     selected = "XEROX"
         ),
-        uiOutput(outputId = "select_models")
+        uiOutput(outputId = "select_models"),
+        uiOutput(outputId = "select_zonas"),
+        uiOutput(outputId = "select_is"),
+        uiOutput(outputId = "select_fechas"),
+        shiny::actionButton( inputId = "clearOptions"
+                             , icon = icon( name = "eraser")
+                             , label = "Reestablecer todo"
+                             , style = "color: #fff; background-color: #D75453; border-color: #C73232"
+        )
         
     ),
     mainPanel( 
@@ -130,6 +147,23 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
     
+    initialInputs <- isolate(reactiveValuesToList(input))
+    
+    observe({
+        # OPTIONAL - save initial values of dynamic inputs
+        inputValues <- reactiveValuesToList(input)
+        initialInputs <<- utils::modifyList(inputValues, initialInputs)
+    })
+    
+    observeEvent(input$clearOptions, {
+        for (id in names(initialInputs)) {
+            value <- initialInputs[[id]]
+            # For empty checkboxGroupInputs
+            if (is.null(value)) value <- ""
+            session$sendInputMessage(id, list(value = value))
+        }
+    })
+    
     datos_fil <- reactive({
         datos %>% 
             filter(Marca == input$marcas)
@@ -137,8 +171,8 @@ server <- function(input, output, session) {
     
     modelos <- reactive({
         datos_fil() %>% 
-            distinct(Modelo) %>% 
-            pull()
+        distinct(Modelo) %>% 
+        pull()
     })
     
     output$select_models <- renderUI({
@@ -147,6 +181,73 @@ server <- function(input, output, session) {
                     choices = modelos(),
                     multiple = TRUE)
     })
+    
+    datos_fil2 <- reactive({
+        datos %>% 
+            filter(Marca == input$marcas) %>% 
+            filter(Modelo %in% input$modelos)
+    })
+    
+    zonas <- reactive({
+        datos_fil2() %>% 
+        distinct(Zonas) %>% 
+        pull()
+    })
+    
+    output$select_zonas <- renderUI({
+        selectInput(inputId  = "zonas",
+                    label = h4("Zona"),
+                    choices = zonas(),
+                    multiple = TRUE)
+    })
+    
+    datos_fil3 <- reactive({
+        datos %>% 
+            filter(Marca == input$marcas) %>% 
+            filter(Modelo %in% input$modelos) %>% 
+            filter(Zonas %in% input$zonas)
+    })
+    
+    is <- reactive({
+        datos_fil3() %>% 
+        distinct(IS) %>% 
+        pull()
+    })
+    
+    output$select_is <- renderUI({
+        selectInput(inputId  = "is",
+                    label = h4("Ingeniero de Servicio"),
+                    choices = is(),
+                    multiple = TRUE)
+    })
+        
+    datos_fil4 <- reactive({
+        datos %>% 
+            filter(Marca == input$marcas) %>% 
+            filter(Modelo %in% input$modelos) %>% 
+            filter(Zonas %in% input$zonas) %>% 
+            filter(Fechas %in% input$fechas)
+    })
+        
+    fechas <- reactive({
+        datos_fil4() %>% 
+        distinct(Fechas) %>% 
+        pull()
+    })    
+        
+    output$select_fechas <- renderUI({
+        airMonthpickerInput(
+            inputId    = "fechas",
+            label      = "Selecciona la fecha:",
+            multiple   = TRUE,
+            disabledDates = fechasbien,
+            view       = "months",
+            language   = "es",
+            clearButton = TRUE,
+            autoClose  = TRUE
+        )
+    })    
+        
     foundational.map <- function(){
         leaflet() %>%
             #addTiles( urlTemplate = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png") %>%
@@ -207,9 +308,9 @@ server <- function(input, output, session) {
     }) # end of shiny::observeEvent({})
     
     # oberver for the clearHighlight button.
-    shiny::observeEvent( input$clearHighlight, {
+    shiny::observeEvent( input$clearOptions, {
         click.list$ids <- NULL
-        myMap_reval(foundational.map()) # reset map.
+        myMap_reval(foundational.map()) # reset options.
     }) 
     
 }
