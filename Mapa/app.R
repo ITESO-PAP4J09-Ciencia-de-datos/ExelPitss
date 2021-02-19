@@ -1,25 +1,34 @@
 
 # LIBRERIAS ---------------------------------------------------------------
 
+library(utils)
+
+# ciencia de datos
 library(tidyverse)
+
+# importación de datos
 library(readxl)
-library(tidyquant)
-library(stringr)
-library(cellranger)
-library(shiny)
-library(sf)
-library(ggplot2)
+#library(tidyquant)
+#library(cellranger)
+
+#library(sf)
+
+# visualización del mapa
 library(leaflet)
 library(raster)
-library(dplyr)
 library(spData)
 library(tmap)
-library(ggplot2)
-library(bslib)
-library(shinydashboard)
+
+#library(bslib)
+
 library(rgdal)
+
+# elementos de shiny 
+library(shiny)
 library(shinythemes)
 library(shinyWidgets)
+library(shinydashboard)
+library(shinyjs)
 
 # DATOS -------------------------------------------------------------------
 
@@ -74,7 +83,21 @@ fechas <- datos %>%
     pull()
 
 fechas <- format(as.Date(fechas), "%Y-%m")
-fechascompletas <- seq(min(fechas), max(fechas), by="months")
+#fechascompletas <- seq(min(fechas), max(fechas), by="months")
+
+# DATOS MEXICO ------------------------------------------------------------
+
+# estados y municipios
+
+# poner pin en cada municipio
+
+# cuando seleccionen el pin, despliegue nombres de IS, o un resumen
+
+# cuando seleccionen todo el estado
+
+# que el mapa se vaya filtrando conforme las opciones que se van seleccionando
+
+
 
 # DATOS MAPA --------------------------------------------------------------
 
@@ -90,52 +113,69 @@ state_popup <- paste0("<strong>Estado: </strong>",
                       mexico$name, 
                       "<br><strong>PIB per c?pita, miles de pesos, 2008: </strong>", 
                       mexico$gdp08)
+
 # UI CODE -----------------------------------------------------------------
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
     theme = shinytheme("superhero"),
+    useShinyjs(),
     #Assign Dasbhoard title 
     titlePanel(h1("Cobertura ExelPitss")),
     sidebarPanel(
         selectInput(inputId  = "marcas",
                     label    = h4("Marca"),
                     choices  = marcas,
-                    selected = "XEROX"
+                    selected = "XEROX",
+                    multiple = TRUE
         ),
-        uiOutput(outputId = "select_models"),
-        uiOutput(outputId = "select_zonas"),
-        uiOutput(outputId = "select_is"),
-        uiOutput(outputId = "select_fechas"),
-        shiny::actionButton( inputId = "clearOptions"
-                             , icon = icon( name = "eraser")
-                             , label = "Reestablecer todo"
-                             , style = "color: #fff; background-color: #D75453; border-color: #C73232"
-        )
+        div(
+            id = "form",
+            uiOutput(outputId = "select_models"),
+            uiOutput(outputId = "select_zonas"),
+            uiOutput(outputId = "select_is"),
+            uiOutput(outputId = "select_fechas")
+        ),
+        actionButton("reset_input",
+                     label = "Reestablecer todo",
+                     icon = icon( name = "eraser"),
+                     style = "color: #fff; background-color: #D75453; border-color: #C73232"
+                    )
         
     ),
-    mainPanel( 
-        shinydashboard::box(
-            width = 12
-            , title = "Mapa"
-            # separate the box by a column
-            , column(
-                width = 10
-                , shiny::actionButton( inputId = "clearHighlight"
-                                       , icon = icon( name = "eraser")
-                                       , label = "Reestablecer mapa"
-                                       , style = "color: #fff; background-color: #D75453; border-color: #C73232"
-                ),
-            )
-            # separate the box by a column
-            , column(
-                width = 9
-                , leaflet::leafletOutput( outputId = "myMap"
-                                          , height = 500,
-                                          width = 600
+    mainPanel(
+        tabsetPanel(
+            tabPanel(
+                "MAPA",
+                shinydashboard::box(
+                    width = 12
+                    , title = "Mapa"
+                    # separate the box by a column
+                    , column(
+                        width = 10
+                        , shiny::actionButton( inputId = "clearHighlight"
+                                               , icon = icon( name = "eraser")
+                                               , label = "Reestablecer mapa"
+                                               , style = "color: #fff; background-color: #D75453; border-color: #C73232"
+                        ),
+                    )
+                    # separate the box by a column
+                    , column(
+                        width = 9
+                        , leaflet::leafletOutput( outputId = "myMap"
+                                                  , height = 500,
+                                                  width = 600
+                        )
+                    )
                 )
+            ),
+            tabPanel(
+                "TABLA",
+                #código para devolver tabla
             )
-        ) # end of the box
+            
+        )
+         # end of the box
      # end of fluid page
         
     )
@@ -147,21 +187,8 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
     
-    initialInputs <- isolate(reactiveValuesToList(input))
-    
-    observe({
-        # OPTIONAL - save initial values of dynamic inputs
-        inputValues <- reactiveValuesToList(input)
-        initialInputs <<- utils::modifyList(inputValues, initialInputs)
-    })
-    
-    observeEvent(input$clearOptions, {
-        for (id in names(initialInputs)) {
-            value <- initialInputs[[id]]
-            # For empty checkboxGroupInputs
-            if (is.null(value)) value <- ""
-            session$sendInputMessage(id, list(value = value))
-        }
+    observeEvent(input$reset_input, {
+        reset("form")
     })
     
     datos_fil <- reactive({
@@ -240,7 +267,7 @@ server <- function(input, output, session) {
             inputId    = "fechas",
             label      = "Selecciona la fecha:",
             multiple   = TRUE,
-            disabledDates = fechasbien,
+            #disabledDates = fechasbien,
             view       = "months",
             language   = "es",
             clearButton = TRUE,

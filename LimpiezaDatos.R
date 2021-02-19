@@ -12,6 +12,7 @@ library(spData)
 library(tmap)
 library(ggplot2)
 library(shiny)
+library(lubridate)
 
 localidades <- read_xlsx("localidades.xlsx",col_names=c("is","zonas"),skip=1) %>%
   mutate(Apellidos = word(is,1,2)) %>%
@@ -38,5 +39,9 @@ datos <- left_join(datos,localidades, by="Apellidos")
 datos <- datos %>% 
   drop_na(zonas) %>% 
   relocate(zonas, .after = IS) %>% 
-  select(everything(),-c("is","Apellidos"))
+  dplyr::select(everything(),-c("is","Apellidos"))
 
+names(datos) <- c("IS","Zonas","Modelo","Marca","Virtual","Requerido","Fecha","Certificacion")
+
+datos <- datos %>% 
+  mutate(Fecha = as.Date(Fecha))
