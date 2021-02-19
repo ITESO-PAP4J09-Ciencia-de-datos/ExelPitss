@@ -6,22 +6,15 @@ library(utils)
 # ciencia de datos
 library(tidyverse)
 
-# importación de datos
+# importación y lectura de datos
 library(readxl)
-#library(tidyquant)
-#library(cellranger)
-
-#library(sf)
+library(rgdal)
 
 # visualización del mapa
 library(leaflet)
 library(raster)
 library(spData)
 library(tmap)
-
-#library(bslib)
-
-library(rgdal)
 
 # elementos de shiny 
 library(shiny)
@@ -123,14 +116,9 @@ ui <- fluidPage(
     #Assign Dasbhoard title 
     titlePanel(h1("Cobertura ExelPitss")),
     sidebarPanel(
-        selectInput(inputId  = "marcas",
-                    label    = h4("Marca"),
-                    choices  = marcas,
-                    selected = "XEROX",
-                    multiple = TRUE
-        ),
-        div(
+                div(
             id = "form",
+            uiOutput(outputId = "select_marcas"),
             uiOutput(outputId = "select_models"),
             uiOutput(outputId = "select_zonas"),
             uiOutput(outputId = "select_is"),
@@ -157,7 +145,7 @@ ui <- fluidPage(
                                                , icon = icon( name = "eraser")
                                                , label = "Reestablecer mapa"
                                                , style = "color: #fff; background-color: #D75453; border-color: #C73232"
-                        ),
+                        )
                     )
                     # separate the box by a column
                     , column(
@@ -171,6 +159,7 @@ ui <- fluidPage(
             ),
             tabPanel(
                 "TABLA",
+                tableOutput(outputId = "tabla1")
                 #código para devolver tabla
             )
             
@@ -191,16 +180,140 @@ server <- function(input, output, session) {
         reset("form")
     })
     
+    # sin seleccionar nada
     datos_fil <- reactive({
-        datos %>% 
-            filter(Marca == input$marcas)
+        datos
     })
     
-    modelos <- reactive({
-        datos_fil() %>% 
-        distinct(Modelo) %>% 
-        pull()
+    # si no escogen ni modelo, ni zona, ni is
+    datos_fil1 <- reactive({
+        datos %>% 
+            filter(Marca %in% input$marcas)
     })
+    
+    # si no escogen ni zona, ni is
+    datos_fil2 <- reactive({
+        datos %>% 
+            filter(Marca %in% input$marcas) %>% 
+            filter(Modelo %in% input$modelos)
+    })
+    
+    # si no escogen IS
+    datos_fil3 <- reactive({
+        datos %>% 
+            filter(Marca %in% input$marcas) %>% 
+            filter(Modelo %in% input$modelos) %>% 
+            filter(Zonas %in% input$zonas)
+    })
+      
+    # si no escogen ni modelo, ni zonas
+    datos_fil4 <- reactive({
+        datos %>% 
+            filter(Marca %in% input$marcas) %>%
+            filter(IS %in% input$is)
+    })
+    
+    # si no escogen ni modelo, ni is
+    datos_fil5 <- reactive({
+        datos %>% 
+            filter(Marca %in% input$marcas) %>%
+            filter(Zonas %in% input$zonas)
+    })
+    
+    # si no escogen ni marca, ni is
+    datos_fil6 <- reactive({
+        datos %>% 
+            filter(Modelo %in% input$modelos) %>%
+            filter(Zonas %in% input$zonas)
+    })
+    
+    # si no escogen ni marca, ni zonas
+    datos_fil7 <- reactive({
+        datos %>% 
+            filter(Modelo %in% input$modelos) %>%
+            filter(IS %in% input$is)
+    })
+    
+    # si no escogen ni marca, ni zona, ni is
+    datos_fil8 <- reactive({
+        datos %>% 
+            filter(Modelo %in% input$modelos)
+    })
+    
+    # si no escogen ni marca, ni modelo, ni is
+    datos_fil9 <- reactive({
+        datos %>% 
+            filter(Zonas %in% input$zonas)
+    })
+    
+    # si no escogen ni marca, ni modelo, ni zonas
+    datos_fil.10 <- reactive({
+        datos %>% 
+            filter(IS %in% input$is)
+    })
+    
+    # si escogen todo
+    datos_fil.11 <- reactive({
+        datos %>% 
+            filter(Marca %in% input$marcas) %>% 
+            filter(Modelo %in% input$modelos) %>% 
+            filter(Zonas %in% input$zonas) %>% 
+            filter(IS %in% input$is)
+    })
+    
+    # si no escogen marca
+    datos_fil.12 <- reactive({
+        datos %>% 
+            filter(Modelo %in% input$modelos) %>% 
+            filter(Zonas %in% input$zonas) %>% 
+            filter(IS %in% input$is)
+    })
+    
+    # si no escogen modelo
+    datos_fil.13 <- reactive({
+        datos %>% 
+            filter(Marca %in% input$marcas) %>% 
+            filter(Zonas %in% input$zonas) %>% 
+            filter(IS %in% input$is)
+    })
+    
+    # si no escogen zona
+    datos_fil.14 <- reactive({
+        datos %>% 
+            filter(Marca %in% input$marcas) %>% 
+            filter(Modelo %in% input$modelos) %>% 
+            filter(IS %in% input$is)
+    })
+    
+    # si no escogen ni marca, ni modelo
+    datos_fil.15 <- reactive({
+        datos %>% 
+            filter(Zonas %in% input$zonas) %>% 
+            filter(IS %in% input$is)
+    })
+      
+    # OPCIONES MARCAS
+    marcas <- reactive({
+        datos_fil() %>% 
+            distinct(Marca) %>% 
+            pull()
+    })
+    
+    output$select_marcas <- renderUI({
+        selectInput(inputId  = "marcas",
+                    label    = h4("Marca"),
+                    choices  = marcas(),
+                    #selected = "XEROX",
+                    multiple = TRUE)
+    })
+    
+    # OPCIONES MODELOS
+    modelos <- reactive({
+        datos_fil1() %>% 
+            distinct(Modelo) %>% 
+            pull() 
+    })
+    
     
     output$select_models <- renderUI({
         selectInput(inputId  = "modelos",
@@ -209,72 +322,35 @@ server <- function(input, output, session) {
                     multiple = TRUE)
     })
     
-    datos_fil2 <- reactive({
-        datos %>% 
-            filter(Marca == input$marcas) %>% 
-            filter(Modelo %in% input$modelos)
-    })
-    
+    # OPCIONES ZONAS
     zonas <- reactive({
         datos_fil2() %>% 
-        distinct(Zonas) %>% 
-        pull()
+            distinct(Zonas) %>% 
+            pull()
     })
     
-    output$select_zonas <- renderUI({
+        output$select_zonas <- renderUI({
         selectInput(inputId  = "zonas",
                     label = h4("Zona"),
                     choices = zonas(),
                     multiple = TRUE)
     })
     
-    datos_fil3 <- reactive({
-        datos %>% 
-            filter(Marca == input$marcas) %>% 
-            filter(Modelo %in% input$modelos) %>% 
-            filter(Zonas %in% input$zonas)
-    })
-    
+    # OPCIONES IS
     is <- reactive({
         datos_fil3() %>% 
-        distinct(IS) %>% 
-        pull()
+            distinct(IS) %>% 
+            pull()
     })
     
-    output$select_is <- renderUI({
+        output$select_is <- renderUI({
         selectInput(inputId  = "is",
                     label = h4("Ingeniero de Servicio"),
                     choices = is(),
                     multiple = TRUE)
     })
         
-    datos_fil4 <- reactive({
-        datos %>% 
-            filter(Marca == input$marcas) %>% 
-            filter(Modelo %in% input$modelos) %>% 
-            filter(Zonas %in% input$zonas) %>% 
-            filter(Fechas %in% input$fechas)
-    })
-        
-    fechas <- reactive({
-        datos_fil4() %>% 
-        distinct(Fechas) %>% 
-        pull()
-    })    
-        
-    output$select_fechas <- renderUI({
-        airMonthpickerInput(
-            inputId    = "fechas",
-            label      = "Selecciona la fecha:",
-            multiple   = TRUE,
-            #disabledDates = fechasbien,
-            view       = "months",
-            language   = "es",
-            clearButton = TRUE,
-            autoClose  = TRUE
-        )
-    })    
-        
+    # OUTPUT MAPA MEXICO
     foundational.map <- function(){
         leaflet() %>%
             #addTiles( urlTemplate = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png") %>%
@@ -339,6 +415,58 @@ server <- function(input, output, session) {
         click.list$ids <- NULL
         myMap_reval(foundational.map()) # reset options.
     }) 
+    
+    # OUTPUT TABLA
+    output$tabla1 <- renderTable(width="400px",{
+        if (is.null(input$marcas) & is.null(input$modelos) & is.null(input$zonas) & is.null(input$is)){
+            datos_fil()
+        }
+        else if (is.null(input$modelos) & is.null(input$zonas) & is.null(input$is)){
+            return(datos_fil1())
+        }
+        else if (is.null(input$zonas) & is.null(input$is)){
+            return(datos_fil2())
+        }
+        else if(is.null(input$is)){
+            return(datos_fil3())
+        }
+        else if (is.null(input$modelos) & is.null(input$zonas)){
+            return(datos_fil4())
+        }
+        else if (is.null(input$modelos) & is.null(input$is)){
+            return(datos_fil5())
+        }
+        else if (is.null(input$marcas) & is.null(input$is)){
+            return(datos_fil6())
+        }
+        else if (is.null(input$marcas) & is.null(input$zonas)){
+            return(datos_fil7())
+        }
+        else if(is.null(input$marcas) & is.null(input$zonas) & is.null(input$is)){
+            return(datos_fil8())
+        }
+        else if (is.null(input$marcas) & is.null(input$modelos) & is.null(input$is)){
+            return(datos_fil9())
+        }
+        else if (is.null(input$marcas) & is.null(input$modelos) & is.null(input$zonas)){
+            return(datos_fil.10())
+        }
+        else if (is.null(input$marcas)){
+            return(datos_fil.12())
+        }
+        else if (is.null(input$modelos)){
+            return(datos_fil.13())
+        }
+        else if (is.null(input$zonas)){
+            return(datos_fil.14())
+        }
+        else if (is.null(input$marcas) & is.null(input$modelos)) {
+            return(datos_fil.15())
+        }
+        else {
+            return(datos_fil.11())
+        }
+    })
     
 }
 
