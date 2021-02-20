@@ -365,6 +365,7 @@ server <- function(input, output, session) {
                          , weight = 2
                          , layerId = mexico$state
                          , group = "click.list")
+            #addMarkers(lng = Long, lat = Lat, options = popupOptions(closeButton = FALSE))
     }
     
     # reactiveVal for the map object, and corresponding output object.
@@ -405,7 +406,7 @@ server <- function(input, output, session) {
                               , color = "#6cb5bc"
                               , weight = 5
                               , opacity = 1
-                ) 
+                )
         }
         
     }) # end of shiny::observeEvent({})
