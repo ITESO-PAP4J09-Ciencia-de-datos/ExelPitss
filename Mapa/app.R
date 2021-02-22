@@ -12,9 +12,11 @@ library(rgdal)
 
 # visualización del mapa
 library(leaflet)
+library(ggmap) # -> para obtener lon y lat de los municipios
 library(raster)
 library(spData)
 library(tmap)
+library(RJSONIO)
 
 # elementos de shiny 
 library(shiny)
@@ -25,11 +27,22 @@ library(shinyjs)
 
 # DATOS -------------------------------------------------------------------
 
+coordenadas <- read_xlsx("municipios_coord.xlsx","municipios",col_names=c("zonas","estado","latitud","longitud"),skip=1)
+
 localidades <- read_xlsx("localidades.xlsx",col_names=c("is","zonas"),skip=1) %>%
     mutate(Apellidos = word(is,1,2)) %>%
     relocate(Apellidos, .after = is) %>% 
     mutate(Apellidos=ifelse(Apellidos =="DE LA",word(is,1,3),Apellidos),
            Apellidos=ifelse(Apellidos == "LIZARAN MACEDA",word(is,1,3),Apellidos))
+
+localidades <- left_join(localidades,coordenadas, by = "zonas") %>% 
+  dplyr::select(everything(), -c("estado"))
+
+long <- localidades %>% 
+  dplyr::select(longitud)
+  
+lat <- localidades %>% 
+  dplyr::select(latitud)
 
 # verificaci?n de 2 apellidos iguales
 n_occur <- data.frame(table(localidades$Apellidos))
@@ -47,12 +60,12 @@ datos <- datos %>%
 
 datos <- left_join(datos,localidades, by="Apellidos")
 
-datos <- datos %>% 
+datos <- datos %>%
     drop_na(zonas) %>% 
     relocate(zonas, .after = IS) %>% 
     dplyr::select(everything(),-c("is","Apellidos"))
 
-names(datos) <- c("IS","Zonas","Modelo","Marca","Virtual","Requerido","Fecha","Certificacion")
+names(datos) <- c("IS","Zonas","Modelo","Marca","Virtual","Requerido","Fecha","Certificacion","Latitud","Longitud")
 
 marcas <- datos %>% 
     distinct(Marca) %>% 
@@ -75,7 +88,7 @@ fechas <- datos %>%
     distinct(Fecha) %>% 
     pull()
 
-fechas <- format(as.Date(fechas), "%Y-%m")
+#fechas <- format(as.Date(fechas), "%Y-%m")
 #fechascompletas <- seq(min(fechas), max(fechas), by="months")
 
 # DATOS MEXICO ------------------------------------------------------------
@@ -300,11 +313,12 @@ server <- function(input, output, session) {
     })
     
     output$select_marcas <- renderUI({
-        selectInput(inputId  = "marcas",
+        pickerInput(inputId  = "marcas",
                     label    = h4("Marca"),
                     choices  = marcas(),
-                    #selected = "XEROX",
-                    multiple = TRUE)
+                    options  = list(`actions-box`=TRUE),
+                    multiple = TRUE,
+                    selected = marcas())
     })
     
     # OPCIONES MODELOS
@@ -316,10 +330,12 @@ server <- function(input, output, session) {
     
     
     output$select_models <- renderUI({
-        selectInput(inputId  = "modelos",
+        pickerInput(inputId  = "modelos",
                     label = h4("Modelo"),
                     choices = modelos(),
-                    multiple = TRUE)
+                    options  = list(`actions-box`=TRUE),
+                    multiple = TRUE,
+                    selected = modelos())
     })
     
     # OPCIONES ZONAS
@@ -329,11 +345,14 @@ server <- function(input, output, session) {
             pull()
     })
     
-        output$select_zonas <- renderUI({
-        selectInput(inputId  = "zonas",
+    output$select_zonas <- renderUI({
+        pickerInput(inputId  = "zonas",
                     label = h4("Zona"),
                     choices = zonas(),
-                    multiple = TRUE)
+                    options  = list(`actions-box`=TRUE),
+                    multiple = TRUE,
+                    selected = zonas()
+                    )
     })
     
     # OPCIONES IS
@@ -343,17 +362,21 @@ server <- function(input, output, session) {
             pull()
     })
     
-        output$select_is <- renderUI({
+    output$select_is <- renderUI({
         selectInput(inputId  = "is",
                     label = h4("Ingeniero de Servicio"),
                     choices = is(),
-                    multiple = TRUE)
+                    #options  = list(`actions-box`=TRUE),
+                    multiple = TRUE
+                    #selected = is()
+                    )
     })
         
     # OUTPUT MAPA MEXICO
     foundational.map <- function(){
         leaflet() %>%
-            #addTiles( urlTemplate = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png") %>%
+            #addTiles() %>%
+            #addMarkers(~long, ~lat, popup = ~as.character(mag), label = ~as.character(mag)) %>% 
             #setView( lng = -87.567215
             #         , lat = 41.822582
             #         , zoom = 11 ) %>%
