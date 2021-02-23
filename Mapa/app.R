@@ -268,6 +268,12 @@ server <- function(input, output, session) {
     })
         
     # OUTPUT MAPA MEXICO
+    icons <- awesomeIcons(
+        icon = 'bolt',
+        iconColor = 'green',
+        markerColor = "black",
+        library = 'fa'
+    )
     foundational.map <- function(){
         leaflet() %>%
             #addTiles() %>%
@@ -283,11 +289,15 @@ server <- function(input, output, session) {
                          , weight = 2
                          , layerId = mexico$state
                          , group = "click.list") %>% 
-            addMarkers(
+            addAwesomeMarkers(
               lng = localidades$longitud,
               lat = localidades$latitud,
               options = popupOptions(closeButton = FALSE),
-              label = localidades$zonas)
+              label = localidades$zonas,
+              popup = localidades$is,localidades$Apellidos,
+              icon = icons)
+            # addPopups(lng = localidades$longitud, lat = localidades$latitud, localidades,
+            #           options = popupOptions(closeButton = FALSE))
     }
     
     # reactiveVal for the map object, and corresponding output object.
