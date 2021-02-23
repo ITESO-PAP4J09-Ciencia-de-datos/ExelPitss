@@ -162,6 +162,10 @@ ui <- fluidPage(
                                                   width = 600
                         )
                     )
+                    , column(
+                      width = 3,
+                      tableOutput(outputId = "tabla_is")
+                    )
                 )
             ),
             tabPanel(
@@ -274,6 +278,7 @@ server <- function(input, output, session) {
         markerColor = "black",
         library = 'fa'
     )
+    
     foundational.map <- function(){
         leaflet() %>%
             #addTiles() %>%
@@ -294,7 +299,7 @@ server <- function(input, output, session) {
               lat = localidades$latitud,
               options = popupOptions(closeButton = FALSE),
               label = localidades$zonas,
-              popup = localidades$is,localidades$Apellidos,
+              popup = localidades %>% group_by(zonas),# %>% distinct(is),#localidades$Apellidos,
               icon = icons)
             # addPopups(lng = localidades$longitud, lat = localidades$latitud, localidades,
             #           options = popupOptions(closeButton = FALSE))
@@ -306,10 +311,44 @@ server <- function(input, output, session) {
         myMap_reval()
     }) 
     
-    shiny::observeEvent(input$myMap_marker_click, {
-      renderText("hola")#p <- input$myMap_marker_click
-      #renderTable(localidades %>% filter(zonas == p) %>% select(is))
+    
+    
+    #is_seleccionado <- reactive({
+    #  observeEvent(input$myMap_marker_click, {
+        #p <- input$myMap_marker_click
+     #   localidades %>% filter(zonas == input$myMap_marker_click) %>% select(is)
+     # })
+    #})
+    
+    observe({
+      
+      event <- input$myMap_marker_click
+      
+      if(is.null(event))
+        return()
+      
+      #text <- paste("Seleccionaste: ", event$label)
+      
+      #myMap$clearPopups()
+      #map$showPopup(text)
+      
+      #is_seleccionado <- reactive({
+       # localidades %>% 
+      #    filter(zonas == event$id ) %>% 
+      #    dplyr::select(is)
+      #})
+      
+      
+      output$tabla_is <- renderTable({
+        localidades %>% 
+          filter(zonas == event$label) %>%
+          dplyr::select(is)
+      })
     })
+    
+   #output$tabla_is <- renderTable({
+    #  is_seleccionado()
+    #})
     
     # To hold the selected map region id.
     click.list <- shiny::reactiveValues( ids = vector() )
