@@ -38,12 +38,6 @@ localidades <- read_xlsx("localidades.xlsx",col_names=c("is","zonas"),skip=1) %>
 localidades <- left_join(localidades,coordenadas, by = "zonas") %>% 
   dplyr::select(everything(), -c("estado"))
 
-long <- localidades %>% 
-  dplyr::select(longitud)
-  
-lat <- localidades %>% 
-  dplyr::select(latitud)
-
 # verificaci?n de 2 apellidos iguales
 n_occur <- data.frame(table(localidades$Apellidos))
 reps <- localidades[localidades$Apellidos %in% n_occur$Var1[n_occur$Freq > 1],]
@@ -193,121 +187,19 @@ server <- function(input, output, session) {
         reset("form")
     })
     
-    # sin seleccionar nada
-    datos_fil <- reactive({
-        datos
+    datos_filtrados <- reactive({
+      datos %>% 
+      filter(
+          Marca %in% input$marcas,
+          Modelo %in% input$modelos,
+          Zonas %in% input$zonas,
+          IS %in% input$is,
+        )
     })
-    
-    # si no escogen ni modelo, ni zona, ni is
-    datos_fil1 <- reactive({
-        datos %>% 
-            filter(Marca %in% input$marcas)
-    })
-    
-    # si no escogen ni zona, ni is
-    datos_fil2 <- reactive({
-        datos %>% 
-            filter(Marca %in% input$marcas) %>% 
-            filter(Modelo %in% input$modelos)
-    })
-    
-    # si no escogen IS
-    datos_fil3 <- reactive({
-        datos %>% 
-            filter(Marca %in% input$marcas) %>% 
-            filter(Modelo %in% input$modelos) %>% 
-            filter(Zonas %in% input$zonas)
-    })
-      
-    # si no escogen ni modelo, ni zonas
-    datos_fil4 <- reactive({
-        datos %>% 
-            filter(Marca %in% input$marcas) %>%
-            filter(IS %in% input$is)
-    })
-    
-    # si no escogen ni modelo, ni is
-    datos_fil5 <- reactive({
-        datos %>% 
-            filter(Marca %in% input$marcas) %>%
-            filter(Zonas %in% input$zonas)
-    })
-    
-    # si no escogen ni marca, ni is
-    datos_fil6 <- reactive({
-        datos %>% 
-            filter(Modelo %in% input$modelos) %>%
-            filter(Zonas %in% input$zonas)
-    })
-    
-    # si no escogen ni marca, ni zonas
-    datos_fil7 <- reactive({
-        datos %>% 
-            filter(Modelo %in% input$modelos) %>%
-            filter(IS %in% input$is)
-    })
-    
-    # si no escogen ni marca, ni zona, ni is
-    datos_fil8 <- reactive({
-        datos %>% 
-            filter(Modelo %in% input$modelos)
-    })
-    
-    # si no escogen ni marca, ni modelo, ni is
-    datos_fil9 <- reactive({
-        datos %>% 
-            filter(Zonas %in% input$zonas)
-    })
-    
-    # si no escogen ni marca, ni modelo, ni zonas
-    datos_fil.10 <- reactive({
-        datos %>% 
-            filter(IS %in% input$is)
-    })
-    
-    # si escogen todo
-    datos_fil.11 <- reactive({
-        datos %>% 
-            filter(Marca %in% input$marcas) %>% 
-            filter(Modelo %in% input$modelos) %>% 
-            filter(Zonas %in% input$zonas) %>% 
-            filter(IS %in% input$is)
-    })
-    
-    # si no escogen marca
-    datos_fil.12 <- reactive({
-        datos %>% 
-            filter(Modelo %in% input$modelos) %>% 
-            filter(Zonas %in% input$zonas) %>% 
-            filter(IS %in% input$is)
-    })
-    
-    # si no escogen modelo
-    datos_fil.13 <- reactive({
-        datos %>% 
-            filter(Marca %in% input$marcas) %>% 
-            filter(Zonas %in% input$zonas) %>% 
-            filter(IS %in% input$is)
-    })
-    
-    # si no escogen zona
-    datos_fil.14 <- reactive({
-        datos %>% 
-            filter(Marca %in% input$marcas) %>% 
-            filter(Modelo %in% input$modelos) %>% 
-            filter(IS %in% input$is)
-    })
-    
-    # si no escogen ni marca, ni modelo
-    datos_fil.15 <- reactive({
-        datos %>% 
-            filter(Zonas %in% input$zonas) %>% 
-            filter(IS %in% input$is)
-    })
-      
+  
     # OPCIONES MARCAS
     marcas <- reactive({
-        datos_fil() %>% 
+        datos %>% 
             distinct(Marca) %>% 
             pull()
     })
@@ -316,16 +208,17 @@ server <- function(input, output, session) {
         pickerInput(inputId  = "marcas",
                     label    = h4("Marca"),
                     choices  = marcas(),
-                    options  = list(`actions-box`=TRUE),
+                    options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
                     selected = marcas())
     })
     
     # OPCIONES MODELOS
     modelos <- reactive({
-        datos_fil1() %>% 
-            distinct(Modelo) %>% 
-            pull() 
+        datos %>%
+          filter(Marca %in% input$marcas) %>% 
+          distinct(Modelo) %>% 
+          pull() 
     })
     
     
@@ -333,23 +226,24 @@ server <- function(input, output, session) {
         pickerInput(inputId  = "modelos",
                     label = h4("Modelo"),
                     choices = modelos(),
-                    options  = list(`actions-box`=TRUE),
+                    options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
                     selected = modelos())
     })
     
     # OPCIONES ZONAS
     zonas <- reactive({
-        datos_fil2() %>% 
-            distinct(Zonas) %>% 
-            pull()
+      datos %>%
+        filter(Marca %in% input$marcas, Modelo %in% input$modelos) %>%
+        distinct(Zonas) %>% 
+        pull() 
     })
     
     output$select_zonas <- renderUI({
         pickerInput(inputId  = "zonas",
                     label = h4("Zona"),
                     choices = zonas(),
-                    options  = list(`actions-box`=TRUE),
+                    options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
                     selected = zonas()
                     )
@@ -357,18 +251,19 @@ server <- function(input, output, session) {
     
     # OPCIONES IS
     is <- reactive({
-        datos_fil3() %>% 
-            distinct(IS) %>% 
-            pull()
+        datos %>% 
+          filter(Marca %in% input$marcas, Modelo %in% input$modelos, Zonas %in% input$zonas) %>%
+          distinct(IS) %>% 
+          pull()
     })
     
     output$select_is <- renderUI({
-        selectInput(inputId  = "is",
+        pickerInput(inputId  = "is",
                     label = h4("Ingeniero de Servicio"),
                     choices = is(),
-                    #options  = list(`actions-box`=TRUE),
-                    multiple = TRUE
-                    #selected = is()
+                    options  = list(`actions-box`=TRUE,`live-search`=TRUE),
+                    multiple = TRUE,
+                    selected = is()
                     )
     })
         
@@ -387,8 +282,12 @@ server <- function(input, output, session) {
                          , color = "#000000"
                          , weight = 2
                          , layerId = mexico$state
-                         , group = "click.list")
-            #addMarkers(lng = Long, lat = Lat, options = popupOptions(closeButton = FALSE))
+                         , group = "click.list") %>% 
+            addMarkers(
+              lng = localidades$longitud,
+              lat = localidades$latitud,
+              options = popupOptions(closeButton = FALSE),
+              label = localidades$zonas)
     }
     
     # reactiveVal for the map object, and corresponding output object.
@@ -397,10 +296,15 @@ server <- function(input, output, session) {
         myMap_reval()
     }) 
     
+    shiny::observeEvent(input$myMap_marker_click, {
+      renderText("hola")#p <- input$myMap_marker_click
+      #renderTable(localidades %>% filter(zonas == p) %>% select(is))
+    })
+    
     # To hold the selected map region id.
     click.list <- shiny::reactiveValues( ids = vector() )
     
-    shiny::observeEvent( input$myMap_shape_click, ignoreNULL = T,ignoreInit = T, {
+    shiny::observeEvent(input$myMap_shape_click, ignoreNULL = T,ignoreInit = T, {
         
         # If already selected, first remove previous selection
         if(length(click.list)>0)
@@ -442,54 +346,7 @@ server <- function(input, output, session) {
     
     # OUTPUT TABLA
     output$tabla1 <- renderTable(width="400px",{
-        if (is.null(input$marcas) & is.null(input$modelos) & is.null(input$zonas) & is.null(input$is)){
-            datos_fil()
-        }
-        else if (is.null(input$modelos) & is.null(input$zonas) & is.null(input$is)){
-            return(datos_fil1())
-        }
-        else if (is.null(input$zonas) & is.null(input$is)){
-            return(datos_fil2())
-        }
-        else if(is.null(input$is)){
-            return(datos_fil3())
-        }
-        else if (is.null(input$modelos) & is.null(input$zonas)){
-            return(datos_fil4())
-        }
-        else if (is.null(input$modelos) & is.null(input$is)){
-            return(datos_fil5())
-        }
-        else if (is.null(input$marcas) & is.null(input$is)){
-            return(datos_fil6())
-        }
-        else if (is.null(input$marcas) & is.null(input$zonas)){
-            return(datos_fil7())
-        }
-        else if(is.null(input$marcas) & is.null(input$zonas) & is.null(input$is)){
-            return(datos_fil8())
-        }
-        else if (is.null(input$marcas) & is.null(input$modelos) & is.null(input$is)){
-            return(datos_fil9())
-        }
-        else if (is.null(input$marcas) & is.null(input$modelos) & is.null(input$zonas)){
-            return(datos_fil.10())
-        }
-        else if (is.null(input$marcas)){
-            return(datos_fil.12())
-        }
-        else if (is.null(input$modelos)){
-            return(datos_fil.13())
-        }
-        else if (is.null(input$zonas)){
-            return(datos_fil.14())
-        }
-        else if (is.null(input$marcas) & is.null(input$modelos)) {
-            return(datos_fil.15())
-        }
-        else {
-            return(datos_fil.11())
-        }
+        datos_filtrados()
     })
     
 }
