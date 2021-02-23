@@ -275,7 +275,7 @@ server <- function(input, output, session) {
     
     #iconos normales
     icons <- awesomeIcons(
-        icon = 'bolt',
+        icon = 'id-badge',
         iconColor = 'green',
         markerColor = "black",
         library = 'fa'
@@ -319,9 +319,9 @@ server <- function(input, output, session) {
               options = popupOptions(closeButton = FALSE),
               label = localidades$zonas,
               #popup = paste("Ingenieros: ", pop()),
-              icon = icons)
-            # addPopups(lng = localidades$longitud, lat = localidades$latitud, localidades,
-            #           options = popupOptions(closeButton = FALSE))
+              icon = icons) %>%
+            addPopups(lng = localidades$longitud,lat = localidades$latitud, localidades$Apellidos,
+                      options = popupOptions(closeButton = TRUE))
     }
     
     data <- reactiveVal()
