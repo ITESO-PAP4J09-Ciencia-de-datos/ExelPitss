@@ -157,8 +157,8 @@ ui <- fluidPage(
                     # separate the box by a column
                     , column(
                         width = 9
-                        , leaflet::leafletOutput( outputId = "myMap"
-                                                  , height = 500,
+                        , leaflet::leafletOutput( outputId = "myMap",
+                                                  height = 500,
                                                   width = 600
                         )
                     )
@@ -272,12 +272,30 @@ server <- function(input, output, session) {
     })
         
     # OUTPUT MAPA MEXICO
+    
+    #iconos normales
     icons <- awesomeIcons(
         icon = 'bolt',
         iconColor = 'green',
         markerColor = "black",
         library = 'fa'
     )
+    #iconos seleccionados
+    icons2 <- makeAwesomeIcon(
+        icon = 'flag',
+        markerColor = 'black',
+        iconColor = 'green',
+        library = 'fa'
+    )
+    
+    #popup
+    pop <- reactive({
+      datos %>% 
+        filter(Zonas == input$myMap_marker$id) %>% 
+        select(IS)
+    })
+      
+    
     
     foundational.map <- function(){
         leaflet() %>%
@@ -297,13 +315,16 @@ server <- function(input, output, session) {
             addAwesomeMarkers(
               lng = localidades$longitud,
               lat = localidades$latitud,
+              layerId = localidades$zonas,
               options = popupOptions(closeButton = FALSE),
               label = localidades$zonas,
-              popup = localidades %>% group_by(zonas),# %>% distinct(is),#localidades$Apellidos,
+              #popup = paste("Ingenieros: ", pop()),
               icon = icons)
             # addPopups(lng = localidades$longitud, lat = localidades$latitud, localidades,
             #           options = popupOptions(closeButton = FALSE))
     }
+    
+    data <- reactiveVal()
     
     # reactiveVal for the map object, and corresponding output object.
     myMap_reval <- reactiveVal(foundational.map())
@@ -311,45 +332,55 @@ server <- function(input, output, session) {
         myMap_reval()
     }) 
     
-    
-    
-    #is_seleccionado <- reactive({
-    #  observeEvent(input$myMap_marker_click, {
-        #p <- input$myMap_marker_click
-     #   localidades %>% filter(zonas == input$myMap_marker_click) %>% select(is)
-     # })
-    #})
-    
-    observe({
-      
-      event <- input$myMap_marker_click
-      
-      if(is.null(event))
+    output$tabla_is <- renderTable({
+      if (is.null(input$clickedMarker))
         return()
-      
-      #text <- paste("Seleccionaste: ", event$label)
-      
-      #myMap$clearPopups()
-      #map$showPopup(text)
-      
-      #is_seleccionado <- reactive({
-       # localidades %>% 
-      #    filter(zonas == event$id ) %>% 
-      #    dplyr::select(is)
-      #})
-      
-      
-      output$tabla_is <- renderTable({
-        localidades %>% 
-          filter(zonas == event$label) %>%
-          dplyr::select(is)
-      })
-    })
+      else {
+         localidades %>% 
+              filter(zonas == input$clickedMarker) %>% 
+              select(is)
+      }
+         })
+    # observeEvent(input$marcas, {
+    #   leafletProxy("myMap") %>%
+    #     clearGroup("myMarkers") %>%
+    #     addMarkers(data = datos[datos$Marca %in% input$marcas, ],
+    #                lng = localidades$longitud,
+    #                lat = localidades$latitud)
+    # })
     
-   #output$tabla_is <- renderTable({
-    #  is_seleccionado()
-    #})
     
+    # cuando le des clic al marker aparezca una tabla con los nombres de los IS y que cambie el marker seleccionado
+    # observeEvent(input$myMap_marker_click,{
+    #   
+    #   data$clickedMarker = input$myMap_marker_click
+    #   leafletProxy('myMap') %>%
+    #     addAwesomeMarkers(#popup=as.character(row_selected$mag),
+    #                       layerId = as.character(data$clickedMarker$id),
+    #                       lng = data()$long,
+    #                       lat = data()$lat,
+    #                       icon = icons2)
+    #   
+    #   # Reset previously selected marker
+    #   if(!is.null(data()))
+    #   {
+    #     proxy %>%
+    #       addMarkers(#popup = as.character(data()$mag), 
+    #                  layerId = as.character(data()$id),
+    #                  lng = data()$long, 
+    #                  lat = data()$lat)
+    #   }
+    #   # set new value to reactiveVal 
+    #   data(data$clickedMarker)
+    # 
+    # 
+    #   #myMap_reval$showPopup(localidades$is[localidades$zonas == event])
+    #   
+    #   
+    #   
+    # })
+    
+   
     # To hold the selected map region id.
     click.list <- shiny::reactiveValues( ids = vector() )
     
