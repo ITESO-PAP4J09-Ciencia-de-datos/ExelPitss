@@ -25,17 +25,19 @@ library(shinyWidgets)
 library(shinydashboard)
 library(shinyjs)
 
+
+
 # DATOS -------------------------------------------------------------------
 
-coordenadas <- read_xlsx("municipios_coord.xlsx","municipios",col_names=c("zonas","estado","latitud","longitud"),skip=1)
+coordenadas <- read_xlsx("municipios_coord.xlsx","municipios",col_names=c("Zonas","estado","latitud","longitud"),skip=1)
 
-localidades <- read_xlsx("localidades.xlsx",col_names=c("is","zonas"),skip=1) %>%
+localidades <- read_xlsx("localidades.xlsx",col_names=c("is","Zonas"),skip=1) %>%
     mutate(Apellidos = word(is,1,2)) %>%
     relocate(Apellidos, .after = is) %>% 
     mutate(Apellidos=ifelse(Apellidos =="DE LA",word(is,1,3),Apellidos),
            Apellidos=ifelse(Apellidos == "LIZARAN MACEDA",word(is,1,3),Apellidos))
 
-localidades <- left_join(localidades,coordenadas, by = "zonas") %>% 
+localidades <- left_join(localidades,coordenadas, by = "Zonas") %>% 
   dplyr::select(everything(), -c("estado"))
 
 # verificaci?n de 2 apellidos iguales
@@ -55,8 +57,8 @@ datos <- datos %>%
 datos <- left_join(datos,localidades, by="Apellidos")
 
 datos <- datos %>%
-    drop_na(zonas) %>% 
-    relocate(zonas, .after = IS) %>% 
+    drop_na(Zonas) %>% 
+    relocate(Zonas, .after = IS) %>% 
     dplyr::select(everything(),-c("is","Apellidos"))
 
 names(datos) <- c("IS","Zonas","Modelo","Marca","Virtual","Requerido","Fecha","Certificacion","Latitud","Longitud")
@@ -197,7 +199,7 @@ server <- function(input, output, session) {
           Marca %in% input$marcas,
           Modelo %in% input$modelos,
           Zonas %in% input$zonas,
-          IS %in% input$is,
+          IS %in% input$is
         )
     })
   
@@ -280,20 +282,27 @@ server <- function(input, output, session) {
         markerColor = "black",
         library = 'fa'
     )
-    #iconos seleccionados
-    icons2 <- makeAwesomeIcon(
-        icon = 'flag',
-        markerColor = 'black',
-        iconColor = 'green',
-        library = 'fa'
-    )
+    # #iconos seleccionados
+    # icons2 <- awesomeIcons(
+    #     icon = 'id-badge',
+    #     markerColor = 'blue',
+    #     iconColor = 'green',
+    #     library = 'fa',
+    #     markerOptions(interactive = TRUE),
+    # )
     
     #popup
-    pop <- reactive({
-      datos %>% 
-        filter(Zonas == input$myMap_marker$id) %>% 
-        select(IS)
-    })
+    get_popup_content <- function() {
+      observeEvent(input$myMap_marker_click,{
+        if(is.null(input$myMap_marker_click))
+          return()
+        reactive({
+          datos_filtrados() %>% 
+            filter(Zonas == input$myMap_marker_click) %>% 
+            dplyr::select(IS)
+        })
+      })
+    }
       
     
     
@@ -311,17 +320,17 @@ server <- function(input, output, session) {
                          , color = "#000000"
                          , weight = 2
                          , layerId = mexico$state
-                         , group = "click.list") %>% 
-            addAwesomeMarkers(
-              lng = localidades$longitud,
-              lat = localidades$latitud,
-              layerId = localidades$zonas,
-              options = popupOptions(closeButton = FALSE),
-              label = localidades$zonas,
-              #popup = paste("Ingenieros: ", pop()),
-              icon = icons) %>%
-            addPopups(lng = localidades$longitud,lat = localidades$latitud, localidades$Apellidos,
-                      options = popupOptions(closeButton = TRUE))
+                         , group = "click.list") #%>% 
+            # addAwesomeMarkers(
+            #   lng = datos$Longitud,
+            #   lat = datos$Latitud,
+            #   layerId = datos$Zonas,
+            #   #options = popupOptions(closeButton = FALSE),
+            #   label = datos$Zonas,
+            #   #popup = get_popup_content(),
+            #   icon = icons)# %>%
+            #addPopups(lng = localidades$longitud,lat = localidades$latitud, ,
+                     # options = popupOptions(closeButton = TRUE))
     }
     
     data <- reactiveVal()
@@ -410,13 +419,31 @@ server <- function(input, output, session) {
             leaflet::leafletProxy( mapId = "myMap" ) %>%
                 addPolylines( data = lines.of.interest
                               , layerId = lines.of.interest@data$id
-                              , color = "#6cb5bc"
+                              , color = "#0571B0"
                               , weight = 5
                               , opacity = 1
                 )
         }
         
     }) # end of shiny::observeEvent({})
+    
+    
+    observeEvent({
+      input$marcas
+      input$modelos
+      input$zonas
+      input$is},{
+      leafletProxy("myMap") %>% 
+        addAwesomeMarkers(
+          lng = datos_filtrados()$Longitud,
+            lat = datos_filtrados()$Latitud,
+            layerId = datos$Zonas,
+            #options = popupOptions(closeButton = FALSE),
+            label = datos$Zonas,
+            icon = icons
+        )
+    })
+      
     
     # oberver for the clearHighlight button.
     shiny::observeEvent( input$clearOptions, {
