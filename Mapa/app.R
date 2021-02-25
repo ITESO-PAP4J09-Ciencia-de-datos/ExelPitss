@@ -123,10 +123,28 @@ state_popup <- paste0("<strong>Estado: </strong>",
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-    theme = shinytheme("superhero"),
+    theme = shinytheme("cosmo"),
+    setBackgroundColor(
+        color = c("#F7FBFF", "grey"),
+        gradient = "linear",
+        direction = "bottom")
+    #setBackgroundColor("ghostwhite")
+    # setBackgroundColor(
+    #     color = c("#F7FBFF", "#2171B5"),
+    #     gradient = "radial",
+    #     direction = c("top", "left")
+    #),
+    ,
     useShinyjs(),
-    #Assign Dasbhoard title 
-    titlePanel(h1("Cobertura ExelPitss")),
+    #Assign Dasbhoard title
+    #tags$head(tags$style('h1 {color:red;}')),
+    #tags$head(tags$style('Cobertura ExelPitss {color:red; font-style:copperplate; font-size:40px; font-weight:bold}')),
+    #titlePanel(h1("Cobertura ExelPitss", align="center", size="40px")),
+    titlePanel(h1("Cobertura ", 
+                    span("ExelPitts", 
+                            style = "color: teal; font-size: 50px; font-weight:bold",
+                            align = "center"))),
+    
     sidebarPanel(
                 div(
             id = "form",
@@ -139,7 +157,8 @@ ui <- fluidPage(
         actionButton("reset_input",
                      label = "Reestablecer todo",
                      icon = icon( name = "eraser"),
-                     style = "color: #fff; background-color: #D75453; border-color: #C73232"
+                     style = "color: #fff; background-color: goldenrod; border-color: darkgoldenrod"
+                     #style = "color: #fff; background-color: #D75453; border-color: #C73232"
                     )
         
     ),
@@ -156,7 +175,7 @@ ui <- fluidPage(
                         , shiny::actionButton( inputId = "clearHighlight"
                                                , icon = icon( name = "eraser")
                                                , label = "Reestablecer mapa"
-                                               , style = "color: #fff; background-color: #D75453; border-color: #C73232"
+                                               , style = "color: #fff; background-color: goldenrod; border-color: darkgoldenrod"
                         )
                     )
                     # separate the box by a column
