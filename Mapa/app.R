@@ -10,6 +10,9 @@ library(tidyverse)
 library(readxl)
 library(rgdal)
 
+#visualización de texto
+library(htmltools)
+
 # visualización del mapa
 library(leaflet)
 library(ggmap) # -> para obtener lon y lat de los municipios
@@ -163,6 +166,10 @@ ui <- fluidPage(
                                                   height = 500,
                                                   width = 600
                         )
+                    )
+                    , column(
+                      width = 3,
+                      textOutput(outputId = "text")
                     )
                     , column(
                       width = 3,
@@ -333,7 +340,7 @@ server <- function(input, output, session) {
                      # options = popupOptions(closeButton = TRUE))
     }
     
-    data <- reactiveVal()
+    data <- reactiveValues()
     
     # reactiveVal for the map object, and corresponding output object.
     myMap_reval <- reactiveVal(foundational.map())
@@ -341,55 +348,6 @@ server <- function(input, output, session) {
         myMap_reval()
     }) 
     
-    output$tabla_is <- renderTable({
-      if (is.null(input$clickedMarker))
-        return()
-      else {
-         localidades %>% 
-              filter(zonas == input$clickedMarker) %>% 
-              select(is)
-      }
-         })
-    # observeEvent(input$marcas, {
-    #   leafletProxy("myMap") %>%
-    #     clearGroup("myMarkers") %>%
-    #     addMarkers(data = datos[datos$Marca %in% input$marcas, ],
-    #                lng = localidades$longitud,
-    #                lat = localidades$latitud)
-    # })
-    
-    
-    # cuando le des clic al marker aparezca una tabla con los nombres de los IS y que cambie el marker seleccionado
-    # observeEvent(input$myMap_marker_click,{
-    #   
-    #   data$clickedMarker = input$myMap_marker_click
-    #   leafletProxy('myMap') %>%
-    #     addAwesomeMarkers(#popup=as.character(row_selected$mag),
-    #                       layerId = as.character(data$clickedMarker$id),
-    #                       lng = data()$long,
-    #                       lat = data()$lat,
-    #                       icon = icons2)
-    #   
-    #   # Reset previously selected marker
-    #   if(!is.null(data()))
-    #   {
-    #     proxy %>%
-    #       addMarkers(#popup = as.character(data()$mag), 
-    #                  layerId = as.character(data()$id),
-    #                  lng = data()$long, 
-    #                  lat = data()$lat)
-    #   }
-    #   # set new value to reactiveVal 
-    #   data(data$clickedMarker)
-    # 
-    # 
-    #   #myMap_reval$showPopup(localidades$is[localidades$zonas == event])
-    #   
-    #   
-    #   
-    # })
-    
-   
     # To hold the selected map region id.
     click.list <- shiny::reactiveValues( ids = vector() )
     
@@ -400,19 +358,28 @@ server <- function(input, output, session) {
         {
             remove_id = click.list$ids
             lines.of.interest <- mexico[ which( mexico$state %in% remove_id) , ]
+            markers.of.interest <- coordenadas[ which( coordenadas$estado %in% remove_id) , ]
             leaflet::leafletProxy( mapId = "myMap" ) %>%
                 addPolylines( data = lines.of.interest
                               , layerId = lines.of.interest@data$id
                               , color = "#000000"
                               , weight = 2
-                              , opacity = 0.2)
+                              , opacity = 0.2)#%>% 
+              # addAwesomeMarkers( data = markers.of.interest
+              #                    , layerId = markers.of.interest@data$id
+              #                    , lat = localidades$latitud
+              #                    , lng = localidades$longitud
+              #                    , label = localidades$Zonas 
+              #                    , icon = icons
+              # ) 
         }
         
         # add current selection
         click <- input$myMap_shape_click
         click.list$ids <- click$id  # we only store the last click now!
         lines.of.interest <- mexico[ which( mexico$state %in% click.list$ids ) , ]
-        print(click)
+        #markers.of.interest <- coordenadas[ which( coordenadas$estado %in% remove_id) , ]
+        #print(click)
         if( is.null( click$id ) ){
             req( click$id )
         } else if( !click$id %in% lines.of.interest@data$id ){
@@ -422,7 +389,14 @@ server <- function(input, output, session) {
                               , color = "#0571B0"
                               , weight = 5
                               , opacity = 1
-                )
+                 )
+            # addAwesomeMarkers( data = markers.of.interest
+            #                    , layerId = markers.of.interest@data$id
+            #                    , lat = localidades$latitud
+            #                    , lng = localidades$longitud
+            #                    , label = localidades$Zonas 
+            #                    , icon = icons
+            # )
         }
         
     }) # end of shiny::observeEvent({})
@@ -439,11 +413,22 @@ server <- function(input, output, session) {
             lat = datos_filtrados()$Latitud,
             layerId = datos$Zonas,
             #options = popupOptions(closeButton = FALSE),
-            label = datos$Zonas,
+            label = ,
             icon = icons
         )
     })
+    
+    #observer para desplegar tabla de IS en cada marker
+    shiny::observe({
+        click <- input$myMap_marker_click
+        if (is.null(click))
+          return()
+        texto1 <- paste("Ingenieros en ",click$id,":")
+        tabla <- datos %>% filter(Zonas==click$id) %>% distinct(IS)
+        output$text <- renderText({texto1})
+        output$tabla_is <- renderTable(tabla,spacing='xs',align='l',colnames=FALSE)
       
+    })
     
     # oberver for the clearHighlight button.
     shiny::observeEvent( input$clearOptions, {
