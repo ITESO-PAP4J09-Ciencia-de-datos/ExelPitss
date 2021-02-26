@@ -174,7 +174,7 @@ ui <- fluidPage(
                           height:100px;
                           padding-top:50px;
                           position:relative;
-                          color:black;
+                          color:teal;
                           font-size: 20px; 
                           font-style: bold",
                       textOutput(outputId = "text")
@@ -188,7 +188,7 @@ ui <- fluidPage(
                 )
             ),
             tabPanel(
-                "Tabla de Cursos",
+                "TABLA DE CURSOS",
                 tableOutput(outputId = "tabla1")
                 #código para devolver tabla
             )
@@ -225,7 +225,7 @@ server <- function(input, output, session) {
     
     output$select_marcas <- renderUI({
         pickerInput(inputId  = "marcas",
-                    label    = h4("Marca"),
+                    label    = h4("Marca", style="color:darkcyan; font-size:20px"),
                     choices  = marcas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -243,7 +243,7 @@ server <- function(input, output, session) {
     
     output$select_models <- renderUI({
         pickerInput(inputId  = "modelos",
-                    label = h4("Modelo"),
+                    label = h4("Modelo", style="color:darkcyan; font-size:20px"),
                     choices = modelos(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -260,7 +260,7 @@ server <- function(input, output, session) {
     
     output$select_zonas <- renderUI({
         pickerInput(inputId  = "zonas",
-                    label = h4("Zona"),
+                    label = h4("Zona", style="color:darkcyan; font-size:20px"),
                     choices = zonas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -278,7 +278,7 @@ server <- function(input, output, session) {
     
     output$select_is <- renderUI({
         pickerInput(inputId  = "is",
-                    label = h4("Ingeniero de Servicio"),
+                    label = h4("Ingeniero de Servicio", style="color:darkcyan; font-size:20px"),
                     choices = is(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -297,8 +297,8 @@ server <- function(input, output, session) {
     #iconos seleccionados
     icons2 <- awesomeIcons(
         icon = 'id-badge',
-        markerColor = 'blue',
-        iconColor = 'green',
+        markerColor = 'red',
+        iconColor = 'goldenrod',
         library = 'fa',
     )
     
@@ -379,7 +379,7 @@ server <- function(input, output, session) {
             lat = datos_filtrados()$Latitud,
             layerId = datos$Zonas,
             #options = popupOptions(closeButton = FALSE),
-            label = ,
+            label = datos$Zonas,
             icon = icons
         )
     })
