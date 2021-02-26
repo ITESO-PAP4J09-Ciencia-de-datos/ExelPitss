@@ -90,20 +90,6 @@ fechas <- datos %>%
 #fechas <- format(as.Date(fechas), "%Y-%m")
 #fechascompletas <- seq(min(fechas), max(fechas), by="months")
 
-# DATOS MEXICO ------------------------------------------------------------
-
-# estados y municipios
-
-# poner pin en cada municipio
-
-# cuando seleccionen el pin, despliegue nombres de IS, o un resumen
-
-# cuando seleccionen todo el estado
-
-# que el mapa se vaya filtrando conforme las opciones que se van seleccionando
-
-
-
 # DATOS MAPA --------------------------------------------------------------
 
 tmp <- tempdir()
@@ -148,6 +134,7 @@ ui <- fluidPage(
     sidebarPanel(
                 div(
             id = "form",
+            style="text-align:center;",
             uiOutput(outputId = "select_marcas"),
             uiOutput(outputId = "select_models"),
             uiOutput(outputId = "select_zonas"),
@@ -188,7 +175,16 @@ ui <- fluidPage(
                     )
                     , column(
                       width = 3,
+                      div(style="text-align:center;
+                          width:250px;
+                          height:100px;
+                          padding-top:50px;
+                          position:relative;
+                          color:black;
+                          font-size: 20px; 
+                          font-style: bold",
                       textOutput(outputId = "text")
+                      )
                     )
                     , column(
                       width = 3,
@@ -308,15 +304,14 @@ server <- function(input, output, session) {
         markerColor = "black",
         library = 'fa'
     )
-    # #iconos seleccionados
-    # icons2 <- awesomeIcons(
-    #     icon = 'id-badge',
-    #     markerColor = 'blue',
-    #     iconColor = 'green',
-    #     library = 'fa',
-    #     markerOptions(interactive = TRUE),
-    # )
-    
+    #iconos seleccionados
+    icons2 <- awesomeIcons(
+        icon = 'id-badge',
+        markerColor = 'blue',
+        iconColor = 'green',
+        library = 'fa',
+    )
+
     #popup
     get_popup_content <- function() {
       observeEvent(input$myMap_marker_click,{
@@ -346,17 +341,7 @@ server <- function(input, output, session) {
                          , color = "#000000"
                          , weight = 2
                          , layerId = mexico$state
-                         , group = "click.list") #%>% 
-            # addAwesomeMarkers(
-            #   lng = datos$Longitud,
-            #   lat = datos$Latitud,
-            #   layerId = datos$Zonas,
-            #   #options = popupOptions(closeButton = FALSE),
-            #   label = datos$Zonas,
-            #   #popup = get_popup_content(),
-            #   icon = icons)# %>%
-            #addPopups(lng = localidades$longitud,lat = localidades$latitud, ,
-                     # options = popupOptions(closeButton = TRUE))
+                         , group = "click.list")
     }
     
     data <- reactiveValues()
@@ -383,14 +368,7 @@ server <- function(input, output, session) {
                               , layerId = lines.of.interest@data$id
                               , color = "#000000"
                               , weight = 2
-                              , opacity = 0.2)#%>% 
-              # addAwesomeMarkers( data = markers.of.interest
-              #                    , layerId = markers.of.interest@data$id
-              #                    , lat = localidades$latitud
-              #                    , lng = localidades$longitud
-              #                    , label = localidades$Zonas 
-              #                    , icon = icons
-              # ) 
+                              , opacity = 0.2) 
         }
         
         # add current selection
@@ -409,13 +387,6 @@ server <- function(input, output, session) {
                               , weight = 5
                               , opacity = 1
                  )
-            # addAwesomeMarkers( data = markers.of.interest
-            #                    , layerId = markers.of.interest@data$id
-            #                    , lat = localidades$latitud
-            #                    , lng = localidades$longitud
-            #                    , label = localidades$Zonas 
-            #                    , icon = icons
-            # )
         }
         
     }) # end of shiny::observeEvent({})
@@ -447,6 +418,16 @@ server <- function(input, output, session) {
         output$text <- renderText({texto1})
         output$tabla_is <- renderTable(tabla,spacing='xs',align='l',colnames=FALSE)
       
+    })
+    
+    shiny::observeEvent(input$myMap_marker_click, {
+      click <- input$myMap_marker_click
+      proxy <- leafletProxy("myMap")
+      if(click$id == "Selected"){
+        proxy %>% removeMarker(layerId = "Selected")
+      }else{
+        proxy %>% addAwesomeMarkers(lat = click$lat, lng = click$lng,icon = icons2, layerId = "Selected")
+      }
     })
     
     # oberver for the clearHighlight button.
