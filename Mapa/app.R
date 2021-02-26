@@ -32,6 +32,13 @@ library(shinyjs)
 
 # DATOS -------------------------------------------------------------------
 
+# COLORES
+az_os <- rgb(0,0,51/255)
+az_cl <- rgb(0,154/255,203/255)
+negro <- rgb(51/255,51/255,51/255)
+n_os <- rgb(226/255,120/255,49/255)
+n_cl <- rgb(248/255,148/255,56/255)
+
 coordenadas <- read_xlsx("municipios_coord.xlsx","municipios",col_names=c("Zonas","estado","latitud","longitud"),skip=1)
 
 localidades <- read_xlsx("localidades.xlsx",col_names=c("is","Zonas"),skip=1) %>%
@@ -111,7 +118,7 @@ state_popup <- paste0("<strong>Estado: </strong>",
 ui <- fluidPage(
     theme = shinytheme("cosmo"),
     setBackgroundColor(
-        color = c("#F7FBFF", "grey"),
+        color = c(az_cl, az_os),
         gradient = "linear",
         direction = "bottom")
     #setBackgroundColor("ghostwhite")
@@ -126,10 +133,12 @@ ui <- fluidPage(
     #tags$head(tags$style('h1 {color:red;}')),
     #tags$head(tags$style('Cobertura ExelPitss {color:red; font-style:copperplate; font-size:40px; font-weight:bold}')),
     #titlePanel(h1("Cobertura ExelPitss", align="center", size="40px")),
-    titlePanel(h1("Cobertura ", 
-                    span("ExelPitts", 
-                            style = "color: teal; font-size: 50px; font-weight:bold",
-                            align = "center"))),
+    titlePanel(div("COBERTURA",style = "color: negro; font-size: 80px; font-style:proxima nova",align = "center",
+                   img(height = 105, width = 400, src = "exel pitss logo final_RGB-04.png"))),
+    # titlePanel(h1("Cobertura ", 
+    #                 span("ExelPitss", 
+    #                         style = "color: dodgerblue4; font-size: 50px; font-weight:bold",
+    #                         align = "center"))),
     
     sidebarPanel(
                 div(
@@ -141,10 +150,14 @@ ui <- fluidPage(
             uiOutput(outputId = "select_is"),
             uiOutput(outputId = "select_fechas")
         ),
-        actionButton("reset_input",
-                     label = "Reestablecer todo",
-                     icon = icon( name = "eraser"),
-                     style = "color: #fff; background-color: goldenrod; border-color: darkgoldenrod"
+        actionButton(
+                     #div(
+                       "reset_input",
+                       label = "Reestablecer todo",
+                       icon = icon( name = "eraser"),
+                       style = "color: #fff; background-color: n_cl; border-color: n_os"
+                     #)
+                     
                      #style = "color: #fff; background-color: #D75453; border-color: #C73232"
                     )
         
@@ -156,6 +169,7 @@ ui <- fluidPage(
                 shinydashboard::box(
                     width = 12,
                     title = "Mapa",
+                    style = "color: white",
                     # separate the box by a column
                     column(width = 9, 
                         shiny::actionButton( inputId = "clearMap"
@@ -174,7 +188,7 @@ ui <- fluidPage(
                           height:100px;
                           padding-top:50px;
                           position:relative;
-                          color:teal;
+                          color:dodgerblue4;
                           font-size: 20px; 
                           font-style: bold",
                       textOutput(outputId = "text")
@@ -189,7 +203,7 @@ ui <- fluidPage(
             ),
             tabPanel(
                 "TABLA DE CURSOS",
-                tableOutput(outputId = "tabla1")
+                dataTableOutput(outputId = "tabla1")
                 #código para devolver tabla
             )
             
@@ -225,7 +239,7 @@ server <- function(input, output, session) {
     
     output$select_marcas <- renderUI({
         pickerInput(inputId  = "marcas",
-                    label    = h4("Marca", style="color:darkcyan; font-size:20px"),
+                    label    = h4("Marca", style="color:dodgerblue4; font-size:20px"),
                     choices  = marcas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -243,7 +257,7 @@ server <- function(input, output, session) {
     
     output$select_models <- renderUI({
         pickerInput(inputId  = "modelos",
-                    label = h4("Modelo", style="color:darkcyan; font-size:20px"),
+                    label = h4("Modelo", style="color:dodgerblue4; font-size:20px"),
                     choices = modelos(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -260,7 +274,7 @@ server <- function(input, output, session) {
     
     output$select_zonas <- renderUI({
         pickerInput(inputId  = "zonas",
-                    label = h4("Zona", style="color:darkcyan; font-size:20px"),
+                    label = h4("Zona", style="color:dodgerblue4; font-size:20px"),
                     choices = zonas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -278,7 +292,7 @@ server <- function(input, output, session) {
     
     output$select_is <- renderUI({
         pickerInput(inputId  = "is",
-                    label = h4("Ingeniero de Servicio", style="color:darkcyan; font-size:20px"),
+                    label = h4("Ingeniero de Servicio", style="color:dodgerblue4; font-size:20px"),
                     choices = is(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -297,8 +311,8 @@ server <- function(input, output, session) {
     #iconos seleccionados
     icons2 <- awesomeIcons(
         icon = 'id-badge',
-        markerColor = 'red',
-        iconColor = 'goldenrod',
+        markerColor = 'blue',
+        iconColor = n_cl,
         library = 'fa',
     )
     
@@ -436,8 +450,10 @@ server <- function(input, output, session) {
     }) 
     
     # OUTPUT TABLA
-    output$tabla1 <- renderTable(width="400px",{
-        datos_filtrados()
+    output$tabla1 <- renderDataTable({
+        datos_filtrados() %>% 
+        dplyr::select(everything(), -c("Latitud","Longitud")) %>% 
+        datatable(filter ="top")
     })
     
 }
