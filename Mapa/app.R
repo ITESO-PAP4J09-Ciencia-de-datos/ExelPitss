@@ -154,27 +154,21 @@ ui <- fluidPage(
             tabPanel(
                 "MAPA",
                 shinydashboard::box(
-                    width = 12
-                    , title = "Mapa"
+                    width = 12,
+                    title = "Mapa",
                     # separate the box by a column
-                    , column(
-                        width = 10
-                        , shiny::actionButton( inputId = "clearHighlight"
+                    column(width = 9, 
+                        shiny::actionButton( inputId = "clearMap"
                                                , icon = icon( name = "eraser")
                                                , label = "Reestablecer mapa"
                                                , style = "color: #fff; background-color: goldenrod; border-color: darkgoldenrod"
+                        ),
+                        leaflet::leafletOutput( outputId = "myMap",
+                                                height = 500,
+                                                width = 600
                         )
-                    )
-                    # separate the box by a column
-                    , column(
-                        width = 9
-                        , leaflet::leafletOutput( outputId = "myMap",
-                                                  height = 500,
-                                                  width = 600
-                        )
-                    )
-                    , column(
-                      width = 3,
+                    ), 
+                    column(width = 3,
                       div(style="text-align:center;
                           width:250px;
                           height:100px;
@@ -184,16 +178,17 @@ ui <- fluidPage(
                           font-size: 20px; 
                           font-style: bold",
                       textOutput(outputId = "text")
-                      )
-                    )
-                    , column(
-                      width = 3,
+                      ),
                       tableOutput(outputId = "tabla_is")
                     )
+                    # , column(
+                    #   width = 1,
+                    #  
+                    # )
                 )
             ),
             tabPanel(
-                "TABLA",
+                "Tabla de Cursos",
                 tableOutput(outputId = "tabla1")
                 #código para devolver tabla
             )
@@ -210,10 +205,6 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-    
-    observeEvent(input$reset_input, {
-        reset("form")
-    })
     
     datos_filtrados <- reactive({
       datos %>% 
@@ -295,8 +286,6 @@ server <- function(input, output, session) {
                     )
     })
         
-    # OUTPUT MAPA MEXICO
-    
     #iconos normales
     icons <- awesomeIcons(
         icon = 'id-badge',
@@ -304,6 +293,7 @@ server <- function(input, output, session) {
         markerColor = "black",
         library = 'fa'
     )
+    
     #iconos seleccionados
     icons2 <- awesomeIcons(
         icon = 'id-badge',
@@ -311,22 +301,8 @@ server <- function(input, output, session) {
         iconColor = 'green',
         library = 'fa',
     )
-
-    #popup
-    get_popup_content <- function() {
-      observeEvent(input$myMap_marker_click,{
-        if(is.null(input$myMap_marker_click))
-          return()
-        reactive({
-          datos_filtrados() %>% 
-            filter(Zonas == input$myMap_marker_click) %>% 
-            dplyr::select(IS)
-        })
-      })
-    }
-      
     
-    
+    # función de nuestro mapa
     foundational.map <- function(){
         leaflet() %>%
             #addTiles() %>%
@@ -341,12 +317,11 @@ server <- function(input, output, session) {
                          , color = "#000000"
                          , weight = 2
                          , layerId = mexico$state
-                         , group = "click.list")
+                         , group = "click.list") %>% 
+        setView(lat = 22.1565,lng = -100.986,zoom=4.5)
     }
     
-    data <- reactiveValues()
-    
-    # reactiveVal for the map object, and corresponding output object.
+    # OUTPUT MAPA MEXICO.
     myMap_reval <- reactiveVal(foundational.map())
     output$myMap <- renderLeaflet({
         myMap_reval()
@@ -355,6 +330,7 @@ server <- function(input, output, session) {
     # To hold the selected map region id.
     click.list <- shiny::reactiveValues( ids = vector() )
     
+    # observer para seleccionar el estado
     shiny::observeEvent(input$myMap_shape_click, ignoreNULL = T,ignoreInit = T, {
         
         # If already selected, first remove previous selection
@@ -391,7 +367,7 @@ server <- function(input, output, session) {
         
     }) # end of shiny::observeEvent({})
     
-    
+    # observer para ir filtrando los markers del mapa según el input
     observeEvent({
       input$marcas
       input$modelos
@@ -408,18 +384,25 @@ server <- function(input, output, session) {
         )
     })
     
+    # observer para borrar los inputs
+    observeEvent(input$reset_input, {
+      reset("form")
+    })
+    
     #observer para desplegar tabla de IS en cada marker
     shiny::observe({
         click <- input$myMap_marker_click
-        if (is.null(click))
-          return()
+        if (is.null(click)){
+          output$text <- renderText({"Selecciona alguna zona"})
+        } else {
         texto1 <- paste("Ingenieros en ",click$id,":")
         tabla <- datos %>% filter(Zonas==click$id) %>% distinct(IS)
         output$text <- renderText({texto1})
         output$tabla_is <- renderTable(tabla,spacing='xs',align='l',colnames=FALSE)
-      
+        }
     })
     
+    # observer para cambiar el color del marker seleccionado
     shiny::observeEvent(input$myMap_marker_click, {
       click <- input$myMap_marker_click
       proxy <- leafletProxy("myMap")
@@ -430,10 +413,26 @@ server <- function(input, output, session) {
       }
     })
     
-    # oberver for the clearHighlight button.
-    shiny::observeEvent( input$clearOptions, {
+    # oberver para el boton de borrar lo seleccionado del mapa
+    shiny::observeEvent(input$clearMap, {
         click.list$ids <- NULL
-        myMap_reval(foundational.map()) # reset options.
+        myMap_reval(foundational.map())
+        
+        proxy <- leafletProxy('myMap')
+        if (input$clearMap){ 
+          proxy %>% removeMarker(layerId = "Selected") %>% 
+            addAwesomeMarkers(
+              lng = datos_filtrados()$Longitud,
+              lat = datos_filtrados()$Latitud,
+              layerId = datos$Zonas,
+              #options = popupOptions(closeButton = FALSE),
+              label = ,
+              icon = icons
+            )
+          output$text <- renderText({"Selecciona alguna zona"})
+          tabla <- tibble(vacio=c(""))
+          output$tabla_is <- renderTable(tabla,spacing='xs',align='l',colnames=FALSE)
+        }
     }) 
     
     # OUTPUT TABLA
