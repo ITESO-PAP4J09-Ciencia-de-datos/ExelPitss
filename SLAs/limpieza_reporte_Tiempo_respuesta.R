@@ -89,7 +89,8 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
 tiempos_os_tidy_tbl %>% 
   filter(Ruta == "JALISCO",
          Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>% 
-  ggplot(aes(x = `Técnico de visita`, y = hora_decimal, fill = Tiempos))+
+  ggplot(aes(x = fct_reorder(`Técnico de visita`, hora_decimal), 
+             y = hora_decimal, fill = Tiempos))+
   geom_boxplot() +
   facet_grid(Ruta ~ Tiempos, scales = "free_y") + 
   theme(legend.position = "none") +
@@ -97,12 +98,14 @@ tiempos_os_tidy_tbl %>%
 
 
 tiempos_os_tidy_tbl %>% 
-  filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>% 
-  ggplot(aes(x = Ruta, y = hora_decimal, fill = Tiempos))+
+  filter(Tiempos %in% c("Tiempo de respuesta")) %>% 
+  ggplot(aes(x = fct_reorder(Ruta, hora_decimal), y = hora_decimal, fill = Tiempos))+
   geom_boxplot() +
   facet_wrap(~ Tiempos, scales = "free_x") + 
   theme(legend.position = "none") +
-  coord_flip()
+  coord_flip() +
+  labs(y = "Horas",
+       x = "")
 
 
 tiempos_mensual_tsbl <- tiempos_os_tidy_tbl %>% 
