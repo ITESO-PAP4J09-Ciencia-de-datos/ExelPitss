@@ -393,7 +393,7 @@ server <- function(input, output, session) {
             lat = datos_filtrados()$Latitud,
             layerId = datos$Zonas,
             #options = popupOptions(closeButton = FALSE),
-            label = datos$Zonas,
+            label = datos_filtrados()$Zonas,
             icon = icons
         )
     })
@@ -427,7 +427,7 @@ server <- function(input, output, session) {
       }
     })
     
-    # oberver para el boton de borrar lo seleccionado del mapa
+    # observer para el boton de borrar lo seleccionado del mapa
     shiny::observeEvent(input$clearMap, {
         click.list$ids <- NULL
         myMap_reval(foundational.map())
