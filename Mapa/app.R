@@ -453,8 +453,8 @@ server <- function(input, output, session) {
     # OUTPUT TABLA
     output$tabla1 <- renderDataTable({
         datos_filtrados() %>% 
-        dplyr::select(everything(), -c("Latitud","Longitud")) %>% 
-        datatable(filter ="top")
+        dplyr::select(everything(), -c("Latitud","Longitud"))# %>% 
+        #,filter="top"#datatable(filter ="top")
     })
     
 }
