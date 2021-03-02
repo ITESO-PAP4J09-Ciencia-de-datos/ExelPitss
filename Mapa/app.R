@@ -133,7 +133,7 @@ ui <- fluidPage(
     #tags$head(tags$style('h1 {color:red;}')),
     #tags$head(tags$style('Cobertura ExelPitss {color:red; font-style:copperplate; font-size:40px; font-weight:bold}')),
     #titlePanel(h1("Cobertura ExelPitss", align="center", size="40px")),
-    titlePanel(div("COBERTURA",style = "color: negro; font-size: 80px; font-style:proxima nova",align = "center",
+    titlePanel(div("COBERTURA",style = "color:ghostwhite; font-size: 70px; font-style:proxima nova; font-weight:bold; font-style:italic",align = "center",
                    img(height = 105, width = 400, src = "exel pitss logo final_RGB-04.png"))),
     # titlePanel(h1("Cobertura ", 
     #                 span("ExelPitss", 
@@ -155,7 +155,7 @@ ui <- fluidPage(
                        "reset_input",
                        label = "Reestablecer todo",
                        icon = icon( name = "eraser"),
-                       style = "color: #fff; background-color: n_cl; border-color: n_os"
+                       style = "color: #fff; background-color: goldenrod; border-color: darkgoldenrod"
                      #)
                      
                      #style = "color: #fff; background-color: #D75453; border-color: #C73232"
@@ -169,7 +169,7 @@ ui <- fluidPage(
                 shinydashboard::box(
                     width = 12,
                     title = "Mapa",
-                    style = "color: white",
+                    style = "color:white",
                     # separate the box by a column
                     column(width = 9, 
                         shiny::actionButton( inputId = "clearMap"
@@ -239,7 +239,7 @@ server <- function(input, output, session) {
     
     output$select_marcas <- renderUI({
         pickerInput(inputId  = "marcas",
-                    label    = h4("Marca", style="color:dodgerblue4; font-size:20px"),
+                    label    = h4("Marca", style="color:#EE7942; font-style:urw din italic; font-size:20px"),
                     choices  = marcas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -257,7 +257,7 @@ server <- function(input, output, session) {
     
     output$select_models <- renderUI({
         pickerInput(inputId  = "modelos",
-                    label = h4("Modelo", style="color:dodgerblue4; font-size:20px"),
+                    label = h4("Modelo", style="color:#EE7942; font-style:urw din italic;font-size:20px"),
                     choices = modelos(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -274,7 +274,7 @@ server <- function(input, output, session) {
     
     output$select_zonas <- renderUI({
         pickerInput(inputId  = "zonas",
-                    label = h4("Zona", style="color:dodgerblue4; font-size:20px"),
+                    label = h4("Zona", style="color:#EE7942; font-style:urw din italic; font-size:20px"),
                     choices = zonas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -292,7 +292,7 @@ server <- function(input, output, session) {
     
     output$select_is <- renderUI({
         pickerInput(inputId  = "is",
-                    label = h4("Ingeniero de Servicio", style="color:dodgerblue4; font-size:20px"),
+                    label = h4("Ingeniero de Servicio", style="color:#EE7942; font-style:urw din italic; font-size:20px"),
                     choices = is(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
