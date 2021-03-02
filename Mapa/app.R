@@ -393,8 +393,8 @@ server <- function(input, output, session) {
           addAwesomeMarkers(
             lng = datos_filtrados()$Longitud,
             lat = datos_filtrados()$Latitud,
-            layerId = nombres_fil,
-            label = nombres_fil,
+            layerId = datos$Zonas,
+            label = datos$Zonas,
             icon = icons
           )
     })
