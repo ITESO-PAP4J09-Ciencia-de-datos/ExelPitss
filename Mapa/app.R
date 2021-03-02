@@ -387,15 +387,16 @@ server <- function(input, output, session) {
       input$modelos
       input$zonas
       input$is},{
+        nombres_fil <- datos_filtrados() %>% 
+          dplyr::select(Zonas)
       leafletProxy("myMap") %>% 
-        addAwesomeMarkers(
-          lng = datos_filtrados()$Longitud,
+          addAwesomeMarkers(
+            lng = datos_filtrados()$Longitud,
             lat = datos_filtrados()$Latitud,
-            layerId = datos$Zonas,
-            #options = popupOptions(closeButton = FALSE),
-            label = datos_filtrados()$Zonas,
+            layerId = nombres_fil,
+            label = nombres_fil,
             icon = icons
-        )
+          )
     })
     
     # observer para borrar los inputs
