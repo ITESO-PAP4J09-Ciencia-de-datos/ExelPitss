@@ -116,7 +116,7 @@ state_popup <- paste0("<strong>Estado: </strong>",
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-    theme = shinytheme("cosmo"),
+    #theme = shinytheme("cosmo"),
     setBackgroundColor(
         color = c(az_cl, az_os),
         gradient = "linear",
@@ -140,10 +140,11 @@ ui <- fluidPage(
     #                         style = "color: dodgerblue4; font-size: 50px; font-weight:bold",
     #                         align = "center"))),
     
-    sidebarPanel(
+    sidebarPanel(#alpha('white', 0.1),
+                #tags$style(".well {background-color: white;  opacity: 0.8;}"),
                 div(
             id = "form",
-            style="text-align:center;",
+            style = "text-align:center; color: rgb(0,0,51/255)",
             uiOutput(outputId = "select_marcas"),
             uiOutput(outputId = "select_models"),
             uiOutput(outputId = "select_zonas"),
@@ -155,8 +156,7 @@ ui <- fluidPage(
                        "reset_input",
                        label = "Reestablecer todo",
                        icon = icon( name = "eraser"),
-                       style = "color: #fff; background-color: goldenrod; border-color: darkgoldenrod"
-                     #)
+                       style = "color: #fff; background-color: #F89438; border-color: #E27831"
                      
                      #style = "color: #fff; background-color: #D75453; border-color: #C73232"
                     )
@@ -165,17 +165,17 @@ ui <- fluidPage(
     mainPanel(
         tabsetPanel(
             tabPanel(
-                "MAPA",
+                "MAPA",style = "color: #fff",
                 shinydashboard::box(
                     width = 12,
                     title = "Mapa",
-                    style = "color:white",
+                    
                     # separate the box by a column
                     column(width = 9, 
                         shiny::actionButton( inputId = "clearMap"
                                                , icon = icon( name = "eraser")
                                                , label = "Reestablecer mapa"
-                                               , style = "color: #fff; background-color: goldenrod; border-color: darkgoldenrod"
+                                               , style = "color: #fff; background-color: #F89438; border-color: #E27831"
                         ),
                         leaflet::leafletOutput( outputId = "myMap",
                                                 height = 500,
@@ -188,11 +188,12 @@ ui <- fluidPage(
                           height:100px;
                           padding-top:50px;
                           position:relative;
-                          color:dodgerblue4;
+                          color:white;
                           font-size: 20px; 
                           font-style: bold",
                       textOutput(outputId = "text")
                       ),
+                      style = "color: #fff",
                       tableOutput(outputId = "tabla_is")
                     )
                     # , column(
@@ -203,6 +204,10 @@ ui <- fluidPage(
             ),
             tabPanel(
                 "TABLA DE CURSOS",
+                tags$head(
+                  tags$style(type = "text/css", "a{color: #fff}")
+                  ),
+                style = "color: #fff",
                 dataTableOutput(outputId = "tabla1")
                 #código para devolver tabla
             )
@@ -239,7 +244,7 @@ server <- function(input, output, session) {
     
     output$select_marcas <- renderUI({
         pickerInput(inputId  = "marcas",
-                    label    = h4("Marca", style="color:#EE7942; font-style:urw din italic; font-size:20px"),
+                    label    = h4("Marca", style="color:az_os; font-style:urw din italic; font-size:20px"),
                     choices  = marcas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -257,7 +262,7 @@ server <- function(input, output, session) {
     
     output$select_models <- renderUI({
         pickerInput(inputId  = "modelos",
-                    label = h4("Modelo", style="color:#EE7942; font-style:urw din italic;font-size:20px"),
+                    label = h4("Modelo", style="color:az_os; font-style:urw din italic;font-size:20px"),
                     choices = modelos(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -274,7 +279,7 @@ server <- function(input, output, session) {
     
     output$select_zonas <- renderUI({
         pickerInput(inputId  = "zonas",
-                    label = h4("Zona", style="color:#EE7942; font-style:urw din italic; font-size:20px"),
+                    label = h4("Zona", style="color:az_os; font-style:urw din italic; font-size:20px"),
                     choices = zonas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -292,7 +297,7 @@ server <- function(input, output, session) {
     
     output$select_is <- renderUI({
         pickerInput(inputId  = "is",
-                    label = h4("Ingeniero de Servicio", style="color:#EE7942; font-style:urw din italic; font-size:20px"),
+                    label = h4("Ingeniero de Servicio", style="color:az_os; font-style:urw din italic; font-size:20px"),
                     choices = is(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -303,7 +308,7 @@ server <- function(input, output, session) {
     #iconos normales
     icons <- awesomeIcons(
         icon = 'id-badge',
-        iconColor = 'green',
+        iconColor = "#009ACB",
         markerColor = "black",
         library = 'fa'
     )
@@ -311,9 +316,10 @@ server <- function(input, output, session) {
     #iconos seleccionados
     icons2 <- awesomeIcons(
         icon = 'id-badge',
-        markerColor = 'blue',
-        iconColor = n_cl,
+        markerColor = "orange",
+        iconColor = "#fff",
         library = 'fa',
+        spin = TRUE
     )
     
     # función de nuestro mapa
@@ -450,10 +456,16 @@ server <- function(input, output, session) {
         }
     }) 
     
+   
     # OUTPUT TABLA
     output$tabla1 <- renderDataTable({
-        datos_filtrados() %>% 
-        dplyr::select(everything(), -c("Latitud","Longitud"))# %>% 
+      # DT::datatable(tabla_final()) %>% 
+      #   DT::formatStyle(
+      #     backgroundColor = "white"
+      #   )
+        datos_filtrados() %>%
+        dplyr::select(everything(), -c("Latitud","Longitud"))# %>%
+
         #,filter="top"#datatable(filter ="top")
     })
     
