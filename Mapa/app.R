@@ -9,6 +9,7 @@ library(tidyverse)
 # importación y lectura de datos
 library(readxl)
 library(rgdal)
+library(DT)
 
 #visualización de texto
 library(htmltools)
@@ -116,7 +117,7 @@ state_popup <- paste0("<strong>Estado: </strong>",
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-    #theme = shinytheme("cosmo"),
+    title = "Cobertura Exel Pitss",
     setBackgroundColor(
         color = c(az_cl, az_os),
         gradient = "linear",
@@ -141,7 +142,8 @@ ui <- fluidPage(
     #                         align = "center"))),
     
     sidebarPanel(#alpha('white', 0.1),
-                #tags$style(".well {background-color: white;  opacity: 0.8;}"),
+                #tags$head(tags$style(".well {background-color: #fff;  opacity: 0.8;}")),
+      width = 3,
                 div(
             id = "form",
             style = "text-align:center; color: #FFFFFF24; fill:transparent", #rgb(0,0,51/255);",
@@ -208,7 +210,7 @@ ui <- fluidPage(
                   tags$style(type = "text/css", "a{color: #fff}")
                   ),
                 style = "color: #fff",
-                dataTableOutput(outputId = "tabla1")
+                dataTableOutput(outputId = "tabla1", width = "120%")
                 #código para devolver tabla
             )
             
@@ -226,7 +228,8 @@ ui <- fluidPage(
 server <- function(input, output, session) {
     
     datos_filtrados <- reactive({
-      datos %>% 
+      datos %>%
+        mutate(across(where(is.character),as_factor)) %>% 
       filter(
           Marca %in% input$marcas,
           Modelo %in% input$modelos,
@@ -456,18 +459,29 @@ server <- function(input, output, session) {
         }
     }) 
     
+    # tabla_final <- datos_filtrados() %>%
+    #   dplyr::select(everything(), -c("Latitud","Longitud"))
    
+    
+    
     # OUTPUT TABLA
-    output$tabla1 <- renderDataTable({
-      # DT::datatable(tabla_final()) %>% 
-      #   DT::formatStyle(
-      #     backgroundColor = "white"
-      #   )
-        datos_filtrados() %>%
-        dplyr::select(everything(), -c("Latitud","Longitud"))# %>%
-
-        #,filter="top"#datatable(filter ="top")
-    })
+    output$tabla1 <- DT::renderDataTable(
+      
+      DT::datatable({datos_filtrados() %>% dplyr::select(everything(),-c("Latitud","Longitud"))},
+                    rownames = FALSE,
+                    options = list(
+                      initComplete = JS(
+                        "function(settings, json) {",
+                        "$(this.api().table().header()).css({'background-color': '#000033', 'color': '#fff'});",
+                        "}")
+                    ),
+                    filter=list(
+                      position = "top"
+                    )
+      )
+      )
+    
+    
     
 }
 
