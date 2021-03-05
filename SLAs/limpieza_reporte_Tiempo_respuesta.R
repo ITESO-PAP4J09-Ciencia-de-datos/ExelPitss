@@ -37,10 +37,12 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
     Fecha_recepion = as.Date(Fecha_hora_recepcion),
     Fecha_cierre   = as.Date(Fecha_hora_cierre)
   ) %>% 
-  filter(Estatus == "RESUELTA",
-         Categoría == "CORRECTIVO",
+  filter(Estatus        == "RESUELTA",
+         Categoría      == "CORRECTIVO",
+         Fecha_recepion >= "2018-02-01",
          !is.na(`Tiempo transcurrido`),
-         !is.na(`Tiempo efectivo`)) %>% 
+         !is.na(`Tiempo efectivo`)
+         ) %>% 
   # Cambiando algunos nombres por facilidad
   rename(
     OS           = `N.° de orden`,
@@ -79,17 +81,25 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
     hora_decimal = as.numeric(Horas) + as.numeric(Minutos)/60
   ) %>% 
   # quitar cols. innecesarias
-  select(-c(Horas, Minutos))# %>% 
+  select(-c(Horas, Minutos)) %>% 
   # Regresar a cols. separadas cada indicador
-  # pivot_wider(
-  #   names_from  = Tiempos,
-  #   values_from = hora_decimal
-  # )
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  )
+
+tiempos_os_tidy_tbl_long <- tiempos_os_tidy_tbl %>% 
+  pivot_longer(
+    cols      = contains("Tiempo"),
+    names_to  = "Tiempos",
+    values_to = "hora_decimal"
+  )
   
-tiempos_os_tidy_tbl %>% 
+tiempos_os_tidy_tbl_long %>% 
   filter(Ruta == "JALISCO",
          Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>% 
-  ggplot(aes(x = `Técnico de visita`, y = hora_decimal, fill = Tiempos))+
+  ggplot(aes(x = fct_reorder(`Técnico de visita`, hora_decimal), 
+             y = hora_decimal, fill = Tiempos))+
   geom_boxplot() +
   facet_grid(Ruta ~ Tiempos, scales = "free_y") + 
   theme(legend.position = "none") +
@@ -97,12 +107,14 @@ tiempos_os_tidy_tbl %>%
 
 
 tiempos_os_tidy_tbl %>% 
-  filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>% 
-  ggplot(aes(x = Ruta, y = hora_decimal, fill = Tiempos))+
+  filter(Tiempos %in% c("Tiempo de respuesta")) %>% 
+  ggplot(aes(x = fct_reorder(Ruta, hora_decimal), y = hora_decimal, fill = Tiempos))+
   geom_boxplot() +
   facet_wrap(~ Tiempos, scales = "free_x") + 
   theme(legend.position = "none") +
-  coord_flip()
+  coord_flip() +
+  labs(y = "Horas",
+       x = "")
 
 
 tiempos_mensual_tsbl <- tiempos_os_tidy_tbl %>% 
