@@ -37,12 +37,10 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
     Fecha_recepion = as.Date(Fecha_hora_recepcion),
     Fecha_cierre   = as.Date(Fecha_hora_cierre)
   ) %>% 
-  filter(Estatus        == "RESUELTA",
-         Categoría      == "CORRECTIVO",
-         Fecha_recepion >= "2018-02-01",
+  filter(Estatus == "RESUELTA",
+         Categoría == "CORRECTIVO",
          !is.na(`Tiempo transcurrido`),
-         !is.na(`Tiempo efectivo`)
-         ) %>% 
+         !is.na(`Tiempo efectivo`)) %>% 
   # Cambiando algunos nombres por facilidad
   rename(
     OS           = `N.° de orden`,
@@ -82,13 +80,14 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
   ) %>% 
   # quitar cols. innecesarias
   select(-c(Horas, Minutos)) %>% 
-  # Regresar a cols. separadas cada indicador
   pivot_wider(
     names_from  = Tiempos,
     values_from = hora_decimal
-  )
-
-tiempos_os_tidy_tbl_long <- tiempos_os_tidy_tbl %>% 
+  ) %>% 
+  mutate(
+    Cociente_tiempo = as.numeric(`Tiempo de respuesta`)/
+      as.numeric(`Limite de tiempo de respuesta`)
+  ) %>% 
   pivot_longer(
     cols      = contains("Tiempo"),
     names_to  = "Tiempos",
