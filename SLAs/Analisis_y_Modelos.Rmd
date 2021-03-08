@@ -1,0 +1,27 @@
+---
+title: "Análisis y Modelos"
+subtitle: "Informe de los tiempos de recepción y tiempo limite de respuesta"
+output: html_notebook
+---
+# Introdución 
+El presente archivo es un informe de los datos obtenidos al realizar el análisis  y modelado del comportamiento  de los tiempos de recepción y tiempo límite de respuesta que fueron capturados en el "Reporte de tiempos respuesta", esto con el objetivo de encontrar información y modelos que sean de ayuda en para la toma de decisiones de la empresa  **ExelPitss**
+
+
+# Paqueterias
+```{r include=FALSE}
+library(tidymodels)
+library(tidyverse)
+
+```
+
+# Desarrollo 
+ 
+
+```{r}
+
+```
+
+# Conclusiones 
+
+ 
+# Bibliografia / Referencias 
