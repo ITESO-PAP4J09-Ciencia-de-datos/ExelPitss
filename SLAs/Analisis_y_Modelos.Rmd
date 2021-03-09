@@ -11,15 +11,40 @@ El presente archivo es un informe de los datos obtenidos al realizar el análisi
 ```{r include=FALSE}
 library(tidymodels)
 library(tidyverse)
-
+library(corrr)
 ```
 
 # Desarrollo 
- 
-
+## Busqueda de correlaciones 
 ```{r}
+correlacion_tiempos <- tiempos_os_tidy_tbl %>% 
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  ) 
 
+correlacion_tiempos1 <- correlacion_tiempos %>% 
+   select("Cociente_tiempo",
+         `Tiempo efectivo en sitio`,
+         `Tiempo de respuesta`,
+         `Tiempo límite restante...24`,
+         `Tiempo límite restante...27`,
+         `Limite de tiempo de respuesta`,
+         `Limite tiempo de solución total`
+         )
+correlacion_tiempos2 <- cor(correlacion_tiempos1)
+correlacion_tiempos3 <- as_cordf(correlacion_tiempos2)
+correlacion_tiempos4 <- stretch(correlacion_tiempos3)
+
+
+plot(correlacion_tiempos1)
+view(correlacion_tiempos2)
+view(correlacion_tiempos3)
+view(correlacion_tiempos4)
 ```
+
+
+## Modelos 
 
 # Conclusiones 
 
