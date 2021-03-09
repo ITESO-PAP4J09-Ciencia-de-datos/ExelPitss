@@ -121,26 +121,11 @@ ui <- fluidPage(
     setBackgroundColor(
         color = c(az_cl, az_os),
         gradient = "linear",
-        direction = "bottom")
-    #setBackgroundColor("ghostwhite")
-    # setBackgroundColor(
-    #     color = c("#F7FBFF", "#2171B5"),
-    #     gradient = "radial",
-    #     direction = c("top", "left")
-    #),
-    ,
+        direction = "bottom"),
     useShinyjs(),
     #Assign Dasbhoard title
-    #tags$head(tags$style('h1 {color:red;}')),
-    #tags$head(tags$style('Cobertura ExelPitss {color:red; font-style:copperplate; font-size:40px; font-weight:bold}')),
-    #titlePanel(h1("Cobertura ExelPitss", align="center", size="40px")),
     titlePanel(div("COBERTURA",style = "color:white; font-size: 70px; font-style:proxima nova; font-weight:bold; font-style:italic",align = "center",
                    img(height = 105, width = 400, src = "exel pitss logo final_RGB-04.png"))),
-    # titlePanel(h1("Cobertura ", 
-    #                 span("ExelPitss", 
-    #                         style = "color: dodgerblue4; font-size: 50px; font-weight:bold",
-    #                         align = "center"))),
-    
     sidebarPanel(#alpha('white', 0.1),
                 #tags$head(tags$style(".well {background-color: #fff;  opacity: 0.8;}")),
       width = 3,
@@ -159,8 +144,6 @@ ui <- fluidPage(
                        label = "Reestablecer todo",
                        icon = icon( name = "eraser"),
                        style = "color: #fff; background-color: #F89438; border-color: #E27831"
-                     
-                     #style = "color: #fff; background-color: #D75453; border-color: #C73232"
                     )
         
     ),
@@ -173,21 +156,21 @@ ui <- fluidPage(
                     title = "MAPA",
                     
                     # separate the box by a column
-                    column(width = 9, 
+                    column(width = 10, 
                         shiny::actionButton( inputId = "clearMap"
                                                , icon = icon( name = "eraser")
                                                , label = "Reestablecer mapa"
                                                , style = "color: #fff; background-color: #F89438; border-color: #E27831"
                         ),
                         leaflet::leafletOutput( outputId = "myMap",
-                                                height = 500,
-                                                width = 600
+                                                height = 400,
+                                                width = 670
                         )
                     ), 
-                    column(width = 3,
+                    column(width = 2,
                       div(style="text-align:center;
                           width:250px;
-                          height:100px;
+                          height:50px;
                           padding-top:50px;
                           position:relative;
                           color:white;
@@ -195,8 +178,17 @@ ui <- fluidPage(
                           font-style: bold",
                       textOutput(outputId = "text")
                       ),
-                      style = "color: #fff",
-                      tableOutput(outputId = "tabla_is")
+                      #style = "color: #fff",
+                      div(style="text-align:center;
+                          width:250px;
+                          height:50px;
+                          padding-top:50px;
+                          position:relative;
+                          color:white;
+                          font-size: 15px",
+                          tableOutput(outputId = "tabla_is")
+                      )
+                      
                     )
                     # , column(
                     #   width = 1,
@@ -210,7 +202,7 @@ ui <- fluidPage(
                   tags$style(type = "text/css", "a{color: #fff}")
                   ),
                 style = "color: #fff",
-                dataTableOutput(outputId = "tabla1", width = "120%")
+                dataTableOutput(outputId = "tabla1")# width = "120%")
                 #código para devolver tabla
             )
             
@@ -396,14 +388,12 @@ server <- function(input, output, session) {
       input$modelos
       input$zonas
       input$is},{
-        nombres_fil <- datos_filtrados() %>% 
-          dplyr::select(Zonas)
-      leafletProxy("myMap") %>% 
+          #dplyr::select(Zonas)
+      leafletProxy("myMap") %>%
           addAwesomeMarkers(
             lng = datos_filtrados()$Longitud,
             lat = datos_filtrados()$Latitud,
             layerId = datos$Zonas,
-            label = datos$Zonas,
             icon = icons
           )
     })
@@ -419,8 +409,9 @@ server <- function(input, output, session) {
         if (is.null(click)){
           output$text <- renderText({"Selecciona alguna zona"})
         } else {
-        texto1 <- paste("Ingenieros en ",click$id,":")
-        tabla <- datos %>% filter(Zonas==click$id) %>% distinct(IS)
+        estado <- datos %>% filter(Latitud==click$lat,Longitud==click$lng) %>% distinct(Zonas)
+        texto1 <- paste("Ingenieros en ",estado,":")
+        tabla <- datos %>% filter(Latitud==click$lat,Longitud==click$lng) %>% distinct(IS)
         output$text <- renderText({texto1})
         output$tabla_is <- renderTable(tabla,spacing='xs',align='l',colnames=FALSE)
         }
