@@ -11,7 +11,10 @@ library(scales)
 library(timetk)
 library(tsibble)
 library(feasts)
+library(fpp3)
+library(easypackages)
 
+#("tidyverse", "tidyquant", "lubridate", "patchwork", "fpp2","fpp3","scales")
 # DATA --------------------------------------------------------------------
 
 # tiempos_os_tbl <- read_csv("SLAs/Reporte_Tiempo_respuesta.csv",
@@ -92,13 +95,15 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
     cols      = contains("Tiempo"),
     names_to  = "Tiempos",
     values_to = "hora_decimal"
-  )
-  
-tiempos_os_tidy_tbl_long %>% 
+  ) 
+
+# EDA ---------------------------------------------------------------------
+
+
+tiempos_os_tidy_tbl %>% 
   filter(Ruta == "JALISCO",
          Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>% 
-  ggplot(aes(x = fct_reorder(`Técnico de visita`, hora_decimal), 
-             y = hora_decimal, fill = Tiempos))+
+  ggplot(aes(x = `Técnico de visita`, y = hora_decimal, fill = Tiempos))+
   geom_boxplot() +
   facet_grid(Ruta ~ Tiempos, scales = "free_y") + 
   theme(legend.position = "none") +
@@ -106,36 +111,36 @@ tiempos_os_tidy_tbl_long %>%
 
 
 tiempos_os_tidy_tbl %>% 
-  filter(Tiempos %in% c("Tiempo de respuesta")) %>% 
-  ggplot(aes(x = fct_reorder(Ruta, hora_decimal), y = hora_decimal, fill = Tiempos))+
+  filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>% 
+  ggplot(aes(x = Ruta, y = hora_decimal, fill = Tiempos))+
   geom_boxplot() +
   facet_wrap(~ Tiempos, scales = "free_x") + 
   theme(legend.position = "none") +
-  coord_flip() +
-  labs(y = "Horas",
-       x = "")
+  coord_flip()
 
 
-tiempos_mensual_tsbl <- tiempos_os_tidy_tbl %>% 
+tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>% 
   group_by(Ruta, Tiempos) %>% 
   summarise_by_time(
     .date_var    = Fecha_recepion,
     .by          = "month",
     hora_decimal = mean(hora_decimal)
   ) %>% 
+  
   mutate(Fecha_recepion = as.character(Fecha_recepion) %>% 
-           yearmonth()) %>% 
+           yearmonth())%>% 
+  filter(Fecha_recepion >= yearmonth("2018-02-03")) %>% 
   as_tsibble(index = Fecha_recepion, 
              key = c(Ruta, Tiempos))
 
-p <- tiempos_mensual_tsbl %>% 
+
+p <- tiempos_mensual_ruta_tsbl %>% 
   filter(Ruta %in% c("JALISCO", "NUEVO LEON")) %>% 
   autoplot(hora_decimal) +
   facet_wrap(~Tiempos, scales = "free_y") +
   theme(legend.position = "none")
 
 plotly::ggplotly(p)
-
 # Graficar tiempos de respuesta por ruta
 p2 <- tiempos_mensual_ruta_tsbl %>% 
   filter(Tiempos %in% c("Tiempo de respuesta"), 
