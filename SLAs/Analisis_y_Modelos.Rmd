@@ -10,18 +10,23 @@ El presente archivo es un informe de los datos obtenidos al realizar el análisi
 # Paqueterias
 ```{r include=FALSE}
 library(tidymodels)
-library(tidyverse)
 library(corrr)
+library(tidyverse)
 ```
 
 # Desarrollo 
 ## Busqueda de correlaciones 
+
+
 ```{r}
 correlacion_tiempos <- tiempos_os_tidy_tbl %>% 
-  pivot_wider(
+   filter(
+     !is.na(hora_decimal)
+   ) %>% 
+   pivot_wider(
     names_from  = Tiempos,
     values_from = hora_decimal
-  ) 
+   ) 
 
 correlacion_tiempos1 <- correlacion_tiempos %>% 
    select("Cociente_tiempo",
@@ -31,17 +36,42 @@ correlacion_tiempos1 <- correlacion_tiempos %>%
          `Tiempo límite restante...27`,
          `Limite de tiempo de respuesta`,
          `Limite tiempo de solución total`
-         )
+         ) 
 correlacion_tiempos2 <- cor(correlacion_tiempos1)
 correlacion_tiempos3 <- as_cordf(correlacion_tiempos2)
 correlacion_tiempos4 <- stretch(correlacion_tiempos3)
-
-
 plot(correlacion_tiempos1)
-view(correlacion_tiempos2)
-view(correlacion_tiempos3)
-view(correlacion_tiempos4)
+
 ```
+
+
+
+
+En esta seccion intentamos revisar si existe alguna correlación en los cocientes de las rutas con el proposito de entender que rutas estan relacionadas y en caso de encontrar una relacion revisar las causas de esta realación. 
+
+
+```{r}
+Cociciente_ruta <- tiempos_os_tidy_tbl %>% 
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal 
+  ) %>%
+  select(Ruta,Cociente_tiempo) %>% 
+  filter(
+    !is.na(Ruta),
+    !is.na(Cociente_tiempo)
+  ) %>% 
+  pivot_wider(
+    names_from = Ruta,
+    values_from = Cociente_tiempo
+  )
+  
+
+#Cociciente_ruta2 <- cor(Cociciente_ruta)
+#Cociciente_ruta3 <- as_cordf(Cociciente_ruta2)
+#Cociciente_ruta4 <- stretch(Cociciente_ruta3)
+```
+
 
 
 ## Modelos 
