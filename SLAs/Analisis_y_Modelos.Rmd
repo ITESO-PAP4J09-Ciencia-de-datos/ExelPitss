@@ -135,8 +135,6 @@ Modelo_corr
 Ruta_cor
 ```
 
-
-
 ## Modelos 
 
 # Conclusiones 
