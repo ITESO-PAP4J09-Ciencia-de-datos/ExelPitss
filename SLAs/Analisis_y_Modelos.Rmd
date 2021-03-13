@@ -16,7 +16,7 @@ library(tidyverse)
 
 # Desarrollo 
 ## Busqueda de correlaciones 
-
+La siguiente tabla muestra auna revisción rapida de como se comportan las variables entre si, esto es con el proposito de darnos una idea de que posibles correlaciones podrian exístir.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 correlacion_tiempos <- tiempos_os_tidy_tbl %>% 
@@ -51,8 +51,6 @@ plot(correlacion_tiempos1)
 correlacion_tiempos3
 
 ```
-
-En esta seccion intentamos revisar si existe alguna correlación en los cocientes de las rutas con el proposito de entender que rutas estan relacionadas y en caso de encontrar una relacion revisar las causas de esta realación. 
 
 En las siguientes tablas contienen las siguientes correlaciones   **LRespuesta_TRespuesta_Cor** ( que consta de las variables `Tiempo de respuesta` y `Limite de tiempo de respuesta`) y la columna  **Canvisitas_TRespuesta_Cor** (que consta de las variables`cant_visitas` y `Tiempo de respuesta`). Las correlaciones se hacen de los datos que tienen un coeficiente de tiempo de respuesta y limite de tiempo de respuestas >= 1 y con el modelo de *Spearman*.
 
@@ -134,6 +132,7 @@ Tecnico_visita_corr
 Modelo_corr
 Ruta_cor
 ```
+
 
 ## Modelos 
 
