@@ -141,5 +141,19 @@ Ruta_cor
 
 # Conclusiones 
 
- 
+```{m}
 # Bibliografia / Referencias 
+Lenguaje de programacion:
+  https://www.r-project.org/
+Ambiente de programacion:
+  https://rstudio.com/products/rstudio/download/
+Pagina de inicio de estudios
+  https://r4ds-en-espaniol.netlify.app
+Principios basicos de las series de tiempo
+  https://bookdown.org/content/2274/series-temporales.html
+  https://otexts.com/fpp2/
+Ayuda de modelos en R
+  https://github.com/tidymodels
+  https://www.tidymodels.org/
+    
+```
