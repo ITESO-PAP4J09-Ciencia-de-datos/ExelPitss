@@ -18,7 +18,7 @@ library(tidyverse)
 ## Busqueda de correlaciones 
 
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 correlacion_tiempos <- tiempos_os_tidy_tbl %>% 
    filter(
      !is.na(hora_decimal)
@@ -29,47 +29,110 @@ correlacion_tiempos <- tiempos_os_tidy_tbl %>%
    ) 
 
 correlacion_tiempos1 <- correlacion_tiempos %>% 
-   select("Cociente_tiempo",
+   select(
+         Cociente_tiempo,
          `Tiempo efectivo en sitio`,
          `Tiempo de respuesta`,
          `Tiempo límite restante...24`,
          `Tiempo límite restante...27`,
-         `Limite de tiempo de respuesta`,
-         `Limite tiempo de solución total`
-         ) 
-correlacion_tiempos2 <- cor(correlacion_tiempos1)
+          cant_visitas,
+          OS,
+         num_equipo
+         ) %>% 
+  filter(
+         Cociente_tiempo >= 1
+        )
+
+correlacion_tiempos2 <- cor(correlacion_tiempos1, method= "pearson")
 correlacion_tiempos3 <- as_cordf(correlacion_tiempos2)
 correlacion_tiempos4 <- stretch(correlacion_tiempos3)
+
 plot(correlacion_tiempos1)
+correlacion_tiempos3
 
 ```
 
-
-
-
 En esta seccion intentamos revisar si existe alguna correlación en los cocientes de las rutas con el proposito de entender que rutas estan relacionadas y en caso de encontrar una relacion revisar las causas de esta realación. 
 
+En las siguientes tablas contienen las siguientes correlaciones   **LRespuesta_TRespuesta_Cor** ( que consta de las variables `Tiempo de respuesta` y `Limite de tiempo de respuesta`) y la columna  **Canvisitas_TRespuesta_Cor** (que consta de las variables`cant_visitas` y `Tiempo de respuesta`). Las correlaciones se hacen de los datos que tienen un coeficiente de tiempo de respuesta y limite de tiempo de respuestas >= 1 y con el modelo de *Spearman*.
 
-```{r}
-Cociciente_ruta <- tiempos_os_tidy_tbl %>% 
-  pivot_wider(
+Las 3 tablas no muestran correlaciónes fiables o que podamos tomar como una correlación valida, en algunos casos esto se debe a la naturalesa de los mismos datos, adicional a esto ver que no existen correlaciones lineales entre las variables utilizadas. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+Ruta_cor <- tiempos_os_tidy_tbl %>% 
+   filter(
+     !is.na(hora_decimal)
+   ) %>% 
+   pivot_wider(
     names_from  = Tiempos,
-    values_from = hora_decimal 
-  ) %>%
-  select(Ruta,Cociente_tiempo) %>% 
-  filter(
+    values_from = hora_decimal
+   ) %>% 
+   filter(
+    Cociente_tiempo >= 1,
     !is.na(Ruta),
-    !is.na(Cociente_tiempo)
-  ) %>% 
-  pivot_wider(
-    names_from = Ruta,
-    values_from = Cociente_tiempo
-  )
-  
+   ) %>% 
+   select(
+         `Tiempo efectivo en sitio`,
+         `Tiempo de respuesta`,
+         `Limite de tiempo de respuesta`,
+         `Tiempo límite restante...24`,
+         `Tiempo límite restante...27`,
+          cant_visitas,
+          Ruta,
+          OS
+   ) %>% 
+  group_by(Ruta) %>% 
+  summarise(
+    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`, 
+                                    method = "spearman"),
+    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`, 
+                                     method = "spearman")
+   )
 
-#Cociciente_ruta2 <- cor(Cociciente_ruta)
-#Cociciente_ruta3 <- as_cordf(Cociciente_ruta2)
-#Cociciente_ruta4 <- stretch(Cociciente_ruta3)
+
+Tecnico_visita_corr <- tiempos_os_tidy_tbl %>% 
+   filter(
+     !is.na(hora_decimal)
+   ) %>% 
+   pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+   ) %>% 
+  filter(
+    Cociente_tiempo >= 1,
+    !is.na(Ruta),
+   ) %>% 
+  group_by(`Técnico de visita`) %>% 
+  summarise(
+    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
+                                    method ="spearman"),
+    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
+                                     method = "spearman")
+   )
+
+Modelo_corr <- tiempos_os_tidy_tbl %>% 
+   filter(
+     !is.na(hora_decimal)
+   ) %>% 
+   pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+   ) %>% 
+  filter(
+    Cociente_tiempo >= 1,
+    !is.na(Modelo),
+   ) %>% 
+  group_by(Modelo) %>% 
+  summarise(
+    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
+                                    method ="spearman"),
+    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
+                                     method = "spearman")
+   )
+
+Tecnico_visita_corr
+Modelo_corr
+Ruta_cor
 ```
 
 
