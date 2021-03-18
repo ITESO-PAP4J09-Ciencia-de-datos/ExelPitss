@@ -12,23 +12,26 @@ El presente archivo es un informe de los datos obtenidos al realizar el análisi
 library(tidymodels)
 library(corrr)
 library(tidyverse)
+library(psych)
+library(ggcorrplot)
 ```
 
 # Desarrollo 
 ## Busqueda de correlaciones 
-La siguiente tabla muestra auna revisción rapida de como se comportan las variables entre si, esto es con el proposito de darnos una idea de que posibles correlaciones podrian exístir.
+
+La siguiente tabla muestra a una revisión rapída de como se comportan las variables entre si, esto es con el proposito de darnos una idea de que posibles correlaciones podrian exístir y en caso de existir revisar si es producto del azar.
+
+Correlaciones encontradas entre los tiempos 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
-correlacion_tiempos <- tiempos_os_tidy_tbl %>% 
+correlacion_tiempos1 <- tiempos_os_tidy_tbl %>% 
    filter(
      !is.na(hora_decimal)
    ) %>% 
    pivot_wider(
     names_from  = Tiempos,
     values_from = hora_decimal
-   ) 
-
-correlacion_tiempos1 <- correlacion_tiempos %>% 
+   )  %>% 
    select(
          Cociente_tiempo,
          `Tiempo efectivo en sitio`,
@@ -45,16 +48,17 @@ correlacion_tiempos1 <- correlacion_tiempos %>%
 
 correlacion_tiempos2 <- cor(correlacion_tiempos1, method= "pearson")
 correlacion_tiempos3 <- as_cordf(correlacion_tiempos2)
-correlacion_tiempos4 <- stretch(correlacion_tiempos3)
 
-plot(correlacion_tiempos1)
-correlacion_tiempos3
-
+pairs.panels(correlacion_tiempos1, method = "spearman")
+ggcorrplot(correlacion_tiempos2,method = 'circle', type = 'lower',lab = TRUE)+
+  ggtitle("Matriz de correlación")+
+  theme_minimal()
+corr.test(correlacion_tiempos2, method = "spearman", adjust = "none")
 ```
 
 En las siguientes tablas contienen las siguientes correlaciones   **LRespuesta_TRespuesta_Cor** ( que consta de las variables `Tiempo de respuesta` y `Limite de tiempo de respuesta`) y la columna  **Canvisitas_TRespuesta_Cor** (que consta de las variables`cant_visitas` y `Tiempo de respuesta`). Las correlaciones se hacen de los datos que tienen un coeficiente de tiempo de respuesta y limite de tiempo de respuestas >= 1 y con el modelo de *Spearman*.
 
-Las 3 tablas no muestran correlaciónes fiables o que podamos tomar como una correlación valida, en algunos casos esto se debe a la naturalesa de los mismos datos, adicional a esto ver que no existen correlaciones lineales entre las variables utilizadas. 
+Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una correlación valida, en algunos casos esto se debe a la naturaleza de los mismos datos, adicional a esto ver que no existen correlaciones lineales entre las variables utilizadas. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 Ruta_cor <- tiempos_os_tidy_tbl %>% 
@@ -105,7 +109,7 @@ Tecnico_visita_corr <- tiempos_os_tidy_tbl %>%
     LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
                                     method ="spearman"),
     Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
-                                     method = "spearman")
+                                     method = "spearman"),
    )
 
 Modelo_corr <- tiempos_os_tidy_tbl %>% 
@@ -138,8 +142,10 @@ Ruta_cor
 
 # Conclusiones 
 
-```{m}
+
 # Bibliografia / Referencias 
+
+
 Lenguaje de programacion:
   https://www.r-project.org/
 Ambiente de programacion:
@@ -153,4 +159,3 @@ Ayuda de modelos en R
   https://github.com/tidymodels
   https://www.tidymodels.org/
     
-```
