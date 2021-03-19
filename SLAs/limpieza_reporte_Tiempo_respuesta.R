@@ -24,9 +24,9 @@ library(easypackages)
 #                              `Tiempo efectivo`     = col_character()
 #                            ))
 
-tiempos_os_tbl <- read_xlsx("SLAs/Reporte_Tiempo_respuesta.xlsx")
+tiempos_os_tbl <- read_xlsx("Reporte_Tiempo_respuesta.xlsx")
 
-tiempos_os_tbl %>% glimpse()
+# tiempos_os_tbl %>% glimpse()
 
 
 tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
@@ -100,84 +100,84 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
 # EDA ---------------------------------------------------------------------
 
 
-tiempos_os_tidy_tbl %>% 
+tiempos_os_tidy_tbl %>%
   filter(Ruta == "JALISCO",
-         Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>% 
+         Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
   ggplot(aes(x = `Técnico de visita`, y = hora_decimal, fill = Tiempos))+
   geom_boxplot() +
-  facet_grid(Ruta ~ Tiempos, scales = "free_y") + 
+  facet_grid(Ruta ~ Tiempos, scales = "free_y") +
   theme(legend.position = "none") +
   coord_flip()
 
 
-tiempos_os_tidy_tbl %>% 
-  filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>% 
+tiempos_os_tidy_tbl %>%
+  filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
   ggplot(aes(x = Ruta, y = hora_decimal, fill = Tiempos))+
   geom_boxplot() +
-  facet_wrap(~ Tiempos, scales = "free_x") + 
+  facet_wrap(~ Tiempos, scales = "free_x") +
   theme(legend.position = "none") +
   coord_flip()
 
 
-tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>% 
-  group_by(Ruta, Tiempos) %>% 
+tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>%
+  group_by(Ruta, Tiempos) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
     .by          = "month",
     hora_decimal = mean(hora_decimal)
-  ) %>% 
-  
-  mutate(Fecha_recepion = as.character(Fecha_recepion) %>% 
-           yearmonth())%>% 
-  filter(Fecha_recepion >= yearmonth("2018-02-03")) %>% 
-  as_tsibble(index = Fecha_recepion, 
+  ) %>%
+
+  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
+           yearmonth())%>%
+  filter(Fecha_recepion >= yearmonth("2018-02-03")) %>%
+  as_tsibble(index = Fecha_recepion,
              key = c(Ruta, Tiempos))
 
 
-p <- tiempos_mensual_ruta_tsbl %>% 
-  filter(Ruta %in% c("JALISCO", "NUEVO LEON")) %>% 
+p <- tiempos_mensual_ruta_tsbl %>%
+  filter(Ruta %in% c("JALISCO", "NUEVO LEON")) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Tiempos, scales = "free_y") +
   theme(legend.position = "none")
 
 plotly::ggplotly(p)
 # Graficar tiempos de respuesta por ruta
-p2 <- tiempos_mensual_ruta_tsbl %>% 
-  filter(Tiempos %in% c("Tiempo de respuesta"), 
-         !is.na(Ruta)) %>% 
+p2 <- tiempos_mensual_ruta_tsbl %>%
+  filter(Tiempos %in% c("Tiempo de respuesta"),
+         !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
 
 plotly::ggplotly(p2)
 # Graficar tiempo efectivo en sitio por ruta
-p3 <- tiempos_mensual_ruta_tsbl %>% 
-  filter(Tiempos %in% c("Tiempo efectivo en sitio"), 
-         !is.na(Ruta)) %>% 
+p3 <- tiempos_mensual_ruta_tsbl %>%
+  filter(Tiempos %in% c("Tiempo efectivo en sitio"),
+         !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
 
 plotly::ggplotly(p3)
 
-tiempos_mensual_tecnicoV_tsbl <- tiempos_os_tidy_tbl %>% 
+tiempos_mensual_tecnicoV_tsbl <- tiempos_os_tidy_tbl %>%
   # Regresar a cols. separadas cada indicador
   group_by(`Técnico de visita`, Tiempos) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
     .by          = "month",
     hora_decimal = mean(hora_decimal)
-  ) %>% 
-  mutate(Fecha_recepion = as.character(Fecha_recepion) %>% 
-           yearmonth()) %>% 
-  filter(Fecha_recepion >= yearmonth("2018-02-03")) %>% 
-  as_tsibble(index = Fecha_recepion, 
+  ) %>%
+  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
+           yearmonth()) %>%
+  filter(Fecha_recepion >= yearmonth("2018-02-03")) %>%
+  as_tsibble(index = Fecha_recepion,
              key = c(`Técnico de visita`, Tiempos))
 
 # Graficar porcentajes de respuesta por ruta
-p4 <- tiempos_mensual_ruta_tsbl %>% 
-  filter(Tiempos %in% c("Cociente_tiempo"), 
-         !is.na(Ruta)) %>% 
+p4 <- tiempos_mensual_ruta_tsbl %>%
+  filter(Tiempos %in% c("Cociente_tiempo"),
+         !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
@@ -187,19 +187,19 @@ plotly::ggplotly(p4)
 # Gráfica de Baja Cal Sur coeficiente de tiempos Junio 2019 por técnico de visita
 tiempos_ruta_tecnico_tsbl <- tiempos_os_tidy_tbl %>%
   filter(mes == yearmonth("2019 jun."),
-         Ruta %in% c("BAJA CALIFORNIA SUR")) %>% 
+         Ruta %in% c("BAJA CALIFORNIA SUR")) %>%
   group_by(`Técnico de visita`, Tiempos) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
     .by          = "day",
     hora_decimal = mean(hora_decimal)
-  ) %>% 
-  as_tsibble(index = Fecha_recepion, 
+  ) %>%
+  as_tsibble(index = Fecha_recepion,
              key = c(`Técnico de visita`, Tiempos))
 
 # Graficar Junio Baja California Sur
-p5 <- tiempos_ruta_tecnico_tsbl %>% 
-  filter(Tiempos %in% c("Cociente_tiempo")) %>% 
+p5 <- tiempos_ruta_tecnico_tsbl %>%
+  filter(Tiempos %in% c("Cociente_tiempo")) %>%
   autoplot(hora_decimal) +
   theme(legend.position = "none")
 
@@ -207,47 +207,47 @@ plotly::ggplotly(p5) ## Solo hay una observacion, por lo que no se genera una gr
 
 #Estados donde el cociente fue mayor a 0.5
 tiempos_cociente_M2_tsbl<- tiempos_os_tidy_tbl %>%
-  filter(Fecha_recepion >= "2020-01-01", 
+  filter(Fecha_recepion >= "2020-01-01",
          Tiempos %in% c("Cociente_tiempo"),
-         hora_decimal>= 0.5) %>% 
+         hora_decimal>= 0.5) %>%
   group_by(`Técnico de visita`, Tiempos) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
     .by          = "day",
-    hora_decimal = mean(hora_decimal)) %>% 
-  as_tsibble(index = Fecha_recepion, 
+    hora_decimal = mean(hora_decimal)) %>%
+  as_tsibble(index = Fecha_recepion,
              key = c(`Técnico de visita`, Tiempos))
 
 # Graficar Junio Baja California Sur
-p6 <- tiempos_cociente_M2_tsbl %>% 
-  filter(Tiempos %in% c("Cociente_tiempo")) %>% 
+p6 <- tiempos_cociente_M2_tsbl %>%
+  filter(Tiempos %in% c("Cociente_tiempo")) %>%
   autoplot(hora_decimal) +
   facet_wrap(~`Técnico de visita`, scales = "free_y") +
   theme(legend.position = "none")
 
-plotly::ggplotly(p6) 
+plotly::ggplotly(p6)
 
 
 #grafica de estados con cocientes mayores al 0.5
-p7 <- tiempos_mensual_ruta_tsbl %>% 
+p7 <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Cociente_tiempo"),
          hora_decimal >= 0.5,
-         !is.na(Ruta)) %>% 
+         !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
 
-plotly::ggplotly(p7) 
+plotly::ggplotly(p7)
 
 # Tendencias --------------------------------------------------------------
-#Serie de tiempo de cociente para jalisco del 2019 al 2021 
+#Serie de tiempo de cociente para jalisco del 2019 al 2021
 Ten1Jal <- tiempos_mensual_ruta_tsbl %>%
   filter(
     Tiempos %in% c("Cociente_tiempo"),
     Ruta%in% c("MICHOACAN"),
     Fecha_recepion >= yearmonth("2019-01"),
     !is.na(hora_decimal)
-  ) 
+  )
 Ten1Jal %>%
   autoplot(hora_decimal) +
   xlab("Año") + ylab("Cociente") +
