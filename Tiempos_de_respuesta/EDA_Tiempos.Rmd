@@ -33,9 +33,7 @@ El propósito de este proyecto es realizar un Análisis Exploratorio de datos (E
 
 <div style="text-align: justify">
 
-Los datos de este proyecto se basan en toda la información disponible de las órdenes de servicio. 
-
-Nuestro dataset contiene información de todas las órdenes de servicio resueltas de la categoría de correctivos desde enero 2018 hasta febrero 2021. Esta información se encuentra disponible en el software de la empresa llamado Santii, en la pestaña de Servicio, luego en la sección de Monitores y por último, se selecciona el reporte llamado **Tiempo de Respuesta**.
+Nuestro dataset contiene información de todas las órdenes de servicio resueltas de la categoría de correctivos desde enero 2018 hasta febrero 2021. Esta información se encuentra disponible en el software de la empresa llamado Santii, en la pestaña de Servicio, luego en la sección de Monitores y por último, se selecciona el reporte llamado **Tiempos de Respuesta**.
 
 <div/>
 
