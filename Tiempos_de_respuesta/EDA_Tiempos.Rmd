@@ -1,0 +1,125 @@
+---
+title: "Análisis Órdenes de servicio"
+author: "Daniela Benavides Herrera"
+date: "18/3/2021"
+output: 
+  html_notebook:
+    toc: TRUE
+    toc_float: TRUE
+    theme: cerulean
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+source("eda_TR.R", local = knitr::knit_global(),encoding = "utf-8")
+```
+
+<center>
+![](logo.png)
+</center>
+
+## Introducción
+
+El propósito de este proyecto es realizar un Análisis Exploratorio de datos (EDA por sus siglas en inglés) de los distintos tipos de tiempos de las órdenes de servicio de la empresa Exel Pitss.
+
+
+## Datos
+
+Los datos de este proyecto se basan en toda la información disponible de las órdenes de servicio. A continuación se puede observar una vista anticipada de los datos.
+
+```{r}
+head(datos)
+```
+
+## EDA
+
+Antes de comenzar, cabe mencionar nuestras variables se distinguen en 2 grandes grupos o clasificaciones: categóricas y númericas. Es importante distingarlas ya que nuestro análisis exploratorio de datos no puede realizarse de la misma manera para todas las variables. 
+
+### Variables Categóricas
+
+Las variables categóricas son aquellas que en este caso, se utilizan para asignar un valor no-numérico o cualitativo a algún aspecto de la orden de servicio, por ejemplo, el nombre del cliente, el Ingeniero de Servicio, el nivel, estatus, entre otros. 
+
+En las siguiente tablas podemos observar un sencillo reporte de calidad de datos de nuestras variables categóricas.
+
+```{r}
+dqr_categoricos
+diagnosis_categoricos
+```
+- **Representación gráfica**
+
+```{r}
+ggplot(drop_na(categoricos), aes(x = Ruta)) +
+  geom_bar(fill = "blue", width = 0.5) +
+  xlab("Ruta") + ylab("Observaciones") +
+  coord_flip()
+
+ggplot(categoricos, aes(x = Distribuidor)) +
+  geom_bar(fill = "dark blue", width = 0.5) +
+  xlab("Distribuidor") + ylab("Observaciones") +
+  coord_flip()
+```
+> Las variables categóricas son muy importantes para analizar, en este caso, cuáles rutas son a las que más les caen órdenes de servicio, qué tipo de orden es, la cantidad de órdenes que atiende cada ingeniero, los clientes que levantan más órdenes de servicio, etc. 
+
+### Variables Numéricas
+
+Al contrario de las variables categóricas, las variables numéricas son aquellas que representan números y con las cuales podemos realizar operaciones artiméticas, unos ejemplos de este caso serían: el tiempo de respuesta, el tiempo de solución total, los tiempos límites, etc. 
+
+En las siguiente tablas podemos observar un sencillo reporte de calidad de datos de nuestras variables numéricas.
+
+```{r}
+dqr_numericos
+diagnosis_numericos
+```
+#### Prueba de Normalidad Shapiro-Wilk
+
+Esta prueba nos ayudará a determinar si la variable que seleccionemos se ajusta o se modela correctamente por una distribución normal. En este caso, se utilizará la prueba de *Shapiro-Wilks*, eligiendo un nivel de confianza de $ \alpha = 0.01$ definiendo la hipótesis nula:
+
+$$
+\begin{equation}
+\begin{array}{l}
+H_{0}: X \sim \mathcal{N}\left(\mu, \sigma^{2}\right) \\
+H_{0}: p> \alpha \\
+\end{array}
+\end{equation}
+$$
+Y la hipótesis alternativa:
+
+$$
+\begin{equation}
+\begin{array}{l}
+H_{1}: X \nsim \mathcal{N}\left(\mu, \sigma^{2}\right) \\
+H_{1}: p \leq \alpha 
+\end{array}
+\end{equation}
+$$
+En pocas palabras, la hipótesis nula plantea que la muestra proviene de una distribución normal, y la hipótesis alternativa sostiene que no es así.
+
+```{r}
+datos %>% 
+  normality(TMO, TR, TST, TSP)
+```
+> Como podemos observar, rechazamos la hipótesis nula para cualquiera de las variables seleccionadas, por lo tanto podemos decir que no distribuyen de manera normal.
+
+De todas maneras, visualizaremos el ajuste de la distribución normal en nuestras variables.
+
+```{r}
+datos %>% 
+  plot_normality(TMO, TR, TST, TSP)
+```
+ > Como podemos observar, efectivamente nuestros datos no se ajustan a una distribución normal, y analizando la curtosis de cada variable mostrada en el reporte de calidad, para todos los casos, el coeficiente es positivo, esto quiere decir que existe una mayor concentración de los datos en torno a la media.
+ 
+ 
+#### Outliers
+
+Para fines de este proyecto, es importante analizar si nuestras variables contienen outliers o valores atípicos, los cuales son valores númericamente distantes del resto de los datos. Por lo que graficaremos ciertas variables con y sin sus outliers para poder verificar que exista algún cambio significativo.
+
+
+```{r}
+# OUTLIERS: tiempos de respuesta, de mano de obra, de solución pitss y solución total
+datos %>% 
+  plot_outlier(TR,TMO,TSP,TST) 
+```
+> Cada una de las variables cambia notablemente cuando a esta se le excluyen los outliers, y esto tiene sentido, ya que Exel Pitss no cuenta con cobertura en algunos estados de la República Mexicana, por lo que, en esos casos especiales, un IS de la ruta más cercana, debe acudir a ese lugar, haciendo que el tiempo de respuesta y de solución total, sea mucho mayor a lo que normalmente suele hacer.
