@@ -48,7 +48,9 @@ datos <- datos %>%
          TLR.restante = `Tiempo.límite.restante...24`,
          TSP = Tiempo.efectivo,
          TLS = `Limite.tiempo.de.solución.total`,
-         TLS.restante = `Tiempo.límite.restante...27`)
+         TLS.restante = `Tiempo.límite.restante...27`) %>% 
+  mutate(Clasificacion = if_else(TR > TLR,0,1))
+
 
 # EDA ---------------------------------------------------------------------
 

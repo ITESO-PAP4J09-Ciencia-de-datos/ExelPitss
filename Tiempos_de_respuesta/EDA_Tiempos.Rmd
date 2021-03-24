@@ -4,9 +4,9 @@ author: "Daniela Benavides Herrera"
 date: "18/3/2021"
 output: 
   html_notebook:
+    theme: cerulean
     toc: TRUE
     toc_float: TRUE
-    theme: cerulean
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +21,7 @@ source("eda_TR.R", local = knitr::knit_global(),encoding = "utf-8")
 ![](logo.png)
 </center>
 
-## Introducción
+# Introducción
 
 <div style="text-align: justify">
 
@@ -29,7 +29,7 @@ El propósito de este proyecto es realizar un Análisis Exploratorio de datos (E
 
 <div/>
 
-## Datos
+# Datos
 
 <div style="text-align: justify">
 
@@ -37,7 +37,7 @@ Nuestro dataset contiene información de todas las órdenes de servicio resuelta
 
 <div/>
 
-### Formato
+## Formato
 
 <div style="text-align: justify">
 
@@ -97,6 +97,8 @@ El data set se conforma de `r nrow(datos)` filas y de `r ncol(datos)` variables.
 
 - **`r names(datos)[27]`** es el tiempo restante con respecto del tiempo de solución total menos su límite.
 
+- **`r names(datos)[28]`** es la clasificación de si se cumplió con el Límite del Tiempo de Respuesta, 1 = sí y 0 = no.
+
 A continuación se puede observar una vista anticipada de los datos.
 
 <div/>
@@ -105,7 +107,7 @@ A continuación se puede observar una vista anticipada de los datos.
 head(datos)
 ```
 
-## EDA
+# EDA
 
 <div style="text-align: justify">
 
@@ -113,7 +115,7 @@ Antes de comenzar, cabe mencionar nuestras variables se distinguen en 2 grandes 
 
 <div/>
 
-### Variables Categóricas
+## Variables Categóricas
 
 <div style="text-align: justify">
 
@@ -160,7 +162,7 @@ En las siguiente tablas podemos observar un sencillo reporte de calidad de datos
 dqr_numericos
 diagnosis_numericos
 ```
-#### Prueba de Normalidad Shapiro-Wilk
+### Prueba de Normalidad Shapiro-Wilk
 
 <div style="text-align: justify">
 
@@ -214,7 +216,7 @@ datos %>%
  
 <div/>
  
-#### Outliers
+### Outliers
 
 <div style="text-align: justify">
 
