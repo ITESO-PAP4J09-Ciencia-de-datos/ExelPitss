@@ -166,7 +166,7 @@ diagnosis_numericos
 
 <div style="text-align: justify">
 
-Esta prueba nos ayudará a determinar si la variable que seleccionemos se ajusta o se modela correctamente por una distribución normal. En este caso, se utilizará la prueba de *Shapiro-Wilks*, eligiendo un nivel de confianza de $ \alpha = 0.01$ definiendo la hipótesis nula:
+Esta prueba nos ayudará a determinar si la variable que seleccionemos se ajusta o se modela correctamente por una distribución normal. En este caso, se utilizará la prueba de *Shapiro-Wilks*, eligiendo un nivel de confianza de $\alpha = 0.01$ definiendo la hipótesis nula:
 
 <div/>
 
