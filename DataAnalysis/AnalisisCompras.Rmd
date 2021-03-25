@@ -1,0 +1,226 @@
+
+---
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_float: yes
+---
+<h1 style="color:rgb(0,154/255,203/255);"> AnalisisCompras </h1>
+
+```{r Colores,message=FALSE, warning=FALSE, include=FALSE}
+az_os <- rgb(0,0,51/255)
+az_cl <- rgb(0,154/255,203/255)
+negro <- rgb(51/255,51/255,51/255)
+n_os <- rgb(226/255,120/255,49/255)
+n_cl <- rgb(248/255,148/255,56/255)
+```
+
+
+
+
+
+
+```{r Libraries,message=FALSE, warning=FALSE, include=FALSE}
+# Libraries ---------------------------------------------------------------
+# importación y lectura de datos
+library(readxl)
+library(rgdal)
+library(DT)
+
+# visualización de datos
+library(ggplot2)
+library(data.table)
+
+#tbd
+library(Hmisc)
+library(skimr)
+library(dplyr)
+```
+
+
+```{r RawData,message=FALSE, warning=FALSE, include=FALSE}
+data <- read.csv(file = 'ComprasDetallado.csv')
+colnames(data)<-c('Proveedor','Categoria_Proveedor','Empresa','Sucursal','Fecha',
+                  'Tipo_documento','Folio','Recepcion','Almacen','Referencia_orden_compra',
+                  'Referencia_recepcion_compra','Clave_producto','Serial','Categoria','Notas',
+                  'Nombre_producto','Cantidad_ordenada','Cantidad_recibida','Unidad_de_medida',
+                  'Precio_unitario_por_moneda','Subtotal_por_moneda','Moneda','Tipo_Cambio',
+                  'Precio_unitario_MXN','Subtotal_MXN','Total_MXN')
+
+#data <- mutate(data, Fecha=as.Date(Fecha), format="%Y/%m/%d")
+data[] <- Map(gsub, "[$,]", "", data)
+cols_num <- c('Cantidad_ordenada','Cantidad_recibida',
+              'Precio_unitario_por_moneda','Precio_unitario_MXN','Subtotal_por_moneda',
+              'Subtotal_MXN')
+data[cols_num] <- sapply(data[cols_num],as.numeric)
+
+data_clean <- data[, c('Proveedor','Categoria_Proveedor','Fecha','Nombre_producto','Tipo_documento',
+                       'Cantidad_ordenada','Cantidad_recibida','Moneda','Subtotal_MXN')] %>% 
+  filter(Subtotal_MXN<max(Subtotal_MXN))
+#categoria -> data %>% distinct(Categoria_Proveedor)
+
+tipos <- sapply(data_clean,class)
+```
+
+
+<h2> Descripción </h2>
+Esta tabla muestra a detalle las compras efectuadas por ExelPitss en el periodo del `r min(data$Fecha)` y hasta el `r max(data$Fecha)`.
+
+<h2> Formato </h2>
+
+Inicialmente contamos con una tabla compuesta de `r nrow(data)` filas y `r ncol(data)` columnas.
+Después de hacer la limpieza y observar los datos entregados, así como la limpieza de aquellos innecesarios y repetitivos, se procede a crear una segunda tabla con `r nrow(data_clean)` filas y `r ncol(data_clean)` columnas.
+
+Partiendo de aquí, tenemos columnas con valores de tipo:
+`r tipos`
+
+* **Proveedor**
+
+  Indica el nombre del proveedor de la compra.
+
+* **Categoría_Proveedor**
+
+  Indica la categoría de los productos que brinda el proveedor.
+
+* **Fecha**
+  
+  Fecha en que tuvo lugar la compra.
+
+* **Tipo documento**
+
+  Categoría a la que pertenece la compra.
+
+* **Cantidad_ordenada**
+
+  Indica la cantidad ordenada del producto (dependiendo de su unidad de medida).
+
+* **Cantidad_recibida**
+  
+  Indica la cantidad recibida del producto ordenado.
+
+* **Moneda**
+
+  Moneda en que se realizó la compra.
+
+* **Subtotal_MXN**
+
+  Equivale al dinero en MXN que se utilizó en la compra.
+
+
+
+<h2 style="color:rgb(0,154/255,203/255);"> ANÁLISIS </h2>
+
+### Proveedores
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+p_sig <- data.frame(table(data_clean$Proveedor)) %>% filter(Freq > mean(Freq, na.rm = TRUE))
+
+sorted_prov <- p_sig[order(-p_sig$Freq),]
+```
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+Proveedores <- data_clean %>% 
+  distinct(Proveedor)
+
+dplyr::count(data_clean, Proveedor, sort = TRUE)
+
+```
+
+<br>
+<br>
+
+### Proveedores Significativos vs Frecuencia de aparición
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+
+ggplot(p_sig, aes(x=Freq, y=Var1)) + 
+  geom_bar(stat = "identity", color = az_os, fill = az_cl) +
+  coord_flip() + theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) + ylab('Proveedores Significativos')
+
+```
+<br>
+<br>
+
+Se muestra un histograma de cómo se distribuyen los gastos por operaciones en sus subtotales MXN, la gran mayoría se comportan como gastos menores.
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+Subtotales <- data_clean[order(-data_clean$Subtotal_MXN),] %>% filter(Subtotal_MXN < max(Subtotal_MXN))
+
+sum_catpro <- Subtotales %>%
+  group_by(Categoria_Proveedor) %>%
+  summarise(
+    Size_Sum = sum(Subtotal_MXN)
+  ) 
+
+#dplyr::count(data_clean, Subt, sort = TRUE)
+
+ggplot(data = data_clean %>% filter(Subtotal_MXN<mean(Subtotal_MXN)+2*sd(Subtotal_MXN))) + 
+  geom_histogram(aes(x=Subtotal_MXN), bins=45,  color = az_os, fill = az_cl)
+
+
+
+
+```
+
+También, se crea un análisis mediante skim, el cual nos muestra las medias y cuartiles de nuestros datos numéricos, haciendo notar 
+
+<br>
+<br>
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+numeric.data <- dplyr::select_if(data_clean %>% filter(Subtotal_MXN<max(Subtotal_MXN)), is.numeric)
+skim(numeric.data)
+```
+
+
+<br>
+<br>
+
+Se muestra una gráfica de los subtotales de compras por día a lo largo del 2020. A partir de ello se procederá a crear pronósticos que puedan ayudar a la empresa a conocer mejor sus gastos con el fin de tener una herramienta que pueda complementar su buena administración de capital.
+
+<br>
+
+### Serie de tiempo Fecha (diaria) vs Subtotales MXN
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+data.sum <- aggregate(x = data_clean[c("Subtotal_MXN")],
+                     FUN = sum,
+                     by = list(Group.date = data_clean$Fecha)) %>% 
+  mutate(Group.date=as.Date(Group.date, format = "%d/%m/%Y"))
+
+ggplot(data.sum, aes(x=Group.date, y=Subtotal_MXN)) +
+  geom_line( color = az_os, fill = az_cl) + 
+  xlab("")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
