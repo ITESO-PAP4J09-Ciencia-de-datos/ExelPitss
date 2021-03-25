@@ -49,8 +49,8 @@ datos <- datos %>%
          TSP = Tiempo.efectivo,
          TLS = `Limite.tiempo.de.solución.total`,
          TLS.restante = `Tiempo.límite.restante...27`) %>% 
-  mutate(Clasificacion = if_else(TR > TLR,0,1))
-
+  mutate(Recepcion = as.Date(Recepcion),
+         Cierre    = as.Date(Cierre))
 
 # EDA ---------------------------------------------------------------------
 
@@ -75,16 +75,10 @@ dqr_categoricos <- tibble(
 
 # DIAGNOSIS CATEGORICOS
 diagnosis_categoricos <- diagnose_category(datos)
- 
-#EDA.report <- dlookr::eda_report(datos, output_format = "html")
 
+# Regresion ---------------------------------------------------------------
 
-# Diagnosis ---------------------------------------------------------------
+IS <- datos %>% group_by(IS.visita) %>% summarise()
 
-
-  
-# DIAGNOSE REPORT
-#reporte diagnose_report(output_format = )
-
-
+Fecha <- datos %>% group_by(Recepcion) %>% summarise()
 

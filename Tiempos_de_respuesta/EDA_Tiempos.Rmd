@@ -148,7 +148,7 @@ ggplot(categoricos, aes(x = Distribuidor)) +
 
 <div/>
 
-### Variables Numéricas
+## Variables Numéricas
 
 <div style="text-align: justify">
 
@@ -234,3 +234,27 @@ datos %>%
 > Cada una de las variables cambia notablemente cuando a esta se le excluyen los outliers, y esto tiene sentido, ya que Exel Pitss no cuenta con cobertura en algunos estados de la República Mexicana, por lo que, en esos casos especiales, un IS de la ruta más cercana, debe acudir a ese lugar, haciendo que el tiempo de respuesta y de solución total, sea mucho mayor a lo que normalmente suele hacer.
 
 <div/>
+
+# Modelo de Regresión
+
+<div style="text-align: justify">
+
+El modelo de regresión lineal nos permite crear una relación entre 2 variables:
+
+- La variable de previsión $y$ o dependiente:
+- La variable predictora $x$ o regresora: 
+
+Por lo tanto, a partir de esto es como vamos a realizar pronósticos.
+
+```{r}
+datos %>% ggplot(aes(x = TR, y = TSP)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+tabla1 <- datos %>% group_by(Recepcion) %>%  summarise()
+
+time_s <- ts(datos,freq=12, start = c(2018-01-08))
+```
+
