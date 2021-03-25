@@ -237,6 +237,16 @@ datos %>%
 
 # Modelo de Regresión
 
+```{r}
+detach("package:dlookr", unload = TRUE)
+detach("package:psych", unload = TRUE)
+detach("package:comprehenr", unload = TRUE)
+library(tsibble)
+library(feasts)
+library(fable)
+```
+
+
 <div style="text-align: justify">
 
 El modelo de regresión lineal nos permite crear una relación entre 2 variables:
@@ -252,9 +262,57 @@ datos %>% ggplot(aes(x = TR, y = TSP)) +
   geom_smooth(method = "lm", se = FALSE)
 ```
 
-```{r}
-tabla1 <- datos %>% group_by(Recepcion) %>%  summarise()
 
-time_s <- ts(datos,freq=12, start = c(2018-01-08))
+```{r}
+datos_tsbl <- datos %>% 
+  filter(IS.visita != "Consultoria Dual",
+         Estatus   == "RESUELTA",
+         Categoría == "CORRECTIVO") %>% 
+  group_by(Recepcion, IS.visita) %>% 
+  summarise(across(.cols = c(TR, TSP, TMO, TST), mean),
+            .groups = "drop") %>% 
+  pivot_longer(
+    cols      = starts_with("T"),
+    names_to  = "SLA", 
+    values_to = "Tiempos"
+  ) %>% 
+  as_tsibble(
+    # index : la variable temporal
+    index = Recepcion,
+    # key : la(s) variable(s) que identifican a cada serie de tiempo
+    key   = c(IS.visita, SLA) 
+  )
+
+datos_tsbl
+```
+```{r}
+library(tsibbledata)
+
+aus_retail %>% autoplot()
+
+datos_tsbl %>% 
+  autoplot(Tiempos)
+```
+
+```{r}
+datos %>% 
+  filter(IS.visita != "Consultoria Dual",
+         Estatus   == "RESUELTA",
+         Categoría == "CORRECTIVO") %>% 
+  group_by(Recepcion, IS.visita) %>% 
+  summarise(across(.cols = c(TR, TSP, TMO, TST), mean),
+            .groups = "drop") %>% 
+  pivot_longer(
+    cols      = starts_with("T"),
+    names_to  = "SLA", 
+    values_to = "Tiempos"
+  ) %>% 
+  as_tsibble(
+    # index : la variable temporal
+    index = Recepcion,
+    # key : la(s) variable(s) que identifican a cada serie de tiempo
+    key   = c(IS.visita, SLA)
+  ) %>% 
+  glimpse()
 ```
 
