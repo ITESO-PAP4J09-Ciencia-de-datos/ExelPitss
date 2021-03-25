@@ -7,12 +7,7 @@ library(tidyverse)
 # importación de datos
 library(readxl)
 
-# compresión de listas
-library(comprehenr)
 
-# EDA
-library(psych)
-library(dlookr)
 
 # datos -------------------------------------------------------------------
 
@@ -45,34 +40,4 @@ datos <- datos %>%
          TLS.restante = `Tiempo.límite.restante...27`) %>% 
   mutate(Recepcion = as.Date(Recepcion),
          Cierre    = as.Date(Cierre))
-
-# EDA ---------------------------------------------------------------------
-
-dqr_numericos <-
-  mutate(dlookr::describe(datos)) %>%
-  mutate(dlookr::normality(datos)) %>% 
-  select(everything(), -c(p00,p01,p05,p10,p20,p30,p40,p60,p70,p80,p100,vars))
-
-# DIAGNOSIS NUMERICOS
-diagnosis_numericos <- diagnose_numeric(datos)
-
-categoricos <- datos %>% 
-  select_if(is.character) 
-
-dqr_categoricos <- tibble(
-  Variables = colnames(categoricos),
-  Tipo = as.character(as_tibble(sapply(categoricos, class))[1,]),
-  Presentes = to_vec(for(i in 1:ncol(categoricos)) sum(!is.na(categoricos[,i])) ),
-  Faltantes = to_vec(for(i in 1:ncol(categoricos)) sum(is.na(categoricos[,i])) ),
-  Unicos = to_vec(for(i in 1:ncol(categoricos)) count(distinct(categoricos[,i])))
-) 
-
-# DIAGNOSIS CATEGORICOS
-diagnosis_categoricos <- diagnose_category(datos)
-
-# Regresion ---------------------------------------------------------------
-
-IS <- datos %>% group_by(IS.visita) %>% summarise()
-
-Fecha <- datos %>% group_by(Recepcion) %>% summarise()
 

@@ -17,6 +17,16 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 source("eda_TR.R", local = knitr::knit_global(),encoding = "utf-8")
 ```
 
+```{r}
+# compresión de listas
+library(comprehenr)
+
+# EDA
+library(psych)
+library(dlookr)
+```
+
+
 <center>
 ![](logo.png)
 </center>
@@ -126,7 +136,18 @@ En las siguiente tablas podemos observar un sencillo reporte de calidad de datos
 <div/>
 
 ```{r}
+categoricos <- datos %>% 
+  select_if(is.character) 
+dqr_categoricos <- tibble(
+  Variables = colnames(categoricos),
+  Tipo = as.character(as_tibble(sapply(categoricos, class))[1,]),
+  Presentes = to_vec(for(i in 1:ncol(categoricos)) sum(!is.na(categoricos[,i])) ),
+  Faltantes = to_vec(for(i in 1:ncol(categoricos)) sum(is.na(categoricos[,i])) ),
+  Unicos = to_vec(for(i in 1:ncol(categoricos)) count(distinct(categoricos[,i])))
+) 
+
 dqr_categoricos
+diagnosis_categoricos <- diagnose_category(datos)
 diagnosis_categoricos
 ```
 - **Representación gráfica**
@@ -159,7 +180,13 @@ En las siguiente tablas podemos observar un sencillo reporte de calidad de datos
 <div/>
 
 ```{r}
+dqr_numericos <-
+  mutate(dlookr::describe(datos)) %>%
+  mutate(dlookr::normality(datos)) %>% 
+  select(everything(), -c(p00,p01,p05,p10,p20,p30,p40,p60,p70,p80,p100,vars))
+
 dqr_numericos
+diagnosis_numericos <- diagnose_numeric(datos)
 diagnosis_numericos
 ```
 ### Prueba de Normalidad Shapiro-Wilk
@@ -235,84 +262,4 @@ datos %>%
 
 <div/>
 
-# Modelo de Regresión
-
-```{r}
-detach("package:dlookr", unload = TRUE)
-detach("package:psych", unload = TRUE)
-detach("package:comprehenr", unload = TRUE)
-library(tsibble)
-library(feasts)
-library(fable)
-```
-
-
-<div style="text-align: justify">
-
-El modelo de regresión lineal nos permite crear una relación entre 2 variables:
-
-- La variable de previsión $y$ o dependiente:
-- La variable predictora $x$ o regresora: 
-
-Por lo tanto, a partir de esto es como vamos a realizar pronósticos.
-
-```{r}
-datos %>% ggplot(aes(x = TR, y = TSP)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE)
-```
-
-
-```{r}
-datos_tsbl <- datos %>% 
-  filter(IS.visita != "Consultoria Dual",
-         Estatus   == "RESUELTA",
-         Categoría == "CORRECTIVO") %>% 
-  group_by(Recepcion, IS.visita) %>% 
-  summarise(across(.cols = c(TR, TSP, TMO, TST), mean),
-            .groups = "drop") %>% 
-  pivot_longer(
-    cols      = starts_with("T"),
-    names_to  = "SLA", 
-    values_to = "Tiempos"
-  ) %>% 
-  as_tsibble(
-    # index : la variable temporal
-    index = Recepcion,
-    # key : la(s) variable(s) que identifican a cada serie de tiempo
-    key   = c(IS.visita, SLA) 
-  )
-
-datos_tsbl
-```
-```{r}
-library(tsibbledata)
-
-aus_retail %>% autoplot()
-
-datos_tsbl %>% 
-  autoplot(Tiempos)
-```
-
-```{r}
-datos %>% 
-  filter(IS.visita != "Consultoria Dual",
-         Estatus   == "RESUELTA",
-         Categoría == "CORRECTIVO") %>% 
-  group_by(Recepcion, IS.visita) %>% 
-  summarise(across(.cols = c(TR, TSP, TMO, TST), mean),
-            .groups = "drop") %>% 
-  pivot_longer(
-    cols      = starts_with("T"),
-    names_to  = "SLA", 
-    values_to = "Tiempos"
-  ) %>% 
-  as_tsibble(
-    # index : la variable temporal
-    index = Recepcion,
-    # key : la(s) variable(s) que identifican a cada serie de tiempo
-    key   = c(IS.visita, SLA)
-  ) %>% 
-  glimpse()
-```
 

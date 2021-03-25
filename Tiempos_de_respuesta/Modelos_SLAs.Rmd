@@ -1,9 +1,17 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Modelo de Regresión SLA's"
+author: "Daniela Benavides Herrera"
+date: "25/3/2021"
+output: 
+  html_notebook:
+    theme: cerulean
+    toc: TRUE
+    toc_float: TRUE
 ---
 
-# Modelo de Regresión
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
 
 ```{r, message=FALSE}
 library(tidyverse)
@@ -14,59 +22,54 @@ library(fable)
 ```
 
 ```{r}
-datos_tbl <- read_xlsx("tiempos_respuesta.xlsx")
-
-#glimpse(datos)
-
-datos_tbl <- datos_tbl %>% 
-  mutate(across(contains("Tiempo"), as.numeric)) %>% 
-  rename_all(funs(make.names(.))) %>% 
-  rename(Orden = N...de.orden,
-         Serie = N...de.serie,
-         Equipo = N...de.equipo,
-         Num.Cliente = N..de.cliente,
-         Distribuidor = Grupo.empresarial,
-         Nivel = Nivel.de.servicio,
-         Recepcion = `Fecha.recepción`,
-         Ejecutivo = Usuario.captura,
-         IS.asignado = `Técnico.asignado`,
-         IS.visita = `Técnico.de.visita`,
-         Visitas = N...de.visitas,
-         Cierre = Fecha.cierre,
-         TST = Tiempo.transcurrido,
-         TMO = Tiempo.efectivo.en.sitio,
-         TR = Tiempo.de.respuesta,
-         TLR = Limite.de.tiempo.de.respuesta,
-         TLR.restante = `Tiempo.límite.restante...24`,
-         TSP = Tiempo.efectivo,
-         TLS = `Limite.tiempo.de.solución.total`,
-         TLS.restante = `Tiempo.límite.restante...27`) %>% 
-  mutate(Recepcion = as.Date(Recepcion),
-         Cierre    = as.Date(Cierre)) %>% 
-  filter(Recepcion >= "2018-02-01")
-
-datos_tbl
+source("eda_TR.R", local = knitr::knit_global(),encoding = "utf-8")
 ```
+
+<center>
+![](logo.png)
+</center>
+
+# Introducción
+
+<div style="text-align: justify">
+
+El propósito de este proyecto es generar un modelo de regresión a partir de los SLA's (Service Level Agreements), los cuales vamos a dividir principalmente en:
+
+- **TR**: Tiempos de Respuesta 
+- **TST**: Tiempos de Solución Total para el cliente
+- **TMO**: Tiempos de Mano de Obra
+- **TSP**: Tiempo de Solución Total para Exel Pitss
+
+<div/>
+
+# Modelo de Regresión
 
 <div style="text-align: justify">
 
 El modelo de regresión lineal nos permite crear una relación entre 2 variables:
 
-- La variable de previsión $y$ o dependiente:
-- La variable predictora $x$ o regresora: 
+- La variable de previsión $y$ o dependiente
+- La variable predictora $x$ o regresora
 
-Por lo tanto, a partir de esto es como vamos a realizar pronósticos.
+Por lo tanto, a partir de esto es como vamos a realizar pronósticos. A continuación podemos ver un sencillo ejemplo de cómo ajustamos 2 variables, en este caso, el tiempo de solución total de Exel Pitss (TSP) y el tiempo de respuesta (TR).
+
+<div/>
 
 ```{r}
-datos_tbl %>% ggplot(aes(x = TR, y = TSP)) +
+datos %>% ggplot(aes(x = TR, y = TSP)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE)
 ```
+<div style="text-align: justify">
 
+Por otra parte, para poder realizar los pronósticos, fue necesario agrupar los datos según la fecha de Recepción, seguido de la Ruta. La primera tabla a continuación, muestra los datos agrupados diariamente, la segunda los muestra agrupados semanalmente, y por último, la tercera, los muestra mensualmente.
+
+<div/>
+  
+  * Diariamente
 
 ```{r}
-datos_tsbl <- datos_tbl %>% 
-  filter(IS.visita != "Consultoria Dual",
+datos_tsbl <- datos %>% filter(IS.visita != "Consultoria Dual",
          Estatus   == "RESUELTA",
          Categoría == "CORRECTIVO") %>% 
   group_by(Recepcion, Ruta) %>% 
@@ -82,10 +85,14 @@ datos_tsbl <- datos_tbl %>%
     index = Recepcion,
     # key : la(s) variable(s) que identifican a cada serie de tiempo
     key   = c(Ruta, SLA) 
-  )
+  ) %>% 
+  fill_gaps(.full = TRUE, Tiempos = mean(Tiempos))
 
 datos_tsbl
 ```
+
+  * Semanalmente
+
 ```{r}
 datos_week_tsbl <- datos_tsbl %>% 
   group_by_key() %>% 
@@ -93,6 +100,7 @@ datos_week_tsbl <- datos_tsbl %>%
   summarise(Tiempos = mean(Tiempos), .groups = "drop")
 datos_week_tsbl
 ```
+  * Mensualmente
 
 ```{r}
 datos_month_tsbl <- datos_tsbl %>% 
@@ -101,11 +109,40 @@ datos_month_tsbl <- datos_tsbl %>%
   summarise(Tiempos = mean(Tiempos), .groups = "drop")
 datos_month_tsbl
 ```
+## Visualización
+
+A continuación se muestran las gráficas según la ruta y el tiempo de agrupamiento seleccionado.
+
+```{r}
+datos_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
+  autoplot(Tiempos) + #aes(color = Ruta) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme(legend.position = "none")
+
+
+
+datos_week_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  autoplot(Tiempos) + #aes(color = Ruta) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme(legend.position = "none")
+
+
+
+datos_month_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  autoplot(Tiempos) + #aes(color = Ruta) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme(legend.position = "none")
+
+
+```
 
 
 ```{r}
-p <- datos_tsbl %>% 
-  filter(Ruta == "JALISCO") %>% 
+p <- datos_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
   autoplot(Tiempos) + #aes(color = Ruta) +
   facet_wrap(~ SLA, scales = "free_y") +
   theme(legend.position = "none")
@@ -129,13 +166,33 @@ p <- datos_month_tsbl %>%
 plotly::ggplotly(p)
 ```
 
+## Modelado
+
+Se utilizó el modelo ETS y el modelo ARIMA para realizar un pronóstico de los SLA's.
+
 ```{r}
+datos_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(ETS(Tiempos),
+        ARIMA(Tiempos)) %>% 
+  forecast(h = "1 year") %>% 
+  autoplot(datos_tsbl, level = NULL)+
+  facet_wrap(~SLA, scales = "free_y")
+
 datos_week_tsbl %>% 
   filter(Ruta == "JALISCO") %>% 
   model(ETS(Tiempos),
         ARIMA(Tiempos)) %>% 
   forecast(h = "1 year") %>% 
   autoplot(datos_week_tsbl, level = NULL)+
+  facet_wrap(~SLA, scales = "free_y")
+
+datos_month_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(ETS(Tiempos),
+        ARIMA(Tiempos)) %>% 
+  forecast(h = "1 year") %>% 
+  autoplot(datos_month_tsbl, level = NULL)+
   facet_wrap(~SLA, scales = "free_y")
 ```
 
