@@ -1,0 +1,141 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Modelo de Regresión
+
+```{r, message=FALSE}
+library(tidyverse)
+library(readxl)
+library(tsibble)
+library(feasts)
+library(fable)
+```
+
+```{r}
+datos_tbl <- read_xlsx("tiempos_respuesta.xlsx")
+
+#glimpse(datos)
+
+datos_tbl <- datos_tbl %>% 
+  mutate(across(contains("Tiempo"), as.numeric)) %>% 
+  rename_all(funs(make.names(.))) %>% 
+  rename(Orden = N...de.orden,
+         Serie = N...de.serie,
+         Equipo = N...de.equipo,
+         Num.Cliente = N..de.cliente,
+         Distribuidor = Grupo.empresarial,
+         Nivel = Nivel.de.servicio,
+         Recepcion = `Fecha.recepción`,
+         Ejecutivo = Usuario.captura,
+         IS.asignado = `Técnico.asignado`,
+         IS.visita = `Técnico.de.visita`,
+         Visitas = N...de.visitas,
+         Cierre = Fecha.cierre,
+         TST = Tiempo.transcurrido,
+         TMO = Tiempo.efectivo.en.sitio,
+         TR = Tiempo.de.respuesta,
+         TLR = Limite.de.tiempo.de.respuesta,
+         TLR.restante = `Tiempo.límite.restante...24`,
+         TSP = Tiempo.efectivo,
+         TLS = `Limite.tiempo.de.solución.total`,
+         TLS.restante = `Tiempo.límite.restante...27`) %>% 
+  mutate(Recepcion = as.Date(Recepcion),
+         Cierre    = as.Date(Cierre)) %>% 
+  filter(Recepcion >= "2018-02-01")
+
+datos_tbl
+```
+
+<div style="text-align: justify">
+
+El modelo de regresión lineal nos permite crear una relación entre 2 variables:
+
+- La variable de previsión $y$ o dependiente:
+- La variable predictora $x$ o regresora: 
+
+Por lo tanto, a partir de esto es como vamos a realizar pronósticos.
+
+```{r}
+datos_tbl %>% ggplot(aes(x = TR, y = TSP)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+
+```{r}
+datos_tsbl <- datos_tbl %>% 
+  filter(IS.visita != "Consultoria Dual",
+         Estatus   == "RESUELTA",
+         Categoría == "CORRECTIVO") %>% 
+  group_by(Recepcion, Ruta) %>% 
+  summarise(across(.cols = c(TR, TSP, TMO, TST), mean),
+            .groups = "drop") %>% 
+  pivot_longer(
+    cols      = starts_with("T"),
+    names_to  = "SLA", 
+    values_to = "Tiempos"
+  ) %>% 
+  as_tsibble(
+    # index : la variable temporal
+    index = Recepcion,
+    # key : la(s) variable(s) que identifican a cada serie de tiempo
+    key   = c(Ruta, SLA) 
+  )
+
+datos_tsbl
+```
+```{r}
+datos_week_tsbl <- datos_tsbl %>% 
+  group_by_key() %>% 
+  index_by(Semana = yearweek(Recepcion)) %>% 
+  summarise(Tiempos = mean(Tiempos), .groups = "drop")
+datos_week_tsbl
+```
+
+```{r}
+datos_month_tsbl <- datos_tsbl %>% 
+  group_by_key() %>% 
+  index_by(Mes = yearmonth(Recepcion)) %>% 
+  summarise(Tiempos = mean(Tiempos), .groups = "drop")
+datos_month_tsbl
+```
+
+
+```{r}
+p <- datos_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  autoplot(Tiempos) + #aes(color = Ruta) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme(legend.position = "none")
+
+plotly::ggplotly(p)
+
+p <- datos_week_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  autoplot(Tiempos) + #aes(color = Ruta) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme(legend.position = "none")
+
+plotly::ggplotly(p)
+
+p <- datos_month_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  autoplot(Tiempos) + #aes(color = Ruta) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme(legend.position = "none")
+
+plotly::ggplotly(p)
+```
+
+```{r}
+datos_week_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(ETS(Tiempos),
+        ARIMA(Tiempos)) %>% 
+  forecast(h = "1 year") %>% 
+  autoplot(datos_week_tsbl, level = NULL)+
+  facet_wrap(~SLA, scales = "free_y")
+```
+

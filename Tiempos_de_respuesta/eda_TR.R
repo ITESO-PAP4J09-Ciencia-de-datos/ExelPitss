@@ -1,14 +1,11 @@
 
 # librerías ---------------------------------------------------------------
 
-# importación de datos
-library(readxl)
-
 # ciencia de datos
 library(tidyverse)
 
-# transformación de datos
-library(dplyr)
+# importación de datos
+library(readxl)
 
 # compresión de listas
 library(comprehenr)
@@ -16,9 +13,6 @@ library(comprehenr)
 # EDA
 library(psych)
 library(dlookr)
-
-# visualización de datos
-library(ggplot2)
 
 # datos -------------------------------------------------------------------
 
