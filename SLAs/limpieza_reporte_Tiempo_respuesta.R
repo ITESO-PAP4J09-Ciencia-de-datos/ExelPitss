@@ -13,6 +13,7 @@ library(tsibble)
 library(feasts)
 library(fpp3)
 library(easypackages)
+library(corrr)
 
 #("tidyverse", "tidyquant", "lubridate", "patchwork", "fpp2","fpp3","scales")
 # DATA --------------------------------------------------------------------
