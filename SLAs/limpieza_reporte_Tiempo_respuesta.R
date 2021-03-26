@@ -100,23 +100,6 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
 # EDA ---------------------------------------------------------------------
 
 
-tiempos_os_tidy_tbl %>%
-  filter(Ruta == "JALISCO",
-         Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
-  ggplot(aes(x = `Técnico de visita`, y = hora_decimal, fill = Tiempos))+
-  geom_boxplot() +
-  facet_grid(Ruta ~ Tiempos, scales = "free_y") +
-  theme(legend.position = "none") +
-  coord_flip()
-
-
-tiempos_os_tidy_tbl %>%
-  filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
-  ggplot(aes(x = Ruta, y = hora_decimal, fill = Tiempos))+
-  geom_boxplot() +
-  facet_wrap(~ Tiempos, scales = "free_x") +
-  theme(legend.position = "none") +
-  coord_flip()
 
 
 tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>%
@@ -140,7 +123,7 @@ p <- tiempos_mensual_ruta_tsbl %>%
   facet_wrap(~Tiempos, scales = "free_y") +
   theme(legend.position = "none")
 
-plotly::ggplotly(p)
+
 # Graficar tiempos de respuesta por ruta
 p2 <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Tiempo de respuesta"),
@@ -149,7 +132,7 @@ p2 <- tiempos_mensual_ruta_tsbl %>%
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
 
-plotly::ggplotly(p2)
+
 # Graficar tiempo efectivo en sitio por ruta
 p3 <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Tiempo efectivo en sitio"),
@@ -158,7 +141,7 @@ p3 <- tiempos_mensual_ruta_tsbl %>%
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
 
-plotly::ggplotly(p3)
+
 
 tiempos_mensual_tecnicoV_tsbl <- tiempos_os_tidy_tbl %>%
   # Regresar a cols. separadas cada indicador
@@ -182,7 +165,7 @@ p4 <- tiempos_mensual_ruta_tsbl %>%
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
 
-plotly::ggplotly(p4)
+
 
 # Gráfica de Baja Cal Sur coeficiente de tiempos Junio 2019 por técnico de visita
 tiempos_ruta_tecnico_tsbl <- tiempos_os_tidy_tbl %>%
@@ -203,7 +186,7 @@ p5 <- tiempos_ruta_tecnico_tsbl %>%
   autoplot(hora_decimal) +
   theme(legend.position = "none")
 
-plotly::ggplotly(p5) ## Solo hay una observacion, por lo que no se genera una grafica
+ ## Solo hay una observacion, por lo que no se genera una grafica
 
 #Estados donde el cociente fue mayor a 0.5
 tiempos_cociente_M2_tsbl<- tiempos_os_tidy_tbl %>%
@@ -225,7 +208,7 @@ p6 <- tiempos_cociente_M2_tsbl %>%
   facet_wrap(~`Técnico de visita`, scales = "free_y") +
   theme(legend.position = "none")
 
-plotly::ggplotly(p6)
+
 
 
 #grafica de estados con cocientes mayores al 0.5
@@ -237,7 +220,104 @@ p7 <- tiempos_mensual_ruta_tsbl %>%
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
 
-plotly::ggplotly(p7)
+# Correlaciones tiempo-----
+correlacion_tiempos1 <- tiempos_os_tidy_tbl %>% 
+  filter(
+    !is.na(hora_decimal)
+  ) %>% 
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  )  %>% 
+  select(
+    Cociente_tiempo,
+    `Tiempo efectivo en sitio`,
+    `Tiempo de respuesta`,
+    `Tiempo límite restante...24`,
+    `Tiempo límite restante...27`,
+    cant_visitas,
+    OS,
+    num_equipo
+  ) %>% 
+  filter(
+    Cociente_tiempo >= 1
+  )
+
+correlacion_tiempos2 <- cor(correlacion_tiempos1, method= "pearson")
+correlacion_tiempos3 <- as_cordf(correlacion_tiempos2)
+
+# Correlaciones ruta-técnico de visita por tiempos-spearman-----
+Ruta_cor <- tiempos_os_tidy_tbl %>% 
+  filter(
+    !is.na(hora_decimal)
+  ) %>% 
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  ) %>% 
+  filter(
+    Cociente_tiempo >= 1,
+    !is.na(Ruta),
+  ) %>% 
+  select(
+    `Tiempo efectivo en sitio`,
+    `Tiempo de respuesta`,
+    `Limite de tiempo de respuesta`,
+    `Tiempo límite restante...24`,
+    `Tiempo límite restante...27`,
+    cant_visitas,
+    Ruta,
+    OS
+  ) %>% 
+  group_by(Ruta) %>% 
+  summarise(
+    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`, 
+                                    method = "spearman"),
+    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`, 
+                                    method = "spearman")
+  )
+
+
+Tecnico_visita_corr <- tiempos_os_tidy_tbl %>% 
+  filter(
+    !is.na(hora_decimal)
+  ) %>% 
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  ) %>% 
+  filter(
+    Cociente_tiempo >= 1,
+    !is.na(Ruta),
+  ) %>% 
+  group_by(`Técnico de visita`) %>% 
+  summarise(
+    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
+                                    method ="spearman"),
+    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
+                                    method = "spearman"),
+  )
+
+Modelo_corr <- tiempos_os_tidy_tbl %>% 
+  filter(
+    !is.na(hora_decimal)
+  ) %>% 
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  ) %>% 
+  filter(
+    Cociente_tiempo >= 1,
+    !is.na(Modelo),
+  ) %>% 
+  group_by(Modelo) %>% 
+  summarise(
+    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
+                                    method ="spearman"),
+    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
+                                    method = "spearman")
+  )
+
 
 # Tendencias --------------------------------------------------------------
 #Serie de tiempo de cociente para jalisco del 2019 al 2021
@@ -248,20 +328,11 @@ Ten1Jal <- tiempos_mensual_ruta_tsbl %>%
     Fecha_recepion >= yearmonth("2019-01"),
     !is.na(hora_decimal)
   )
-Ten1Jal %>%
-  autoplot(hora_decimal) +
-  xlab("Año") + ylab("Cociente") +
-  ggtitle("cociente jalisco")
+
 #descomposicion por el modelo STL
 dcmp_Jal <- Ten1Jal %>%
   model(STL(hora_decimal))
 #mostrar la ts
 components(dcmp_Jal)
-#grafica de la tendencia junto con los datos de jal
-Ten1Jal%>%
-  autoplot(hora_decimal, color='blue') +
-  autolayer(components(dcmp_Jal), trend, color='red') +
-  xlab("Año") + ylab("Cociente") +
-  ggtitle("cociente jalisco")
-#Grafica de la tendencia, ajuste estacional y remainder
-components(dcmp_Jal) %>% autoplot()+ xlab("Años")
+
+

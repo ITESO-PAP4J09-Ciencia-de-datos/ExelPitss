@@ -17,13 +17,45 @@ library(psych)
 library(ggcorrplot)
 ```
 
-```{r}
+```{r echo=FALSE}
 source("limpieza_reporte_Tiempo_respuesta.R", 
        local = knitr::knit_global(),
        encoding = "utf-8")
 ```
 
 # Desarrollo 
+## Gráficas del análisis exploratorio
+
+```{r echo=FALSE}
+tiempos_os_tidy_tbl %>%
+  filter(Ruta == "JALISCO",
+         Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
+  ggplot(aes(x = `Técnico de visita`, y = hora_decimal, fill = Tiempos))+
+  geom_boxplot() +
+  facet_grid(Ruta ~ Tiempos, scales = "free_y") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+
+tiempos_os_tidy_tbl %>%
+  filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
+  ggplot(aes(x = Ruta, y = hora_decimal, fill = Tiempos))+
+  geom_boxplot() +
+  facet_wrap(~ Tiempos, scales = "free_x") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+plotly::ggplotly(p)
+plotly::ggplotly(p2)
+plotly::ggplotly(p3)
+plotly::ggplotly(p4)
+plotly::ggplotly(p5)
+plotly::ggplotly(p6)
+plotly::ggplotly(p7)
+```
+
+
+
 ## Busqueda de correlaciones 
 
 La siguiente tabla muestra una revisión rápida de cómo se comportan las variables entre si, esto es con el proposito de darnos una idea de qué posibles correlaciones podrían existir y revisar si es producto del azar.
@@ -31,30 +63,6 @@ La siguiente tabla muestra una revisión rápida de cómo se comportan las varia
 Correlaciones encontradas entre los tiempos 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
-correlacion_tiempos1 <- tiempos_os_tidy_tbl %>% 
-   filter(
-     !is.na(hora_decimal)
-   ) %>% 
-   pivot_wider(
-    names_from  = Tiempos,
-    values_from = hora_decimal
-   )  %>% 
-   select(
-         Cociente_tiempo,
-         `Tiempo efectivo en sitio`,
-         `Tiempo de respuesta`,
-         `Tiempo límite restante...24`,
-         `Tiempo límite restante...27`,
-          cant_visitas,
-          OS,
-         num_equipo
-         ) %>% 
-  filter(
-         Cociente_tiempo >= 1
-        )
-
-correlacion_tiempos2 <- cor(correlacion_tiempos1, method= "pearson")
-correlacion_tiempos3 <- as_cordf(correlacion_tiempos2)
 
 pairs.panels(correlacion_tiempos1, method = "spearman")
 ggcorrplot(correlacion_tiempos2,method = 'circle', type = 'lower',lab = TRUE)+
@@ -68,80 +76,25 @@ En las siguientes tablas contienen las siguientes correlaciones   **LRespuesta_T
 Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una correlación válida, en algunos casos esto se debe a la naturaleza de los mismos datos, adicional a esto ver que no existen correlaciones lineales entre las variables utilizadas. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
-Ruta_cor <- tiempos_os_tidy_tbl %>% 
-   filter(
-     !is.na(hora_decimal)
-   ) %>% 
-   pivot_wider(
-    names_from  = Tiempos,
-    values_from = hora_decimal
-   ) %>% 
-   filter(
-    Cociente_tiempo >= 1,
-    !is.na(Ruta),
-   ) %>% 
-   select(
-         `Tiempo efectivo en sitio`,
-         `Tiempo de respuesta`,
-         `Limite de tiempo de respuesta`,
-         `Tiempo límite restante...24`,
-         `Tiempo límite restante...27`,
-          cant_visitas,
-          Ruta,
-          OS
-   ) %>% 
-  group_by(Ruta) %>% 
-  summarise(
-    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`, 
-                                    method = "spearman"),
-    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`, 
-                                     method = "spearman")
-   )
-
-
-Tecnico_visita_corr <- tiempos_os_tidy_tbl %>% 
-   filter(
-     !is.na(hora_decimal)
-   ) %>% 
-   pivot_wider(
-    names_from  = Tiempos,
-    values_from = hora_decimal
-   ) %>% 
-  filter(
-    Cociente_tiempo >= 1,
-    !is.na(Ruta),
-   ) %>% 
-  group_by(`Técnico de visita`) %>% 
-  summarise(
-    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
-                                    method ="spearman"),
-    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
-                                     method = "spearman"),
-   )
-
-Modelo_corr <- tiempos_os_tidy_tbl %>% 
-   filter(
-     !is.na(hora_decimal)
-   ) %>% 
-   pivot_wider(
-    names_from  = Tiempos,
-    values_from = hora_decimal
-   ) %>% 
-  filter(
-    Cociente_tiempo >= 1,
-    !is.na(Modelo),
-   ) %>% 
-  group_by(Modelo) %>% 
-  summarise(
-    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
-                                    method ="spearman"),
-    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
-                                     method = "spearman")
-   )
 
 Tecnico_visita_corr
 Modelo_corr
 Ruta_cor
+```
+## Series de tiempo
+```{r}
+Ten1Jal %>%
+  autoplot(hora_decimal) +
+  xlab("Año") + ylab("Cociente") +
+  ggtitle("cociente michoacán")
+
+Ten1Jal%>%
+  autoplot(hora_decimal, color='blue') +
+  autolayer(components(dcmp_Jal), trend, color='red') +
+  xlab("Año") + ylab("Cociente") +
+  ggtitle("cociente jalisco")
+#Grafica de la tendencia, ajuste estacional y remainder
+components(dcmp_Jal) %>% autoplot()+ xlab("Años")
 ```
 
 
