@@ -28,7 +28,6 @@ tiempos_os_tbl <- read_xlsx("Reporte_Tiempo_respuesta.xlsx")
 
 # tiempos_os_tbl %>% glimpse()
 
-
 tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
   # Cambiar el nombre de las cols. de fecha a fecha-hora
   rename(
@@ -50,7 +49,9 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
     serie        = `N.° de serie`,
     num_equipo   = `N.° de equipo`,
     num_cliente  = `N.°de cliente`,
-    cant_visitas = `N.° de visitas`
+    cant_visitas = `N.° de visitas`,
+    Tiempo_limite_restante_de_respuesta      = `Tiempo límite restante...24`,
+    Tiempo_limite_restante_de_solución_total =`Tiempo límite restante...27`
   ) %>%
   # Agregar variable con solo el mes-año
   mutate(mes = tsibble::yearmonth(Fecha_recepion)) %>% 
@@ -89,7 +90,10 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
   ) %>% 
   mutate(
     Cociente_tiempo = as.numeric(`Tiempo de respuesta`)/
-      as.numeric(`Limite de tiempo de respuesta`)
+                      as.numeric(`Limite de tiempo de respuesta`)
+  ) %>% 
+  mutate(
+    Estatus_de_Atencion = ifelse( Cociente_tiempo >= 1, 1 , 0)
   ) %>% 
   pivot_longer(
     cols      = contains("Tiempo"),
@@ -98,10 +102,6 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
   ) 
 
 # EDA ---------------------------------------------------------------------
-
-
-
-
 tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>%
   group_by(Ruta, Tiempos) %>%
   summarise_by_time(
@@ -109,7 +109,6 @@ tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>%
     .by          = "month",
     hora_decimal = mean(hora_decimal)
   ) %>%
-
   mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
            yearmonth())%>%
   filter(Fecha_recepion >= yearmonth("2018-02-03")) %>%
@@ -121,7 +120,8 @@ p <- tiempos_mensual_ruta_tsbl %>%
   filter(Ruta %in% c("JALISCO", "NUEVO LEON")) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Tiempos, scales = "free_y") +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("Comparación de los tiempos entre Jalisco y Nuevo Leon")
 
 
 # Graficar tiempos de respuesta por ruta
@@ -130,6 +130,7 @@ p2 <- tiempos_mensual_ruta_tsbl %>%
          !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Ruta, scales = "free_y") +
+  ggtitle("Tiempo de respuesta de cada Ruta")+
   theme(legend.position = "none")
 
 
@@ -205,6 +206,7 @@ tiempos_cociente_M2_tsbl<- tiempos_os_tidy_tbl %>%
 p6 <- tiempos_cociente_M2_tsbl %>%
   filter(Tiempos %in% c("Cociente_tiempo")) %>%
   autoplot(hora_decimal) +
+  ggtitle("Graficar Junio Baja California Sur")+
   facet_wrap(~`Técnico de visita`, scales = "free_y") +
   theme(legend.position = "none")
 
@@ -220,33 +222,51 @@ p7 <- tiempos_mensual_ruta_tsbl %>%
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
 
-# Correlaciones tiempo-----
-correlacion_tiempos1 <- tiempos_os_tidy_tbl %>% 
+# Correlaciones ---------------------------------------------------------
+
+# Correlaciones de `Tiempo efectivo en sitio`,`Tiempo de respuesta` y `Limite tiempo de solución total`
+## Correlaciones no atendidas en tiempo 
+correlacion_tiempos1_Fals <- tiempos_os_tidy_tbl %>% 
   filter(
     !is.na(hora_decimal)
   ) %>% 
   pivot_wider(
     names_from  = Tiempos,
     values_from = hora_decimal
-  )  %>% 
-  select(
-    Cociente_tiempo,
-    `Tiempo efectivo en sitio`,
-    `Tiempo de respuesta`,
-    `Tiempo límite restante...24`,
-    `Tiempo límite restante...27`,
-    cant_visitas,
-    OS,
-    num_equipo
   ) %>% 
   filter(
-    Cociente_tiempo >= 1
-  )
+    Estatus_de_Atencion == 1
+  )%>% 
+  select(
+    `Tiempo efectivo en sitio`,
+    `Tiempo de respuesta`,
+    `Limite tiempo de solución total`
+  ) 
+correlacion_tiempos2_Fals <- cor(correlacion_tiempos1_Fals, method= "pearson")
+correlacion_tiempos3_Fals <- as_cordf(correlacion_tiempos2_Fals)
 
-correlacion_tiempos2 <- cor(correlacion_tiempos1, method= "pearson")
-correlacion_tiempos3 <- as_cordf(correlacion_tiempos2)
+##Correlaciones atendidas a tiempo
+correlacion_tiempos1_True <- tiempos_os_tidy_tbl %>% 
+  filter(
+    !is.na(hora_decimal)
+  ) %>% 
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  ) %>% 
+  filter(
+    Estatus_de_Atencion == 0
+  )%>% 
+  select(
+    `Tiempo efectivo en sitio`,
+    `Tiempo de respuesta`,
+    `Limite tiempo de solución total`
+  ) 
 
-# Correlaciones ruta-técnico de visita por tiempos-spearman-----
+correlacion_tiempos2_True <- cor(correlacion_tiempos1_True, method= "pearson")
+correlacion_tiempos3_True <- as_cordf(correlacion_tiempos2_True)
+
+# Correlaciones ruta-técnico de visita por tiempos-spearman 
 Ruta_cor <- tiempos_os_tidy_tbl %>% 
   filter(
     !is.na(hora_decimal)
@@ -263,8 +283,8 @@ Ruta_cor <- tiempos_os_tidy_tbl %>%
     `Tiempo efectivo en sitio`,
     `Tiempo de respuesta`,
     `Limite de tiempo de respuesta`,
-    `Tiempo límite restante...24`,
-    `Tiempo límite restante...27`,
+    Tiempo_limite_restante_de_respuesta,
+    Tiempo_limite_restante_de_solución_total,
     cant_visitas,
     Ruta,
     OS
@@ -276,7 +296,6 @@ Ruta_cor <- tiempos_os_tidy_tbl %>%
     Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`, 
                                     method = "spearman")
   )
-
 
 Tecnico_visita_corr <- tiempos_os_tidy_tbl %>% 
   filter(

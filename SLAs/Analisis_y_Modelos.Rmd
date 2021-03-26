@@ -16,8 +16,8 @@ library(tidyverse)
 library(psych)
 library(ggcorrplot)
 ```
-
-```{r echo=FALSE}
+# Script
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 source("limpieza_reporte_Tiempo_respuesta.R", 
        local = knitr::knit_global(),
        encoding = "utf-8")
@@ -25,7 +25,6 @@ source("limpieza_reporte_Tiempo_respuesta.R",
 
 # Desarrollo 
 ## Gráficas del análisis exploratorio
-
 ```{r echo=FALSE}
 tiempos_os_tidy_tbl %>%
   filter(Ruta == "JALISCO",
@@ -54,21 +53,27 @@ plotly::ggplotly(p6)
 plotly::ggplotly(p7)
 ```
 
-
-
 ## Busqueda de correlaciones 
 
 La siguiente tabla muestra una revisión rápida de cómo se comportan las variables entre si, esto es con el proposito de darnos una idea de qué posibles correlaciones podrían existir y revisar si es producto del azar.
 
-Correlaciones encontradas entre los tiempos 
+Resultado de las correlaciones entre los tiempos, de las ordenes de servicio que no fueron atendidas en el tiempo asignado 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 
-pairs.panels(correlacion_tiempos1, method = "spearman")
-ggcorrplot(correlacion_tiempos2,method = 'circle', type = 'lower',lab = TRUE)+
+pairs.panels(correlacion_tiempos1_Fals, method = "spearman")
+ggcorrplot(correlacion_tiempos2_Fals,method = 'circle', type = 'lower',lab = TRUE)+
   ggtitle("Matriz de correlación")+
   theme_minimal()
-corr.test(correlacion_tiempos2, method = "spearman", adjust = "none")
+corr.test(correlacion_tiempos2_Fals, method = "spearman", adjust = "none")
+```
+Resultado de las correlaciones entre los tiempos, de las ordenes de servicio que fueron atendidas en el tiempo asignado 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+pairs.panels(correlacion_tiempos1__True, method = "spearman")
+ggcorrplot(correlacion_tiempos2_True,method = 'circle', type = 'lower',lab = TRUE)+
+  ggtitle("Matriz de correlación")+
+  theme_minimal()
+corr.test(correlacion_tiempos2_True, method = "spearman", adjust = "none")
 ```
 
 En las siguientes tablas contienen las siguientes correlaciones   **LRespuesta_TRespuesta_Cor** ( que consta de las variables `Tiempo de respuesta` y `Limite de tiempo de respuesta`) y la columna  **Canvisitas_TRespuesta_Cor** (que consta de las variables`cant_visitas` y `Tiempo de respuesta`). Las correlaciones se hacen de los datos que tienen un coeficiente de tiempo de respuesta y limite de tiempo de respuestas >= 1 y con el modelo de *Spearman*.
@@ -106,16 +111,20 @@ components(dcmp_Jal) %>% autoplot()+ xlab("Años")
 # Bibliografia / Referencias 
 
 
-Lenguaje de programacion:
-  https://www.r-project.org/
-Ambiente de programacion:
+* Lenguaje de programacion:
+  https://www.r-project.org
+  /
+* Ambiente de programacion:
   https://rstudio.com/products/rstudio/download/
-Pagina de inicio de estudios
+
+* Pagina de inicio de estudios
   https://r4ds-en-espaniol.netlify.app
-Principios basicos de las series de tiempo
+
+* Principios basicos de las series de tiempo
   https://bookdown.org/content/2274/series-temporales.html
   https://otexts.com/fpp2/
-Ayuda de modelos en R
+
+* Ayuda de modelos en R
   https://github.com/tidymodels
   https://www.tidymodels.org/
     
