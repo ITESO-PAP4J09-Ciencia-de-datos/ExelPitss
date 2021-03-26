@@ -56,7 +56,9 @@ ui <- fluidPage(
                           #selected  = tecnico,
                       #),
                   submitButton()
-                  ) #wellPanel
+                  ), #wellPanel
+                  
+                  plotOutput(outputId = "grafica")
                   
               )
           
@@ -72,7 +74,7 @@ server <- function(input, output, session) {
   
     df_filtrada <- reactive({
       df %>%
-          filter(`Técnico de visita` %in% Ruta == input$estados)
+          filter(Ruta == input$Estado)
     })
     
     
@@ -84,7 +86,9 @@ server <- function(input, output, session) {
         pickerInput(
             inputId  = "Tecnico",
             label    = "Escoge los tecnicos a nombrar",
-            choices  = df_filtrada,
+            choices  = df_filtrada() %>% 
+              distinct(`Técnico de visita`) %>% 
+              pull(`Técnico de visita`),
             selected = FALSE,
             options  = list(
                 `actions-box` = TRUE,
@@ -94,8 +98,10 @@ server <- function(input, output, session) {
             multiple = TRUE,
             width = "auto"
         )
-         
-    }
-    )
+    })
+    
+    output$grafica <- renderPlot({
+      
+    })
 }
     shinyApp(ui, server)
