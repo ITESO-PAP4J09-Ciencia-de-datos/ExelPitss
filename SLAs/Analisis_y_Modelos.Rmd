@@ -5,7 +5,7 @@ output: html_notebook
 ---
 # Introdución 
 
-El presente archivo es un informe de los datos obtenidos al realizar el análisis  y modelado del comportamiento  de los tiempos de recepción y tiempo límite de respuesta que fueron capturados en el "Reporte de tiempos respuesta", esto con el objetivo de encontrar información y modelos que sean de ayuda en para la toma de decisiones de la empresa  **ExelPitss**
+El presente archivo es un informe de los datos obtenidos al realizar el análisis exploratorio  y modelado del comportamiento  de los tiempos de recepción y tiempo límite de respuesta que fueron capturados en el "Reporte de tiempos respuesta", esto con el objetivo de encontrar información y modelos que sean de ayuda en para la toma de decisiones de la empresa  **ExelPitss**
 
 
 # Paqueterias
@@ -26,7 +26,7 @@ source("limpieza_reporte_Tiempo_respuesta.R",
 # Desarrollo 
 ## Busqueda de correlaciones 
 
-La siguiente tabla muestra a una revisión rapída de como se comportan las variables entre si, esto es con el proposito de darnos una idea de que posibles correlaciones podrian exístir y en caso de existir revisar si es producto del azar.
+La siguiente tabla muestra una revisión rápida de cómo se comportan las variables entre si, esto es con el proposito de darnos una idea de qué posibles correlaciones podrían existir y revisar si es producto del azar.
 
 Correlaciones encontradas entre los tiempos 
 
@@ -65,7 +65,7 @@ corr.test(correlacion_tiempos2, method = "spearman", adjust = "none")
 
 En las siguientes tablas contienen las siguientes correlaciones   **LRespuesta_TRespuesta_Cor** ( que consta de las variables `Tiempo de respuesta` y `Limite de tiempo de respuesta`) y la columna  **Canvisitas_TRespuesta_Cor** (que consta de las variables`cant_visitas` y `Tiempo de respuesta`). Las correlaciones se hacen de los datos que tienen un coeficiente de tiempo de respuesta y limite de tiempo de respuestas >= 1 y con el modelo de *Spearman*.
 
-Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una correlación valida, en algunos casos esto se debe a la naturaleza de los mismos datos, adicional a esto ver que no existen correlaciones lineales entre las variables utilizadas. 
+Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una correlación válida, en algunos casos esto se debe a la naturaleza de los mismos datos, adicional a esto ver que no existen correlaciones lineales entre las variables utilizadas. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 Ruta_cor <- tiempos_os_tidy_tbl %>% 
