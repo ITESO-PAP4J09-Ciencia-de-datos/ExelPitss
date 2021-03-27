@@ -82,6 +82,7 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
     Cociente_tiempo = as.numeric(`Tiempo de respuesta`)/
       as.numeric(`Limite de tiempo de respuesta`)
   ) %>% 
+  # Se creó una columna de clasificación
   mutate(
     Estatus_de_Atencion = ifelse( Cociente_tiempo >= 1, 1 , 0)
   ) %>% 

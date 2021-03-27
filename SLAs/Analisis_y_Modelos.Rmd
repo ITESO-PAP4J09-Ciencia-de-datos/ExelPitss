@@ -17,6 +17,7 @@ library(psych)
 library(ggcorrplot)
 ```
 # Script
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 source("limpieza_reporte_Tiempo_respuesta.R", 
        local = knitr::knit_global(),
