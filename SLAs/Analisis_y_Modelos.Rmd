@@ -17,9 +17,15 @@ library(psych)
 library(ggcorrplot)
 ```
 # Script
-
+##  EDAL
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 source("limpieza_reporte_Tiempo_respuesta.R", 
+       local = knitr::knit_global(),
+       encoding = "utf-8")
+```
+## Modelos
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+source("Modelos.R", 
        local = knitr::knit_global(),
        encoding = "utf-8")
 ```
@@ -87,7 +93,7 @@ Tecnico_visita_corr
 Modelo_corr
 Ruta_cor
 ```
-## Series de tiempo
+## Tendencia
 ```{r}
 Ten1Jal %>%
   autoplot(hora_decimal) +
@@ -102,8 +108,6 @@ Ten1Jal%>%
 #Grafica de la tendencia, ajuste estacional y remainder
 components(dcmp_Jal) %>% autoplot()+ xlab("Años")
 ```
-
-
 ## Modelos 
 
 # Conclusiones 

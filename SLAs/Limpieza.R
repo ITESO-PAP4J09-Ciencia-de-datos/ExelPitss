@@ -1,3 +1,6 @@
+# Librerias  --------------------------------------------------------------
+
+
 # Limpieza de datos
 # library(tidymodels)
 # library(corrr)
@@ -12,6 +15,9 @@ library(tsibble)
 library(feasts)
 # library(fpp3)
 # library(easypackages)
+
+
+# Limpieza ----------------------------------------------------------------
 
 
 tiempos_os_tbl <- read_xlsx("Reporte_Tiempo_respuesta.xlsx")
