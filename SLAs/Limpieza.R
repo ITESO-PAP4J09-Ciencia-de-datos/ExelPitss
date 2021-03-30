@@ -12,7 +12,6 @@ library(scales)
 library(timetk)
 library(tsibble)
 library(feasts)
-
 # Limpieza ----------------------------------------------------------------
 
 tiempos_os_tbl <- read_xlsx("Reporte_Tiempo_respuesta.xlsx")
