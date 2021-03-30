@@ -21,10 +21,19 @@ tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos == "Tiempo de respuesta",
          Ruta == "JALISCO") %>% 
   model(ARIMA(hora_decimal)) %>% 
-  forecast(h = "1 year") %>% 
+  forecast(h = "3 month") %>% 
   autoplot(tiempos_mensual_ruta_tsbl)
-gg_tsdisplay(hora_decimal, plot_type = "partial")
+
+#gg_tsdisplay(hora_decimal, plot_type = "partial")
+
 # Entrenamiento del modelo ------------------------------------------------
+
+Modelo1 <- TVisita_Ruta_Modelo_train_tsb %>% 
+  model(Drift = RW(hora_decimal~ drift())) %>% 
+  forecast(h = "1 year")
+
+
+
 
 
 # Test de los modelos  ----------------------------------------------------
