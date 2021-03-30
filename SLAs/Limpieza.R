@@ -1,6 +1,9 @@
+
 # Limpieza de datos 29/03/2021
 # Equipo 1 PAP Ciencia de datos 
 # Paqueterias -------------------------------------------------------------
+
+# Librerias  --------------------------------------------------------------
 
 library(tidyverse)
 library(readxl)
@@ -9,7 +12,6 @@ library(scales)
 library(timetk)
 library(tsibble)
 library(feasts)
-
 
 # Limpieza ----------------------------------------------------------------
 
