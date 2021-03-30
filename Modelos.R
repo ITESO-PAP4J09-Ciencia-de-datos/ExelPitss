@@ -33,4 +33,3 @@ gg_tsdisplay(hora_decimal, plot_type = "partial")
 
 
 
-

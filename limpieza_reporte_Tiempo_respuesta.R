@@ -269,5 +269,4 @@ dcmp_Jal <- Ten1Jal %>%
   model(STL(hora_decimal))
 #mostrar la ts
 components(dcmp_Jal)
- 
 
