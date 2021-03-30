@@ -139,7 +139,7 @@ p7 <- tiempos_mensual_ruta_tsbl %>%
 
 #series de tiempo de tecnico de visita, ruta y modelo de impresora para el Treain de modelos
 TVisita_Ruta_Modelo_train_tsb <- tiempos_os_tidy_tbl %>%
-  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion <= "2019-01-01",
+  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion < "2020-10-01",
          Tiempos != "Cociente_tiempo") %>%
   group_by(Tiempos, Ruta) %>%
   summarise_by_time(

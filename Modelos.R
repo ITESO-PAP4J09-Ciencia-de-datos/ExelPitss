@@ -28,18 +28,53 @@ tiempos_mensual_ruta_tsbl %>%
 
 # Entrenamiento del modelo ------------------------------------------------
 
-Modelo1 <- TVisita_Ruta_Modelo_train_tsb %>% 
-  model(Drift = RW(hora_decimal~ drift())) %>% 
+Modelo_snaive <- TVisita_Ruta_Modelo_train_tsb %>%
+  filter(Tiempos == "Tiempo de respuesta") %>%
+  model(SNAIVE(hora_decimal)
+        ) %>% 
   forecast(h = "1 month")
   
-Modelo1 %>% 
-  filter(Ruta == "JALISCO") %>% 
+Modelo_snaive %>% 
+  filter(Ruta == "CIUDAD DE MEXICO") %>% 
   autoplot(TVisita_Ruta_Modelo_train_tsb)+
+  ggtitle("MsN Tiempo de respuesta CDMX")
   facet_wrap(~ Tiempos, scales = "free_y")
 
+Modelo_drift <- TVisita_Ruta_Modelo_train_tsb %>%
+  filter(Tiempos == "Tiempo de respuesta") %>%
+  model(Drift = RW(hora_decimal~drift())
+  ) %>% 
+  forecast(h = "1 month")
 
+Modelo_drift %>% 
+  filter(Ruta == "CIUDAD DE MEXICO") %>% 
+  autoplot(TVisita_Ruta_Modelo_train_tsb)+
+  ggtitle("MD Tiempo de respuesta CDMX")+
+  facet_wrap(~ Tiempos, scales = "free_y")
 
+Modelo_mean <- TVisita_Ruta_Modelo_train_tsb %>%
+  filter(Tiempos == "Tiempo de respuesta") %>%
+  model(MEAN(hora_decimal)
+  ) %>% 
+  forecast(h = "1 month")
 
+Modelo_mean %>% 
+  filter(Ruta == "CIUDAD DE MEXICO") %>% 
+  autoplot(TVisita_Ruta_Modelo_train_tsb)+
+  ggtitle("MM Tiempo de respuesta CDMX")+
+  facet_wrap(~ Tiempos, scales = "free_y")
+
+Modelo_naive <- TVisita_Ruta_Modelo_train_tsb %>%
+  filter(Tiempos == "Tiempo de respuesta") %>%
+  model(NAIVE(hora_decimal)
+  ) %>% 
+  forecast(h = "1 month")
+
+Modelo_naive %>% 
+  filter(Ruta == "CIUDAD DE MEXICO") %>% 
+  autoplot(TVisita_Ruta_Modelo_train_tsb)+
+  ggtitle("MN Tiempo de respuesta CDMX")+
+  facet_wrap(~ Tiempos, scales = "free_y")
 
 # Test de los modelos  ----------------------------------------------------
 
