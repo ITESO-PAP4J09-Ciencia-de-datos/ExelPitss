@@ -139,15 +139,16 @@ p7 <- tiempos_mensual_ruta_tsbl %>%
 
 #series de tiempo de tecnico de visita, ruta y modelo de impresora para el Treain de modelos
 TVisita_Ruta_Modelo_train_tsb <- tiempos_os_tidy_tbl %>%
-  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion <= "2019-01-01"
-         ) %>%
-  group_by(`Técnico de visita`, Tiempos, Modelo, Ruta, Cliente) %>%
+  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion <= "2019-01-01",
+         Tiempos != "Cociente_tiempo") %>%
+  group_by(Tiempos, Ruta) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
     .by          = "day",
     hora_decimal = mean(hora_decimal)) %>%
   as_tsibble(index = Fecha_recepion,
-             key = c(`Técnico de visita`, Tiempos,Modelo,Ruta,Cliente))
+             key = c(Tiempos,Ruta)) %>% 
+  tsibble::fill_gaps()
 
 # series de tiempo de tecnico de visita, ruta y modelo de impresora para el Test de modelos
 TVisita_Ruta_Modelo_test_tsb <- tiempos_os_tidy_tbl %>%
@@ -160,10 +161,13 @@ TVisita_Ruta_Modelo_test_tsb <- tiempos_os_tidy_tbl %>%
     hora_decimal = mean(hora_decimal)) %>%
   as_tsibble(index = Fecha_recepion,
              key = c(`Técnico de visita`, Tiempos,Modelo,Ruta,Cliente))
-# series de tiempo de tecnico de visita, ruta y modelo de impresora para el Validation de modelos
-TVisita_Ruta_Modelo_test_tsb <- tiempos_os_tidy_tbl %>%
-  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion <= "2021-01-01"
-  ) %>%
+# series de tiempo de tecnico de visita, ruta y modelo de impresora para el Validation 
+#de modelos
+
+TVisita_Ruta_Modelo_valid_tsb <- tiempos_os_tidy_tbl %>%
+  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion <= "2021-01-01", 
+         Tiempos == "Tiempo efectivo en sitio", 
+         Tiempos == "Tiempo_limite_restante_de_solución_total") %>%
   group_by(`Técnico de visita`, Tiempos, Modelo, Ruta, Cliente) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
@@ -171,6 +175,8 @@ TVisita_Ruta_Modelo_test_tsb <- tiempos_os_tidy_tbl %>%
     hora_decimal = mean(hora_decimal)) %>%
   as_tsibble(index = Fecha_recepion,
              key = c(`Técnico de visita`, Tiempos,Modelo,Ruta,Cliente))
+
+
 
 
 # Correlaciones ---------------------------------------------------------

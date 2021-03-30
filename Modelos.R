@@ -30,7 +30,12 @@ tiempos_mensual_ruta_tsbl %>%
 
 Modelo1 <- TVisita_Ruta_Modelo_train_tsb %>% 
   model(Drift = RW(hora_decimal~ drift())) %>% 
-  forecast(h = "1 year")
+  forecast(h = "1 month")
+  
+Modelo1 %>% 
+  filter(Ruta == "JALISCO") %>% 
+  autoplot(TVisita_Ruta_Modelo_train_tsb)+
+  facet_wrap(~ Tiempos, scales = "free_y")
 
 
 
