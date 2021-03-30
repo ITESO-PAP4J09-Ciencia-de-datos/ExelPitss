@@ -4,22 +4,17 @@
 
 # pkgs --------------------------------------------------------------------
 
-library(tidyverse)
-library(readxl)
-library(lubridate)
-library(scales)
-library(timetk)
-library(tsibble)
-library(feasts)
-library(fpp3)
-library(easypackages)
-library(corrr)
+library(fpp3)          # Trabajar con ejemplos de libro
+library(easypackages)  # Facilitar instalaciones
+library(corrr)         # Herramientas para trabajar correlaciones
 
 
-source("Limpieza.R", local = knitr::knit_global(),encoding = "utf-8")
+source("Limpieza.R", local = knitr::knit_global(),encoding = "utf-8") 
 
 # EDA ---------------------------------------------------------------------
-tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>%
+
+# Tsibble con ruta, técnico de visita y tiempos
+tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>% 
   group_by(Ruta, Tiempos) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
@@ -32,7 +27,7 @@ tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>%
   as_tsibble(index = Fecha_recepion,
              key = c(Ruta, Tiempos))
 
-
+# Graficar y comparar tiempos entre Jalisco y Nuevo Leon
 p <- tiempos_mensual_ruta_tsbl %>%
   filter(Ruta %in% c("JALISCO", "NUEVO LEON")) %>%
   autoplot(hora_decimal) +
@@ -60,10 +55,9 @@ p3 <- tiempos_mensual_ruta_tsbl %>%
   theme(legend.position = "none")
 
 
-
+# Tsibble con técnicos y tiempos
 tiempos_mensual_tecnicoV_tsbl <- tiempos_os_tidy_tbl %>%
-  # Regresar a cols. separadas cada indicador
-  group_by(`Técnico de visita`, Tiempos) %>%
+  group_by(`Técnico de visita`, Tiempos) %>%  #Regresar a cols. separadas cada indicador
   summarise_by_time(
     .date_var    = Fecha_recepion,
     .by          = "month",

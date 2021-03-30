@@ -5,18 +5,18 @@
 
 # Librerias  --------------------------------------------------------------
 
-library(tidyverse)
-library(readxl)
-library(lubridate)
-library(scales)
-library(timetk)
-library(tsibble)
-library(feasts)
+library(tidyverse) # Herramientas para ciencia de datos
+library(readxl)    # Leer archivos de Excel
+library(lubridate) # Permite trabajar con datos de tiempo
+library(scales)    # Funciones para escalar visualizaciones de datos
+library(timetk)    # Funciones para visualizar y manipular series de tiempo
+library(tsibble)   # Convertir tibbles a tsibbles
+library(feasts)    # Metodos para analizar series de tiempo
 # Limpieza ----------------------------------------------------------------
 
-tiempos_os_tbl <- read_xlsx("Reporte_Tiempo_respuesta.xlsx")
+tiempos_os_tbl <- read_xlsx("Reporte_Tiempo_respuesta.xlsx") # Lectura del archivo
 
-tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
+tiempos_os_tidy_tbl <- tiempos_os_tbl %>% #Limpieza de datos
   
   # Cambiar el nombre de las cols. de fecha a fecha-hora
   rename(
@@ -94,7 +94,7 @@ tiempos_os_tidy_tbl <- tiempos_os_tbl %>%
       as.numeric(`Limite de tiempo de respuesta`)
   ) %>% 
   
-  # Se creó una columna de clasificación
+  # Columna de clasificación
   mutate(
     Estatus_de_Atencion = ifelse( Cociente_tiempo >= 1, 1 , 0)
   ) %>% 
