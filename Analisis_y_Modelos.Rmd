@@ -1,0 +1,131 @@
+---
+title: "Análisis y Modelos"
+subtitle: "Informe de los tiempos de recepción y tiempo limite de respuesta"
+output: html_notebook
+---
+# Introdución 
+
+El presente archivo es un informe de los datos obtenidos al realizar el análisis exploratorio  y modelado del comportamiento  de los tiempos de recepción y tiempo límite de respuesta que fueron capturados en el "Reporte de tiempos respuesta", esto con el objetivo de encontrar información y modelos que sean de ayuda en para la toma de decisiones de la empresa  **ExelPitss**
+
+
+# Paqueterias
+```{r include=FALSE}
+library(tidymodels)
+library(corrr)
+library(tidyverse)
+library(psych)
+library(ggcorrplot)
+```
+# Script
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+source("limpieza_reporte_Tiempo_respuesta.R", 
+       local = knitr::knit_global(),
+       encoding = "utf-8")
+```
+
+# Desarrollo 
+## Gráficas del análisis exploratorio
+```{r echo=FALSE}
+tiempos_os_tidy_tbl %>%
+  filter(Ruta == "JALISCO",
+         Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
+  ggplot(aes(x = `Técnico de visita`, y = hora_decimal, fill = Tiempos))+
+  geom_boxplot() +
+  facet_grid(Ruta ~ Tiempos, scales = "free_y") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+
+tiempos_os_tidy_tbl %>%
+  filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
+  ggplot(aes(x = Ruta, y = hora_decimal, fill = Tiempos))+
+  geom_boxplot() +
+  facet_wrap(~ Tiempos, scales = "free_x") +
+  theme(legend.position = "none") +
+  coord_flip()
+
+plotly::ggplotly(p)
+plotly::ggplotly(p2)
+plotly::ggplotly(p3)
+plotly::ggplotly(p4)
+plotly::ggplotly(p5)
+plotly::ggplotly(p6)
+plotly::ggplotly(p7)
+```
+
+## Busqueda de correlaciones 
+
+La siguiente tabla muestra una revisión rápida de cómo se comportan las variables entre si, esto es con el proposito de darnos una idea de qué posibles correlaciones podrían existir y revisar si es producto del azar.
+
+Resultado de las correlaciones entre los tiempos, de las ordenes de servicio que no fueron atendidas en el tiempo asignado 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+
+pairs.panels(correlacion_tiempos1_Fals, method = "spearman")
+ggcorrplot(correlacion_tiempos2_Fals,method = 'circle', type = 'lower',lab = TRUE)+
+  ggtitle("Matriz de correlación")+
+  theme_minimal()
+corr.test(correlacion_tiempos2_Fals, method = "spearman", adjust = "none")
+```
+Resultado de las correlaciones entre los tiempos, de las ordenes de servicio que fueron atendidas en el tiempo asignado 
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+pairs.panels(correlacion_tiempos1__True, method = "spearman")
+ggcorrplot(correlacion_tiempos2_True,method = 'circle', type = 'lower',lab = TRUE)+
+  ggtitle("Matriz de correlación")+
+  theme_minimal()
+corr.test(correlacion_tiempos2_True, method = "spearman", adjust = "none")
+```
+
+En las siguientes tablas contienen las siguientes correlaciones   **LRespuesta_TRespuesta_Cor** ( que consta de las variables `Tiempo de respuesta` y `Limite de tiempo de respuesta`) y la columna  **Canvisitas_TRespuesta_Cor** (que consta de las variables`cant_visitas` y `Tiempo de respuesta`). Las correlaciones se hacen de los datos que tienen un coeficiente de tiempo de respuesta y limite de tiempo de respuestas >= 1 y con el modelo de *Spearman*.
+
+Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una correlación válida, en algunos casos esto se debe a la naturaleza de los mismos datos, adicional a esto ver que no existen correlaciones lineales entre las variables utilizadas. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+
+Tecnico_visita_corr
+Modelo_corr
+Ruta_cor
+```
+## Series de tiempo
+```{r}
+Ten1Jal %>%
+  autoplot(hora_decimal) +
+  xlab("Año") + ylab("Cociente") +
+  ggtitle("cociente michoacán")
+
+Ten1Jal%>%
+  autoplot(hora_decimal, color='blue') +
+  autolayer(components(dcmp_Jal), trend, color='red') +
+  xlab("Año") + ylab("Cociente") +
+  ggtitle("cociente jalisco")
+#Grafica de la tendencia, ajuste estacional y remainder
+components(dcmp_Jal) %>% autoplot()+ xlab("Años")
+```
+
+
+## Modelos 
+
+# Conclusiones 
+
+
+# Bibliografia / Referencias 
+
+
+* Lenguaje de programacion:
+  https://www.r-project.org
+  /
+* Ambiente de programacion:
+  https://rstudio.com/products/rstudio/download/
+
+* Pagina de inicio de estudios
+  https://r4ds-en-espaniol.netlify.app
+
+* Principios basicos de las series de tiempo
+  https://bookdown.org/content/2274/series-temporales.html
+  https://otexts.com/fpp2/
+
+* Ayuda de modelos en R
+  https://github.com/tidymodels
+  https://www.tidymodels.org/
+    

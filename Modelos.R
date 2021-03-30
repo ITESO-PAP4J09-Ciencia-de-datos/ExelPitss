@@ -1,6 +1,6 @@
 # Librerias ---------------------------------------------------------------
 
-
+ 
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
 source("Limpieza.R", local = knitr::knit_global(),encoding = "utf-8")
