@@ -3,7 +3,8 @@
  
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
-source("Limpieza.R", local = knitr::knit_global(),encoding = "utf-8")
+source("limpieza_reporte_Tiempo_respuesta.R", 
+       local = knitr::knit_global(),encoding = "utf-8")
 
 # Ejemplo del profesor ----------------------------------------------------
 fc <- tiempos_mensual_ruta_tsbl %>% 

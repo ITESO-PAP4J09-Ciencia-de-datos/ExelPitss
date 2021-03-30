@@ -19,10 +19,12 @@ library(ggcorrplot)
 # Script
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
-source("limpieza_reporte_Tiempo_respuesta.R", 
+source("Modelos.R", 
        local = knitr::knit_global(),
        encoding = "utf-8")
 ```
+
+
 
 # Desarrollo 
 ## Gráficas del análisis exploratorio
