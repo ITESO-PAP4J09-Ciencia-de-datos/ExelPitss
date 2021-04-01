@@ -6,8 +6,9 @@
 
 library(fpp3)          # Trabajar con ejemplos de libro
 library(easypackages)  # Facilitar instalaciones
-library(corrr)         # Herramientas para trabajar correlaciones
-
+library(corrr)      # Libreria para la busqueda de correlaciones, para el analisis de datos
+library(psych)      # Funciones de ayuda para analisis multivariable a diferenetes escalas 
+library(ggcorrplot) # Forma de visualizar las correlaciones 
 
 source("Limpieza.R", local = knitr::knit_global(),encoding = "utf-8") 
 
@@ -132,46 +133,31 @@ p7 <- tiempos_mensual_ruta_tsbl %>%
 # Series de tiempo para los modelos ---------------------------------------
 
 #series de tiempo de tecnico de visita, ruta y modelo de impresora para el Treain de modelos
-TVisita_Ruta_Modelo_train_tsb <- tiempos_os_tidy_tbl %>%
-  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion < "2020-10-01",
-         Tiempos != "Cociente_tiempo") %>%
-  group_by(Tiempos, Ruta) %>%
+Train_tsb <- tiempos_os_tidy_tbl %>%
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  ) %>% 
+  select(`Tiempo de respuesta`,
+         `Técnico de visita`, 
+         Fecha_recepion,
+         Modelo, 
+         Ruta, 
+         Cliente) %>% 
+  rename( Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
+  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion < "2020-10-01") %>%
+  group_by(`Técnico de visita`,Tiempo_de_respuesta, Modelo, Ruta, Cliente) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
     .by          = "day",
-    hora_decimal = mean(hora_decimal)) %>%
+    Tiempo_de_respuesta = mean(Tiempo_de_respuesta)) %>%
   as_tsibble(index = Fecha_recepion,
-             key = c(Tiempos,Ruta)) %>% 
-  tsibble::fill_gaps()
+             key = c(`Técnico de visita`, Tiempo_de_respuesta,Modelo,Ruta,Cliente))
 
 # series de tiempo de tecnico de visita, ruta y modelo de impresora para el Test de modelos
-TVisita_Ruta_Modelo_test_tsb <- tiempos_os_tidy_tbl %>%
-  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion <= "2020-01-01"
-  ) %>%
-  group_by(`Técnico de visita`, Tiempos, Modelo, Ruta, Cliente) %>%
-  summarise_by_time(
-    .date_var    = Fecha_recepion,
-    .by          = "day",
-    hora_decimal = mean(hora_decimal)) %>%
-  as_tsibble(index = Fecha_recepion,
-             key = c(`Técnico de visita`, Tiempos,Modelo,Ruta,Cliente))
+
 # series de tiempo de tecnico de visita, ruta y modelo de impresora para el Validation 
 #de modelos
-
-TVisita_Ruta_Modelo_valid_tsb <- tiempos_os_tidy_tbl %>%
-  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion <= "2021-01-01", 
-         Tiempos == "Tiempo efectivo en sitio", 
-         Tiempos == "Tiempo_limite_restante_de_solución_total") %>%
-  group_by(`Técnico de visita`, Tiempos, Modelo, Ruta, Cliente) %>%
-  summarise_by_time(
-    .date_var    = Fecha_recepion,
-    .by          = "day",
-    hora_decimal = mean(hora_decimal)) %>%
-  as_tsibble(index = Fecha_recepion,
-             key = c(`Técnico de visita`, Tiempos,Modelo,Ruta,Cliente))
-
-
-
 
 # Correlaciones ---------------------------------------------------------
 
