@@ -4,8 +4,50 @@ library(patchwork)#
 library(forecast) # Libreria con funciones para realizar predicciones 
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
-source("limpieza_reporte_Tiempo_respuesta.R", 
+source("Limpieza.R", 
        local = knitr::knit_global(),encoding = "utf-8")
+
+## series de tiempo de tecnico de visita, ruta y modelo de impresora para el Treain de modelos
+Train_tsb <- tiempos_os_tidy_tbl %>%
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  ) %>% 
+  select(`Tiempo de respuesta`,
+         `Técnico de visita`, 
+         Fecha_recepion,
+         Modelo, 
+         Ruta, 
+         Cliente) %>% 
+  rename( Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
+  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion < "2020-10-01") %>%
+  group_by(`Técnico de visita`, Modelo, Ruta, Cliente) %>%
+  summarise_by_time(
+    .date_var    = Fecha_recepion,
+    .by          = "month",
+    Tiempo_de_respuesta = mean(Tiempo_de_respuesta))%>%
+  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
+           yearmonth())%>%
+  as_tsibble(index = Fecha_recepion,
+             key = c(`Técnico de visita`,Modelo,Ruta,Cliente))
+
+# series de tiempo de RUta 
+Train_tsb <- tiempos_os_tidy_tbl %>%
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  ) %>% 
+  rename( Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
+  filter(Fecha_recepion >= "2018-03-01") %>%
+  group_by( Ruta) %>%
+  summarise_by_time(
+    .date_var    = Fecha_recepion,
+    .by          = "month",
+    Tiempo_de_respuesta = mean(Tiempo_de_respuesta))%>%
+  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
+           yearmonth())%>%
+  as_tsibble(index = Fecha_recepion,
+             key = c(Ruta))
 # Ejemplo del profesor ----------------------------------------------------
 fc <- tiempos_mensual_ruta_tsbl %>% 
   model(Drift = RW(hora_decimal~ drift())) %>% 
@@ -92,11 +134,13 @@ Modelos_fc %>%
   guides(colour=guide_legend(title="Forecast")) +
   geom_vline(xintercept = as.Date("2020-02-01", color = "Red",
              linetype = "dashed"))+
-  annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-07-01")),
-                        y = 3.5, label = c("Train set", "Test set"),
-                        color = c("black","blue"))
+  geom_vline( xintercept = as.Date("2020-09-01", color = "Red",
+                                  linetype = "dashed"))+
+  annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-05-01"),as.Date("2020-11-01")),
+                        y = 3.5, label = c("Train set", "Test set","Validation set"),
+                        color = c("black","blue","green"))
 
-Error_modelos <- Modelos_fit %>% 
+Error_Train <- Modelos_fit %>% 
   accuracy()
 
  
