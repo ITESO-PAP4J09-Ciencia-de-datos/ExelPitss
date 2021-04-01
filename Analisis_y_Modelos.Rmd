@@ -7,15 +7,6 @@ output: html_notebook
 
 El presente archivo es un informe de los datos obtenidos al realizar el análisis exploratorio  y modelado del comportamiento  de los tiempos de recepción y tiempo límite de respuesta que fueron capturados en el "Reporte de tiempos respuesta", esto con el objetivo de encontrar información y modelos que sean de ayuda en para la toma de decisiones de la empresa  **ExelPitss**
 
-
-# Paqueterias
-```{r include=FALSE}
-library(tidymodels) # Utilizado para la creacion de modelos matemacticos
-library(corrr)      # Libreria para la busqueda de correlaciones, para el analisis de datos
-library(tidyverse)  # Base de todos el trabajo, herramienta para manejo general
-library(psych)      # Funciones de ayuda para analisis multivariable a diferenetes escalas 
-library(ggcorrplot) # Forma de visualizar las correlaciones 
-```
 # Script
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}

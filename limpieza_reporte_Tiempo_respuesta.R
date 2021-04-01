@@ -146,16 +146,33 @@ Train_tsb <- tiempos_os_tidy_tbl %>%
          Cliente) %>% 
   rename( Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
   filter(Fecha_recepion >= "2018-03-01",Fecha_recepion < "2020-10-01") %>%
-  group_by(`Técnico de visita`,Tiempo_de_respuesta, Modelo, Ruta, Cliente) %>%
+  group_by(`Técnico de visita`, Modelo, Ruta, Cliente) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
-    .by          = "day",
-    Tiempo_de_respuesta = mean(Tiempo_de_respuesta)) %>%
+    .by          = "month",
+    Tiempo_de_respuesta = mean(Tiempo_de_respuesta))%>%
+  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
+           yearmonth())%>%
   as_tsibble(index = Fecha_recepion,
-             key = c(`Técnico de visita`, Tiempo_de_respuesta,Modelo,Ruta,Cliente))
+             key = c(`Técnico de visita`,Modelo,Ruta,Cliente))
 
 # series de tiempo de tecnico de visita, ruta y modelo de impresora para el Test de modelos
-
+Train_tsb <- tiempos_os_tidy_tbl %>%
+  pivot_wider(
+    names_from  = Tiempos,
+    values_from = hora_decimal
+  ) %>% 
+  rename( Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
+  filter(Fecha_recepion >= "2018-03-01") %>%
+  group_by( Ruta) %>%
+  summarise_by_time(
+    .date_var    = Fecha_recepion,
+    .by          = "month",
+    Tiempo_de_respuesta = mean(Tiempo_de_respuesta))%>%
+  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
+           yearmonth())%>%
+  as_tsibble(index = Fecha_recepion,
+             key = c(Ruta))
 # series de tiempo de tecnico de visita, ruta y modelo de impresora para el Validation 
 #de modelos
 
