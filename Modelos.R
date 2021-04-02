@@ -1,6 +1,6 @@
 # Librerias ---------------------------------------------------------------
 library(tidymodels) # Utilizado para la creacion de modelos matemacticos
-library(patchwork)# 
+library(patchwork)# Utilizado para la creación de modelos matematicos
 library(forecast) # Libreria con funciones para realizar predicciones 
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
@@ -143,6 +143,7 @@ Modelos_fc %>%
 Error_Train <- Modelos_fit %>% 
   accuracy()
 
+Error_test <- accuracy(Modelos_fc, Train_tsb)
  
 # Test de los modelos  ----------------------------------------------------
 
