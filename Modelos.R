@@ -70,49 +70,11 @@ tiempos_mensual_ruta_tsbl %>%
 
 # Entrenamiento del modelo ------------------------------------------------
 
-Modelo_snaive <- Train_tsb %>%
-  model(SNAIVE(`Tiempo_de_respuesta`)
-        ) %>% 
-  forecast(h = "1 month")
-  
-Modelo_snaive %>% 
-  filter(Ruta == "CIUDAD DE MEXICO") %>% 
-  autoplot(TVisita_Ruta_Modelo_train_tsb)+
-  ggtitle("MsN Tiempo de respuesta CDMX")
-
-
-Modelo_drift <- Train_tsb %>%
-  model(Drift = RW(Tiempo_de_respuesta~drift())
-  ) %>% 
-  forecast(h = "1 month")
-
-Modelo_drift %>% 
-  filter(Ruta == "CIUDAD DE MEXICO") %>% 
-  autoplot(TVisita_Ruta_Modelo_train_tsb)+
-  ggtitle("MD Tiempo de respuesta CDMX")+
-  facet_wrap(~ Tiempos, scales = "free_y")
 
 Modelo_mean <- Train_tsb %>%
   model(MEAN(Tiempo_de_respuesta)
   ) %>% 
   forecast(h = "1 month")
-
-Modelo_mean %>% 
-  filter(Ruta == "CIUDAD DE MEXICO") %>% 
-  autoplot(TVisita_Ruta_Modelo_train_tsb)+
-  ggtitle("MM Tiempo de respuesta CDMX")+
-  facet_wrap(~ Tiempos, scales = "free_y")
-
-Modelo_naive <- TVisita_Ruta_Modelo_train_tsb %>%
-  model(NAIVE(Tiempo_de_respuesta)
-  ) %>% 
-  forecast(h = "1 month")
-
-Modelo_naive %>% 
-  filter(Ruta == "CIUDAD DE MEXICO") %>% 
-  autoplot(TVisita_Ruta_Modelo_train_tsb)+
-  ggtitle("MN Tiempo de respuesta CDMX")+
-  facet_wrap(~ Tiempos, scales = "free_y")
 
 Modelos_fit <- Train_tsb %>% 
   filter(Ruta == "JALISCO",Fecha_recepion <= as.Date("2020-01-01" )) %>% 
@@ -122,7 +84,8 @@ Modelos_fit <- Train_tsb %>%
     season("N")),
     "NAIVE" = NAIVE(log(Tiempo_de_respuesta)),
     "ARIMA" = ARIMA(log(Tiempo_de_respuesta)),
-    "Seasonal naïve" = SNAIVE(log(Tiempo_de_respuesta))
+    "SNAIVE" = SNAIVE(log(Tiempo_de_respuesta)),
+    "MEAN" = MEAN(log(Tiempo_de_respuesta))
   )
 Modelos_fc <- Modelos_fit %>% 
   forecast(h = "8 month")
@@ -144,6 +107,37 @@ Error_Train <- Modelos_fit %>%
   accuracy()
 
 Error_test <- accuracy(Modelos_fc, Train_tsb)
+ Residios <- augment(Modelos_fit)
+ 
+ Modelos_fit %>%
+   select(Drift) %>% 
+   gg_tsresiduals()+
+   ggtitle("Residuales Drift")
+ 
+ Modelos_fit %>%
+   select(ETS) %>% 
+   gg_tsresiduals()+
+   ggtitle("Residuales ETS")
+ 
+ Modelos_fit %>%
+   select(NAIVE) %>% 
+   gg_tsresiduals()+
+   ggtitle("Residuales NAIVE")
+ 
+ Modelos_fit %>%
+   select(ARIMA) %>% 
+   gg_tsresiduals()+
+   ggtitle("Residuales ARIMA")
+ 
+ Modelos_fit %>%
+   select(SNAIVE) %>% 
+   gg_tsresiduals()+
+   ggtitle("Residuales SNAIVE")
+ 
+ Modelos_fit %>%
+   select(MEAN) %>% 
+   gg_tsresiduals()+
+   ggtitle("Residuales MEAN")
  
 # Test de los modelos  ----------------------------------------------------
 
