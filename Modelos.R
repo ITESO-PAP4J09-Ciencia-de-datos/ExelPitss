@@ -6,8 +6,8 @@ library(easypackages)
 library(fpp3)
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
-source("Limpieza.R", 
-       local = knitr::knit_global(),encoding = "utf-8")
+
+source("Limpieza.R", encoding = "utf-8")
 
 ## series de tiempo de tecnico de visita, ruta y modelo de impresora para el Treain de modelos
 # Train_tsb <- tiempos_os_tidy_tbl %>%
@@ -35,21 +35,22 @@ source("Limpieza.R",
 
 # series de tiempo de RUta 
 Train_tsb <- tiempos_os_tidy_tbl %>%
-  pivot_wider(
-    names_from  = Tiempos,
-    values_from = hora_decimal
-  ) %>% 
-  rename( Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
-  filter(Fecha_recepion >= "2018-03-01") %>%
-  group_by( Ruta) %>%
+  # pivot_wider(
+  #   names_from  = Tiempos,
+  #   values_from = hora_decimal
+  # ) %>% 
+  # rename(Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
+  filter(Fecha_recepion >= "2018-03-01",
+         Tiempos == "Tiempo de respuesta") %>%
+  group_by(Ruta, Tiempos) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
     .by          = "month",
-    Tiempo_de_respuesta = mean(Tiempo_de_respuesta))%>%
-  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
-           yearmonth())%>%
+    Tiempo_de_respuesta = mean(hora_decimal))%>% 
+  ungroup() %>% 
+  mutate(Fecha_recepion = yearmonth(Fecha_recepion))%>%
   as_tsibble(index = Fecha_recepion,
-             key = c(Ruta))
+             key = c(Ruta, Tiempos))
 
 # Entrenamiento del modelo ------------------------------------------------
 
