@@ -2,6 +2,8 @@
 library(tidymodels) # Utilizado para la creacion de modelos matemacticos
 library(patchwork)# Utilizado para la creación de modelos matematicos
 library(forecast) # Libreria con funciones para realizar predicciones 
+library(easypackages)
+library(fpp3)
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
 source("Limpieza.R", 
@@ -48,33 +50,8 @@ Train_tsb <- tiempos_os_tidy_tbl %>%
            yearmonth())%>%
   as_tsibble(index = Fecha_recepion,
              key = c(Ruta))
-# Ejemplo del profesor ----------------------------------------------------
-fc <- tiempos_mensual_ruta_tsbl %>% 
-  model(Drift = RW(hora_decimal~ drift())) %>% 
-  forecast(h = "1 year")
-
-fc %>% 
-  filter(Ruta == "JALISCO") %>% 
-  autoplot(tiempos_mensual_ruta_tsbl) +
-  facet_wrap(~ Tiempos, scales = "free_y")
-
-
-tiempos_mensual_ruta_tsbl %>% 
-  filter(Tiempos == "Tiempo de respuesta",
-         Ruta == "JALISCO") %>% 
-  model(ARIMA(hora_decimal)) %>% 
-  forecast(h = "3 month") %>% 
-  autoplot(tiempos_mensual_ruta_tsbl)
-
-#gg_tsdisplay(hora_decimal, plot_type = "partial")
 
 # Entrenamiento del modelo ------------------------------------------------
-
-
-Modelo_mean <- Train_tsb %>%
-  model(MEAN(Tiempo_de_respuesta)
-  ) %>% 
-  forecast(h = "1 month")
 
 Modelos_fit <- Train_tsb %>% 
   filter(Ruta == "JALISCO",Fecha_recepion <= as.Date("2020-01-01" )) %>% 
