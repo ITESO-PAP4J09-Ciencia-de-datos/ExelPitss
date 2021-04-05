@@ -141,34 +141,34 @@ datos_month_tsbl %>%
 
 
 ```{r}
-p <- datos_tsbl %>%
-  filter(Ruta == "JALISCO") %>%
-  autoplot(Tiempos) + #aes(color = Ruta) +
-  facet_wrap(~ SLA, scales = "free_y") +
-  theme(legend.position = "none")
-
-plotly::ggplotly(p)
-
-p <- datos_week_tsbl %>% 
-  filter(Ruta == "JALISCO") %>% 
-  autoplot(Tiempos) + #aes(color = Ruta) +
-  facet_wrap(~ SLA, scales = "free_y") +
-  theme(legend.position = "none")
-
-plotly::ggplotly(p)
-
-p <- datos_month_tsbl %>% 
-  filter(Ruta == "JALISCO") %>% 
-  autoplot(Tiempos) + #aes(color = Ruta) +
-  facet_wrap(~ SLA, scales = "free_y") +
-  theme(legend.position = "none")
-
-plotly::ggplotly(p)
+# p <- datos_tsbl %>%
+#   filter(Ruta == "JALISCO") %>%
+#   autoplot(Tiempos) + #aes(color = Ruta) +
+#   facet_wrap(~ SLA, scales = "free_y") +
+#   theme(legend.position = "none")
+# 
+# plotly::ggplotly(p)
+# 
+# p <- datos_week_tsbl %>% 
+#   filter(Ruta == "JALISCO") %>% 
+#   autoplot(Tiempos) + #aes(color = Ruta) +
+#   facet_wrap(~ SLA, scales = "free_y") +
+#   theme(legend.position = "none")
+# 
+# plotly::ggplotly(p)
+# 
+# p <- datos_month_tsbl %>% 
+#   filter(Ruta == "JALISCO") %>% 
+#   autoplot(Tiempos) + #aes(color = Ruta) +
+#   facet_wrap(~ SLA, scales = "free_y") +
+#   theme(legend.position = "none")
+# 
+# plotly::ggplotly(p)
 ```
 
 ## Modelado
 
-Se utilizó el modelo ETS y el modelo ARIMA para realizar un pronóstico de los SLA's.
+Se utilizó el modelo ETS y el modelo ARIMA para realizar un pronóstico de los SLA's, según el tiempo de agrupamiento.
 
 ```{r}
 datos_tsbl %>% 
