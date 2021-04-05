@@ -411,7 +411,7 @@ server <- function(input, output, session) {
         } else {
         estado <- datos %>% filter(Latitud==click$lat,Longitud==click$lng) %>% distinct(Zonas)
         texto1 <- paste("Ingenieros en ",estado,":")
-        tabla <- datos %>% filter(Latitud==click$lat,Longitud==click$lng) %>% distinct(IS)
+        tabla <- datos_filtrados() %>% filter(Latitud==click$lat,Longitud==click$lng) %>% distinct(IS)
         output$text <- renderText({texto1})
         output$tabla_is <- renderTable(tabla,spacing='xs',align='l',colnames=FALSE)
         }
