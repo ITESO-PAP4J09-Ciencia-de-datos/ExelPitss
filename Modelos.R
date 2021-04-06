@@ -53,21 +53,29 @@ Train_tsb <- tiempos_os_tidy_tbl %>%
              key = c(Ruta, Tiempos))
 
 # Entrenamiento del modelo ------------------------------------------------
+## Optimisación de lamda para Box-Cox
+lambda1 <- Train_tsb %>%
+  filter(Ruta == "JALISCO") %>% 
+  features(Tiempo_de_respuesta, features = guerrero) %>%
+  pull(lambda_guerrero)
 
+## Modelos de predicción
 Modelos_fit <- Train_tsb %>% 
   filter(Ruta == "JALISCO", Fecha_recepion < yearmonth("2020-01-01")) %>% 
   model(
-    # "Drift" = RW(log(Tiempo_de_respuesta) ~  drift()),
-    "ETS"   = ETS(log(Tiempo_de_respuesta) ~ error("A")+ trend("A")+
+    "ETS"   = ETS(Tiempo_de_respuesta ~ error("A")+ trend("A")+
     season("N")),
-    # "NAIVE" = NAIVE(log(Tiempo_de_respuesta)),
-    "ARIMA" = ARIMA(log(Tiempo_de_respuesta)),
-    # "SNAIVE" = SNAIVE(log(Tiempo_de_respuesta)),
-    # "MEAN" = MEAN(log(Tiempo_de_respuesta))
+   "ARIMA" = ARIMA(Tiempo_de_respuesta),
+   
+   "ETS_BC"   = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("A")+
+                   season("N")),
+   "ARIMA_BC" = ARIMA(box_cox(Tiempo_de_respuesta,lambda1))
   )
+
 Modelos_fc <- Modelos_fit %>% 
   forecast(h = "8 month")
 
+## Grafica de las predicciones contra los datos 
 Modelos_fc %>% 
   autoplot(filter_index(Train_tsb, "2018-03-01" ~ .), level = NULL) +
   ggtitle("Entrenamiento") +
@@ -81,26 +89,20 @@ Modelos_fc %>%
                         y = 3.5, label = c("Train set", "Test set","Validation set"),
                         color = c("black","blue","green"))
 
+## Analisis de las metricas estadisticas 
 Error_Train <- Modelos_fit %>% 
   accuracy()
 
 Error_test <- accuracy(Modelos_fc, Train_tsb)
- Residios <- augment(Modelos_fit)
+
+# Residios <- augment(Modelos_fit)
  
- Modelos_fit %>%
-   select(Drift) %>% 
-   gg_tsresiduals()+
-   ggtitle("Residuales Drift")
- 
+
+# ANALISIS DE RESIDUOS
  Modelos_fit %>%
    select(ETS) %>% 
    gg_tsresiduals()+
    ggtitle("Residuales ETS")
- 
- Modelos_fit %>%
-   select(NAIVE) %>% 
-   gg_tsresiduals()+
-   ggtitle("Residuales NAIVE")
  
  Modelos_fit %>%
    select(ARIMA) %>% 
@@ -108,17 +110,16 @@ Error_test <- accuracy(Modelos_fc, Train_tsb)
    ggtitle("Residuales ARIMA")
  
  Modelos_fit %>%
-   select(SNAIVE) %>% 
+   select(ETS_BC) %>% 
    gg_tsresiduals()+
-   ggtitle("Residuales SNAIVE")
+   ggtitle("Residuales ETS_BC")
  
  Modelos_fit %>%
-   select(MEAN) %>% 
+   select(ARIMA_BC) %>% 
    gg_tsresiduals()+
-   ggtitle("Residuales MEAN")
+   ggtitle("Residuales ARIMA_BC")
  
 # Test de los modelos  ----------------------------------------------------
-
 
 # Validación de los modelos  ----------------------------------------------
 
