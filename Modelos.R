@@ -55,15 +55,15 @@ Train_tsb <- tiempos_os_tidy_tbl %>%
 # Entrenamiento del modelo ------------------------------------------------
 
 Modelos_fit <- Train_tsb %>% 
-  filter(Ruta == "JALISCO",Fecha_recepion <= as.Date("2020-01-01" )) %>% 
+  filter(Ruta == "JALISCO", Fecha_recepion < yearmonth("2020-01-01")) %>% 
   model(
-    "Drift" = RW(log(Tiempo_de_respuesta) ~  drift()),
+    # "Drift" = RW(log(Tiempo_de_respuesta) ~  drift()),
     "ETS"   = ETS(log(Tiempo_de_respuesta) ~ error("A")+ trend("A")+
     season("N")),
-    "NAIVE" = NAIVE(log(Tiempo_de_respuesta)),
+    # "NAIVE" = NAIVE(log(Tiempo_de_respuesta)),
     "ARIMA" = ARIMA(log(Tiempo_de_respuesta)),
-    "SNAIVE" = SNAIVE(log(Tiempo_de_respuesta)),
-    "MEAN" = MEAN(log(Tiempo_de_respuesta))
+    # "SNAIVE" = SNAIVE(log(Tiempo_de_respuesta)),
+    # "MEAN" = MEAN(log(Tiempo_de_respuesta))
   )
 Modelos_fc <- Modelos_fit %>% 
   forecast(h = "8 month")
@@ -73,9 +73,9 @@ Modelos_fc %>%
   ggtitle("Entrenamiento") +
   xlab("Años") + ylab("horas") +
   guides(colour=guide_legend(title="Forecast")) +
-  geom_vline(xintercept = as.Date("2020-02-01", color = "Red",
+  geom_vline(xintercept = as.Date("2020-01-01", color = "Red",
              linetype = "dashed"))+
-  geom_vline( xintercept = as.Date("2020-09-01", color = "Red",
+  geom_vline( xintercept = as.Date("2020-08-01", color = "Red",
                                   linetype = "dashed"))+
   annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-05-01"),as.Date("2020-11-01")),
                         y = 3.5, label = c("Train set", "Test set","Validation set"),
