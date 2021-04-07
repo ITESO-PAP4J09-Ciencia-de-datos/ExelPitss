@@ -61,19 +61,28 @@ lambda1 <- Train_tsb %>%
 
 ## Modelos de predicción
 Modelos_fit <- Train_tsb %>% 
-  filter(Ruta == "JALISCO", Fecha_recepion < yearmonth("2020-01-01")) %>% 
+  filter(Ruta == "JALISCO", Fecha_recepion <= yearmonth("2020-04-01")) %>% 
   model(
-    "ETS"   = ETS(Tiempo_de_respuesta ~ error("A")+ trend("A")+
-    season("N")),
-   "ARIMA" = ARIMA(Tiempo_de_respuesta),
+   #  "ETS"   = ETS(Tiempo_de_respuesta ~ error("A")+ trend("A")+
+   #            season("N")),
+   # "ARIMA" = ARIMA(Tiempo_de_respuesta),
+   # 
+   # "ETS_BC"   = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("A")+
+   #              season("N")),
+   "ARIMA_BC" = ARIMA(box_cox(Tiempo_de_respuesta,lambda1)),
    
-   "ETS_BC"   = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("A")+
-                   season("N")),
-   "ARIMA_BC" = ARIMA(box_cox(Tiempo_de_respuesta,lambda1))
+   # "ETS_AH" = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
+   #                season("A")),
+   # "ETS_MH"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
+   #       season("M")),
+   # "ETS_HD"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("Ad")+
+   #       season("M"))
+ 
   )
 
 Modelos_fc <- Modelos_fit %>% 
-  forecast(h = "8 month")
+  forecast(h = "5 month")
+
 
 ## Grafica de las predicciones contra los datos 
 Modelos_fc %>% 
@@ -81,11 +90,11 @@ Modelos_fc %>%
   ggtitle("Entrenamiento") +
   xlab("Años") + ylab("horas") +
   guides(colour=guide_legend(title="Forecast")) +
-  geom_vline(xintercept = as.Date("2020-01-01", color = "Red",
+  geom_vline(xintercept = as.Date("2020-05-01", color = "Red",
              linetype = "dashed"))+
-  geom_vline( xintercept = as.Date("2020-08-01", color = "Red",
+  geom_vline( xintercept = as.Date("2020-9-01", color = "Red",
                                   linetype = "dashed"))+
-  annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-05-01"),as.Date("2020-11-01")),
+  annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-07-01"),as.Date("2020-11-01")),
                         y = 3.5, label = c("Train set", "Test set","Validation set"),
                         color = c("black","blue","green"))
 
@@ -95,6 +104,7 @@ Error_Train <- Modelos_fit %>%
 
 Error_test <- accuracy(Modelos_fc, Train_tsb)
 
+# Error_test2 <- accuracy(Modelos_fc2, Train_tsb)
 # Residios <- augment(Modelos_fit)
  
 
