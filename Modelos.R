@@ -35,11 +35,6 @@ source("Limpieza.R", encoding = "utf-8")
 
 # series de tiempo de RUta 
 Train_tsb <- tiempos_os_tidy_tbl %>%
-  # pivot_wider(
-  #   names_from  = Tiempos,
-  #   values_from = hora_decimal
-  # ) %>% 
-  # rename(Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
   filter(Fecha_recepion >= "2018-03-01",
          Tiempos == "Tiempo de respuesta") %>%
   group_by(Ruta, Tiempos) %>%
@@ -63,21 +58,20 @@ lambda1 <- Train_tsb %>%
 Modelos_fit <- Train_tsb %>% 
   filter(Ruta == "JALISCO", Fecha_recepion <= yearmonth("2020-04-01")) %>% 
   model(
-   #  "ETS"   = ETS(Tiempo_de_respuesta ~ error("A")+ trend("A")+
-   #            season("N")),
-   # "ARIMA" = ARIMA(Tiempo_de_respuesta),
-   # 
-   # "ETS_BC"   = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("A")+
-   #              season("N")),
+     "ETS"   = ETS(Tiempo_de_respuesta ~ error("A")+ trend("A")+
+               season("N")),
+    "ARIMA" = ARIMA(Tiempo_de_respuesta),
+    
+    "ETS_BC"   = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("A")+
+                 season("N")),
    "ARIMA_BC" = ARIMA(box_cox(Tiempo_de_respuesta,lambda1)),
    
-   # "ETS_AH" = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
-   #                season("A")),
-   # "ETS_MH"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
-   #       season("M")),
-   # "ETS_HD"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("Ad")+
-   #       season("M"))
- 
+    "ETS_AH" = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
+                   season("A")),
+    "ETS_MH"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
+          season("M")),
+    "ETS_HD"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("Ad")+
+          season("M"))
   )
 
 Modelos_fc <- Modelos_fit %>% 

@@ -62,8 +62,9 @@ ggcorrplot(correlacion_tiempos2_Fals,method = 'circle', type = 'lower',lab = TRU
 corr.test(correlacion_tiempos2_Fals, method = "spearman", adjust = "none")
 ```
 Resultado de las correlaciones entre los tiempos, de las ordenes de servicio que fueron atendidas en el tiempo asignado 
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
-pairs.panels(correlacion_tiempos1__True, method = "spearman")
+pairs.panels(correlacion_tiempos1_True, method = "spearman")
 ggcorrplot(correlacion_tiempos2_True,method = 'circle', type = 'lower',lab = TRUE)+
   ggtitle("Matriz de correlación")+
   theme_minimal()
@@ -74,18 +75,13 @@ En las siguientes tablas contienen las siguientes correlaciones   **LRespuesta_T
 
 Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una correlación válida, en algunos casos esto se debe a la naturaleza de los mismos datos, adicional a esto ver que no existen correlaciones lineales entre las variables utilizadas. 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 
-Tecnico_visita_corr
-Modelo_corr
-Ruta_cor
-```
 ## Series de tiempo
 ```{r}
 Ten1Jal %>%
   autoplot(hora_decimal) +
   xlab("Año") + ylab("Cociente") +
-  ggtitle("cociente michoacán")
+  ggtitle("cociente JALISCO")
 
 Ten1Jal%>%
   autoplot(hora_decimal, color='blue') +
@@ -98,6 +94,41 @@ components(dcmp_Jal) %>% autoplot()+ xlab("Años")
 
 
 ## Modelos 
+
+Grafica de los modelos usados 
+
+```{r}
+Modelos_fc %>% 
+  autoplot(filter_index(Train_tsb, "2018-03-01" ~ .), level = NULL) +
+  ggtitle("Entrenamiento") +
+  xlab("Años") + ylab("horas") +
+  guides(colour=guide_legend(title="Forecast")) +
+  geom_vline(xintercept = as.Date("2020-05-01", color = "Red",
+             linetype = "dashed"))+
+  geom_vline( xintercept = as.Date("2020-9-01", color = "Red",
+                                  linetype = "dashed"))+
+  annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-07-01"),as.Date("2020-11-01")),
+                        y = 3.5, label = c("Train set", "Test set","Validation set"),
+                        color = c("black","blue","green"))
+```
+
+
+Analisis estadistico de los modelos  
+```{r}
+Error_test <- accuracy(Modelos_fc, Train_tsb)
+Error_test
+```
+
+
+Analisis de residuos del modelo ARIMA con transformación Box-Cox
+```{r}
+ Modelos_fit %>%
+   select(ARIMA_BC) %>% 
+   gg_tsresiduals()+
+   ggtitle("Residuales ARIMA_BC")
+```
+
+
 
 # Conclusiones 
 

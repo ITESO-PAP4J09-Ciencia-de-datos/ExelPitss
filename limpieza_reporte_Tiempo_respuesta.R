@@ -22,8 +22,7 @@ tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>%
     .by          = "month",
     hora_decimal = mean(hora_decimal)
   ) %>%
-  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
-           yearmonth())%>%
+  mutate(Fecha_recepion = yearmonth(Fecha_recepion))%>%
   filter(Fecha_recepion >= yearmonth("2018-02-03")) %>%
   as_tsibble(index = Fecha_recepion,
              key = c(Ruta, Tiempos))
@@ -64,8 +63,7 @@ tiempos_mensual_tecnicoV_tsbl <- tiempos_os_tidy_tbl %>%
     .by          = "month",
     hora_decimal = mean(hora_decimal)
   ) %>%
-  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
-           yearmonth()) %>%
+  mutate(Fecha_recepion = yearmonth(Fecha_recepion)) %>%
   filter(Fecha_recepion >= yearmonth("2018-02-03")) %>%
   as_tsibble(index = Fecha_recepion,
              key = c(`Técnico de visita`, Tiempos))
@@ -130,52 +128,6 @@ p7 <- tiempos_mensual_ruta_tsbl %>%
   facet_wrap(~Ruta, scales = "free_y") +
   theme(legend.position = "none")
 
-# Series de tiempo para los modelos ---------------------------------------
-
-#series de tiempo de tecnico de visita, ruta y modelo de impresora para el Treain de modelos
-#Train_tsb <- tiempos_os_tidy_tbl %>%
-#  pivot_wider(
-#    names_from  = Tiempos,
-#    values_from = hora_decimal
-#  ) %>% 
-#  select(`Tiempo de respuesta`,
-#         `Técnico de visita`, 
-#         Fecha_recepion,
-#         Modelo, 
-#         Ruta, 
-#         Cliente) %>% 
-#  rename( Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
-#  filter(Fecha_recepion >= "2018-03-01",Fecha_recepion < "2020-10-01") %>%
-#  group_by(`Técnico de visita`, Modelo, Ruta, Cliente) %>%
-#  summarise_by_time(
-#    .date_var    = Fecha_recepion,
-#    .by          = "month",
-#    Tiempo_de_respuesta = mean(Tiempo_de_respuesta))%>%
-#  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
-#           yearmonth())%>%
-#  as_tsibble(index = Fecha_recepion,
-#             key = c(`Técnico de visita`,Modelo,Ruta,Cliente))
-
-# series de tiempo de RUTA 
-
-#Train_tsb <- tiempos_os_tidy_tbl %>%
-#  pivot_wider(
-#    names_from  = Tiempos,
-#    values_from = hora_decimal
-#  ) %>% 
-#  rename( Tiempo_de_respuesta = `Tiempo de respuesta`) %>% 
-#  filter(Fecha_recepion >= "2018-03-01") %>%
-#  group_by( Ruta) %>%
-#  summarise_by_time(
-#    .date_var    = Fecha_recepion,
-#    .by          = "month",
-#    Tiempo_de_respuesta = mean(Tiempo_de_respuesta))%>%
-#  mutate(Fecha_recepion = as.character(Fecha_recepion) %>%
-#           yearmonth())%>%
-#  as_tsibble(index = Fecha_recepion,
-#             key = c(Ruta))
-
-
 # Correlaciones ---------------------------------------------------------
 
 # Correlaciones de `Tiempo efectivo en sitio`,`Tiempo de respuesta` y `Limite tiempo de solución total`
@@ -221,75 +173,75 @@ correlacion_tiempos2_True <- cor(correlacion_tiempos1_True, method= "pearson")
 correlacion_tiempos3_True <- as_cordf(correlacion_tiempos2_True)
 
 # Correlaciones ruta-técnico de visita por tiempos-spearman 
-Ruta_cor <- tiempos_os_tidy_tbl %>% 
-  filter(
-    !is.na(hora_decimal)
-  ) %>% 
-  pivot_wider(
-    names_from  = Tiempos,
-    values_from = hora_decimal
-  ) %>% 
-  filter(
-    Cociente_tiempo >= 1,
-    !is.na(Ruta),
-  ) %>% 
-  select(
-    `Tiempo efectivo en sitio`,
-    `Tiempo de respuesta`,
-    `Limite de tiempo de respuesta`,
-    Tiempo_limite_restante_de_respuesta,
-    Tiempo_limite_restante_de_solución_total,
-    cant_visitas,
-    Ruta,
-    OS
-  ) %>% 
-  group_by(Ruta) %>% 
-  summarise(
-    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`, 
-                                    method = "spearman"),
-    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`, 
-                                    method = "spearman")
-  )
+# Ruta_cor <- tiempos_os_tidy_tbl %>% 
+#   filter(
+#     !is.na(hora_decimal)
+#   ) %>% 
+#   pivot_wider(
+#     names_from  = Tiempos,
+#     values_from = hora_decimal
+#   ) %>% 
+#   filter(
+#     Cociente_tiempo >= 1,
+#     !is.na(Ruta),
+#   ) %>% 
+#   select(
+#     `Tiempo efectivo en sitio`,
+#     `Tiempo de respuesta`,
+#     `Limite de tiempo de respuesta`,
+#     Tiempo_limite_restante_de_respuesta,
+#     Tiempo_limite_restante_de_solución_total,
+#     cant_visitas,
+#     Ruta,
+#     OS
+#   ) %>% 
+#   group_by(Ruta) %>% 
+#   summarise(
+#     LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`, 
+#                                     method = "spearman"),
+#     Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`, 
+#                                     method = "spearman")
+#   )
+# 
+# Tecnico_visita_corr <- tiempos_os_tidy_tbl %>% 
+#   filter(
+#     !is.na(hora_decimal)
+#   ) %>% 
+#   pivot_wider(
+#     names_from  = Tiempos,
+#     values_from = hora_decimal
+#   ) %>% 
+#   filter(
+#     Cociente_tiempo >= 1,
+#     !is.na(Ruta),
+#   ) %>% 
+#   group_by(`Técnico de visita`) %>% 
+#   summarise(
+#     LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
+#                                     method ="spearman"),
+#     Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
+#                                     method = "spearman"),
+#   )
 
-Tecnico_visita_corr <- tiempos_os_tidy_tbl %>% 
-  filter(
-    !is.na(hora_decimal)
-  ) %>% 
-  pivot_wider(
-    names_from  = Tiempos,
-    values_from = hora_decimal
-  ) %>% 
-  filter(
-    Cociente_tiempo >= 1,
-    !is.na(Ruta),
-  ) %>% 
-  group_by(`Técnico de visita`) %>% 
-  summarise(
-    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
-                                    method ="spearman"),
-    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
-                                    method = "spearman"),
-  )
-
-Modelo_corr <- tiempos_os_tidy_tbl %>% 
-  filter(
-    !is.na(hora_decimal)
-  ) %>% 
-  pivot_wider(
-    names_from  = Tiempos,
-    values_from = hora_decimal
-  ) %>% 
-  filter(
-    Cociente_tiempo >= 1,
-    !is.na(Modelo),
-  ) %>% 
-  group_by(Modelo) %>% 
-  summarise(
-    LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
-                                    method ="spearman"),
-    Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
-                                    method = "spearman")
-  )
+# Modelo_corr <- tiempos_os_tidy_tbl %>% 
+#   filter(
+#     !is.na(hora_decimal)
+#   ) %>% 
+#   pivot_wider(
+#     names_from  = Tiempos,
+#     values_from = hora_decimal
+#   ) %>% 
+#   filter(
+#     Cociente_tiempo >= 1,
+#     !is.na(Modelo),
+#   ) %>% 
+#   group_by(Modelo) %>% 
+#   summarise(
+#     LRespuesta_TRespuesta_Cor = cor(`Tiempo de respuesta`,`Limite de tiempo de respuesta`,
+#                                     method ="spearman"),
+#     Canvisitas_TRespuesta_Cor = cor(cant_visitas,`Tiempo de respuesta`,
+#                                     method = "spearman")
+#   )
 
 
 # Tendencias --------------------------------------------------------------
@@ -297,8 +249,8 @@ Modelo_corr <- tiempos_os_tidy_tbl %>%
 Ten1Jal <- tiempos_mensual_ruta_tsbl %>%
   filter(
     Tiempos %in% c("Cociente_tiempo"),
-    Ruta%in% c("MICHOACAN"),
-    Fecha_recepion >= yearmonth("2019-01"),
+    Ruta%in% c("JALISCO"),
+    Fecha_recepion >= yearmonth("2018-03"),
     !is.na(hora_decimal)
   )
 
