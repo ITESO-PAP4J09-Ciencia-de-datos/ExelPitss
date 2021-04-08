@@ -5,7 +5,10 @@ output: html_notebook
 ---
 # Introdución 
 
-El presente archivo es un informe de los datos obtenidos al realizar el análisis exploratorio  y modelado del comportamiento  de los tiempos de recepción y tiempo límite de respuesta que fueron capturados en el "Reporte de tiempos respuesta", esto con el objetivo de encontrar información y modelos que sean de ayuda en para la toma de decisiones de la empresa  **ExelPitss**
+El presente archivo es un informe sobre el manejo de datos obtenidos por parte de la empresa **ExelPitss**. 
+La infromacion que se nos fue proporcionada es realcionda con las diferentes solicitudes de trabajo, cada una de ellas cuenta con los datos de empresa necesario, modelos y las personas involucradas en la resolucion de la solicitud, pero, como dato principal se encontraban diferentes tipos de tiempos, desde tiempos de respuesta a la solucitud, hasta el tiempo que se necesito en la zona de trabajo para cumplir con los encargos.
+Tras el analisis exploratorio mediante la limpieza de los datos dados, se procedio a la busqeuda de un modelado del comportamieto en los tiempos de recepcion y tiempos limintes de respuesta, esto con el objetivo de presentar informacion relevante para la empresa y pudan tomar mejores decisiones a futuro, relacionadas con esta investigacion.
+
 
 # Script
 
@@ -81,9 +84,9 @@ Estados en donde se necesitó la mitad o menos del tiempo asignado para responde
 
 ## Busqueda de correlaciones 
 
-La siguiente tabla muestra una revisión rápida de cómo se comportan las variables entre si, esto es con el proposito de darnos una idea de qué posibles correlaciones podrían existir y revisar si es producto del azar.
+La siguiente tabla nos muestra un comportamiento sencillo de las varaibles al interactuar entre si, esto con el proposito de darnos una idea general de las posibles correlaciones que podrían existir,  y de esta forma asegurarnos que no fueran causadas por el azar. 
+El primer analisis que decidimos realizar, para intentar observar alguna relacion posible con otro dato, fue en las ordenes de servicio que no fueron atendidas en el tiempo asignado.
 
-Resultado de las correlaciones entre los tiempos, de las ordenes de servicio que no fueron atendidas en el tiempo asignado 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 
@@ -103,9 +106,8 @@ ggcorrplot(correlacion_tiempos2_True,method = 'circle', type = 'lower',lab = TRU
 corr.test(correlacion_tiempos2_True, method = "spearman", adjust = "none")
 ```
 
-En las siguientes tablas contienen las siguientes correlaciones   **LRespuesta_TRespuesta_Cor** ( que consta de las variables `Tiempo de respuesta` y `Limite de tiempo de respuesta`) y la columna  **Canvisitas_TRespuesta_Cor** (que consta de las variables`cant_visitas` y `Tiempo de respuesta`). Las correlaciones se hacen de los datos que tienen un coeficiente de tiempo de respuesta y limite de tiempo de respuestas >= 1 y con el modelo de *Spearman*.
-
-Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una correlación válida, en algunos casos esto se debe a la naturaleza de los mismos datos, adicional a esto ver que no existen correlaciones lineales entre las variables utilizadas. 
+Las siguientes tablas contienen correlaciones especificas:  **LRespuesta_TRespuesta_Cor**, que consta de las variables `Tiempo de respuesta` y `Limite de tiempo de respuesta`, en seguida está la columna  **Canvisitas_TRespuesta_Cor**, que se constituye de las variables`cant_visitas` y `Tiempo de respuesta`. Las correlaciones se hacen con el modelo de *Spearman*, utilizando los datos que tienen un coeficiente de tiempo de respuesta y limite de tiempo de respuestas mayor o igual a 1 (eso quiere decir que utilizaron un mayor tiempo al asignado).
+Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una correlación válida, en algunos casos esto se debe a la naturaleza de los mismos datos, adicional a esto, se puede ver que no existen correlaciones lineales entre las variables utilizadas. 
 
 
 ## Series de tiempo
