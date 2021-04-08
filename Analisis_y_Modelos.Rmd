@@ -44,33 +44,40 @@ tiempos_os_tidy_tbl %>%
 ```
 
 ```{r,echo=FALSE}
-plotly::ggplotly(p)
+plotly::ggplotly(Comp_Jal_NL)
 ```
+Comparaciones del uso de los tiempos por los ingenieros en los estados de Jalisco y Nuevo León
 
 ```{r,echo=FALSE}
-plotly::ggplotly(p2)
+plotly::ggplotly(TR_ruta)
 ```
+Comparaciones por estado del tiempo que tomó responder una solicitud
 
 ```{r,echo=FALSE}
-plotly::ggplotly(p3)
+plotly::ggplotly(TE_ruta)
 ```
+Gráficas por estado del tiempo que trabaja el ingeniero en el lugar que se solicitó
 
 ```{r,echo=FALSE}
-plotly::ggplotly(p4)
+plotly::ggplotly(PerR_ruta)
 ```
+Gráfica que muestra la relación entre el tiempo de respuesta y el límite de tiempo restante, valores más altos del coeficiente significa que se usó más tiempo para solucionar el problema
 
 ```{r,echo=FALSE}
-plotly::ggplotly(p5)
+plotly::ggplotly(cociente_ruta)
 ```
+Gráficas de los estados en donde se usó más de la mitad del tiempo asignado para atender la solicitud. Pueden observarse casos en donde los valores son muy atípicos, principalmente en casos de hace 2 o 3 años. También hay casos como Puebla en donde una significativa cantidad de veces se usa mucho tiempo para atender una solicitud, puede deberse a que el ingeniero deba desplazarse desde otro estado o a factores externos.
 
 ```{r,echo=FALSE}
-plotly::ggplotly(p6)
+plotly::ggplotly(ET_ruta)
 
 ```
+Gráfica que muestra los estados en donde se usó más tiempo del asignado para resolver la solicitud, se puede observar que los excesos de tiempo son anteriores a agosto de 2019
 
 ```{r, echo=FALSE}
-plotly::ggplotly(p7)
+plotly::ggplotly(TO_ruta)
 ```
+Estados en donde se necesitó la mitad o menos del tiempo asignado para responder una solicitud
 
 ## Busqueda de correlaciones 
 
