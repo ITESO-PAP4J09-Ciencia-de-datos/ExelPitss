@@ -66,18 +66,18 @@ Gráfica que muestra la relación entre el tiempo de respuesta y el límite de t
 ```{r,echo=FALSE}
 plotly::ggplotly(cociente_ruta)
 ```
-Gráficas de los estados en donde se usó más de la mitad del tiempo asignado para atender la solicitud. Pueden observarse casos en donde los valores son muy atípicos, principalmente en casos de hace 2 o 3 años. También hay casos como Puebla en donde una significativa cantidad de veces se usa mucho tiempo para atender una solicitud, puede deberse a que el ingeniero deba desplazarse desde otro estado o a factores externos.
+Gráficas de los estados en donde en promedio se usó más de la mitad del tiempo asignado para atender la solicitud. Pueden observarse casos en donde los valores son muy atípicos, principalmente en casos de hace 2 o 3 años. También hay casos como Puebla en donde una significativa cantidad de veces se usa mucho tiempo para atender una solicitud, puede deberse a que el ingeniero deba desplazarse desde otro estado o a factores externos.
 
 ```{r,echo=FALSE}
 plotly::ggplotly(ET_ruta)
 
 ```
-Gráfica que muestra los estados en donde se usó más tiempo del asignado para resolver la solicitud, se puede observar que los excesos de tiempo son anteriores a agosto de 2019
+Gráfica que muestra los estados en donde se usó más tiempo del asignado para resolver la solicitud, se puede observar que los excesos de tiempo son anteriores a agosto de 2019, sin embargo aún los datos se encuentran de manera general por encima del 0.5
 
 ```{r, echo=FALSE}
 plotly::ggplotly(TO_ruta)
 ```
-Estados en donde se necesitó la mitad o menos del tiempo asignado para responder una solicitud
+Estados en donde se necesitó en promedio la mitad o menos del tiempo asignado para responder una solicitud
 
 ## Busqueda de correlaciones 
 
