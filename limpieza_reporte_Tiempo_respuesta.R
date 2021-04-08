@@ -28,7 +28,7 @@ tiempos_mensual_ruta_tsbl <- tiempos_os_tidy_tbl %>%
              key = c(Ruta, Tiempos))
 
 # Graficar y comparar tiempos entre Jalisco y Nuevo Leon
-p <- tiempos_mensual_ruta_tsbl %>%
+Comp_Jal_NL <- tiempos_mensual_ruta_tsbl %>%
   filter(Ruta %in% c("JALISCO", "NUEVO LEON")) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Tiempos, scales = "free_y") +
@@ -37,7 +37,7 @@ p <- tiempos_mensual_ruta_tsbl %>%
 
 
 # Graficar tiempos de respuesta por ruta
-p2 <- tiempos_mensual_ruta_tsbl %>%
+TR_ruta <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Tiempo de respuesta"),
          !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
@@ -47,7 +47,7 @@ p2 <- tiempos_mensual_ruta_tsbl %>%
 
 
 # Graficar tiempo efectivo en sitio por ruta
-p3 <- tiempos_mensual_ruta_tsbl %>%
+TE_ruta <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Tiempo efectivo en sitio"),
          !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
@@ -70,7 +70,7 @@ p3 <- tiempos_mensual_ruta_tsbl %>%
 #              key = c(`Técnico de visita`, Tiempos))
 
 # Graficar porcentajes de respuesta por ruta
-p4 <- tiempos_mensual_ruta_tsbl %>%
+PerR_ruta <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Cociente_tiempo"),
          !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
@@ -105,7 +105,7 @@ p4 <- tiempos_mensual_ruta_tsbl %>%
 #              key = c(`Técnico de visita`, Tiempos))
 
 #grafica de estados con medias cociente al 0.5 y menor a 1
-p5 <- tiempos_mensual_ruta_tsbl %>%
+cociente_ruta <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Cociente_tiempo"),
          mean(hora_decimal) <= 1, mean(hora_decimal) >= 0.5,
          !is.na(Ruta)) %>%
@@ -115,7 +115,7 @@ p5 <- tiempos_mensual_ruta_tsbl %>%
   ggtitle("Rutas con media de cociente entre 0.5 y 1")
 
 #grafica de estados con medias cociente al 1
-p6 <- tiempos_mensual_ruta_tsbl %>%
+ET_ruta <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Cociente_tiempo"),
          mean(hora_decimal) >= 1,
          !is.na(Ruta)) %>%
@@ -125,7 +125,7 @@ p6 <- tiempos_mensual_ruta_tsbl %>%
   ggtitle("Rutas con media de cociente mayor a 1")
 
 #grafica de estados con medias cociente menores a 0.5
-p7 <- tiempos_mensual_ruta_tsbl %>%
+TO_ruta <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Cociente_tiempo"),
          mean(hora_decimal) <= 0.5,
          !is.na(Ruta)) %>%
