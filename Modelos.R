@@ -123,9 +123,8 @@ Error_test <- accuracy(Modelos_fc, Train_tsb)
    gg_tsresiduals()+
    ggtitle("Residuales ARIMA_BC")
  
-# Test de los modelos  ----------------------------------------------------
 
-# Validación de los modelos  ----------------------------------------------
+# Validación modelos  ----------------------------------------------
 
 
 

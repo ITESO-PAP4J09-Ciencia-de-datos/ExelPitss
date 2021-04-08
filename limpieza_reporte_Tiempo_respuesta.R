@@ -33,7 +33,7 @@ p <- tiempos_mensual_ruta_tsbl %>%
   autoplot(hora_decimal) +
   facet_wrap(~Tiempos, scales = "free_y") +
   theme(legend.position = "none")+
-  ggtitle("Comparación de los tiempos entre Jalisco y Nuevo Leon")
+  ggtitle("Grafica de Comparación de los tiempos entre Jalisco y Nuevo Leon")
 
 
 # Graficar tiempos de respuesta por ruta
@@ -52,7 +52,8 @@ p3 <- tiempos_mensual_ruta_tsbl %>%
          !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Ruta, scales = "free_y") +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("Grafica de los tiempos efectivos en sitio de cada ruta")
 
 
 # Tsibble con técnicos y tiempos
@@ -74,7 +75,8 @@ p4 <- tiempos_mensual_ruta_tsbl %>%
          !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Ruta, scales = "free_y") +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("Grafica cociente del tiempo de respuesta/limite de tiempo de respuesta por ruta")
 
 
 # Gráfica de Baja Cal Sur coeficiente de tiempos Junio 2019 por técnico de visita
@@ -90,14 +92,6 @@ tiempos_ruta_tecnico_tsbl <- tiempos_os_tidy_tbl %>%
   as_tsibble(index = Fecha_recepion,
              key = c(`Técnico de visita`, Tiempos))
 
-# Graficar Junio Baja California Sur
-p5 <- tiempos_ruta_tecnico_tsbl %>%
-  filter(Tiempos %in% c("Cociente_tiempo")) %>%
-  autoplot(hora_decimal) +
-  theme(legend.position = "none")
-
- ## Solo hay una observacion, por lo que no se genera una grafica
-
 #Estados donde el cociente fue mayor a 0.5
 tiempos_cociente_M2_tsbl<- tiempos_os_tidy_tbl %>%
   filter(Fecha_recepion >= "2020-01-01",
@@ -110,23 +104,26 @@ tiempos_cociente_M2_tsbl<- tiempos_os_tidy_tbl %>%
     hora_decimal = mean(hora_decimal)) %>%
   as_tsibble(index = Fecha_recepion,
              key = c(`Técnico de visita`, Tiempos))
-
-# Graficar Junio Baja California Sur
-p6 <- tiempos_cociente_M2_tsbl %>%
-  filter(Tiempos %in% c("Cociente_tiempo")) %>%
-  autoplot(hora_decimal) +
-  ggtitle("Graficar Junio Baja California Sur")+
-  facet_wrap(~`Técnico de visita`, scales = "free_y") +
-  theme(legend.position = "none")
-
-#grafica de estados con cocientes mayores al 0.5
-p7 <- tiempos_mensual_ruta_tsbl %>%
+#grafica de estados con medias cociente al 0.5 y menor a 1
+p5 <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Cociente_tiempo"),
-         hora_decimal >= 0.5,
+         mean(hora_decimal) <= 1, mean(hora_decimal) >= 0.5,
          !is.na(Ruta)) %>%
   autoplot(hora_decimal) +
   facet_wrap(~Ruta, scales = "free_y") +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ggtitle("Rutas con media de cociente entre 0.5 y 1")
+
+#grafica de estados con medias cociente al 1
+p6 <- tiempos_mensual_ruta_tsbl %>%
+  filter(Tiempos %in% c("Cociente_tiempo"),
+         mean(hora_decimal) >= 1,
+         !is.na(Ruta)) %>%
+  autoplot(hora_decimal) +
+  facet_wrap(~Ruta, scales = "free_y") +
+  theme(legend.position = "none")+
+  ggtitle("Rutas con media de cociente mayor a 1")
+
 
 # Correlaciones ---------------------------------------------------------
 

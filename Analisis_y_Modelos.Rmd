@@ -27,25 +27,48 @@ tiempos_os_tidy_tbl %>%
   geom_boxplot() +
   facet_grid(Ruta ~ Tiempos, scales = "free_y") +
   theme(legend.position = "none") +
+  ggtitle("Analisis de los tecnicos de visista y sus tiempos de respuesta")+
   coord_flip()
 
+```
 
+
+```{r,echo=FALSE}
 tiempos_os_tidy_tbl %>%
   filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
   ggplot(aes(x = Ruta, y = hora_decimal, fill = Tiempos))+
   geom_boxplot() +
   facet_wrap(~ Tiempos, scales = "free_x") +
   theme(legend.position = "none") +
+  ggtitle("Analisis de los tiempos de respuesta de las rutas")+
   coord_flip()
-
-plotly::ggplotly(p)
-plotly::ggplotly(p2)
-plotly::ggplotly(p3)
-plotly::ggplotly(p4)
-plotly::ggplotly(p5)
-plotly::ggplotly(p6)
-plotly::ggplotly(p7)
 ```
+
+```{r,echo=FALSE}
+plotly::ggplotly(p)
+```
+
+```{r,echo=FALSE}
+plotly::ggplotly(p2)
+```
+
+```{r,echo=FALSE}
+plotly::ggplotly(p3)
+```
+
+```{r,echo=FALSE}
+plotly::ggplotly(p4)
+```
+
+```{r,echo=FALSE}
+plotly::ggplotly(p5)
+```
+
+```{r,echo=FALSE}
+plotly::ggplotly(p6)
+
+```
+
 
 ## Busqueda de correlaciones 
 
