@@ -56,18 +56,18 @@ p3 <- tiempos_mensual_ruta_tsbl %>%
   ggtitle("Grafica de los tiempos efectivos en sitio de cada ruta")
 
 
-# Tsibble con técnicos y tiempos
-tiempos_mensual_tecnicoV_tsbl <- tiempos_os_tidy_tbl %>%
-  group_by(`Técnico de visita`, Tiempos) %>%  #Regresar a cols. separadas cada indicador
-  summarise_by_time(
-    .date_var    = Fecha_recepion,
-    .by          = "month",
-    hora_decimal = mean(hora_decimal)
-  ) %>%
-  mutate(Fecha_recepion = yearmonth(Fecha_recepion)) %>%
-  filter(Fecha_recepion >= yearmonth("2018-02-03")) %>%
-  as_tsibble(index = Fecha_recepion,
-             key = c(`Técnico de visita`, Tiempos))
+# # Tsibble con técnicos y tiempos
+# tiempos_mensual_tecnicoV_tsbl <- tiempos_os_tidy_tbl %>%
+#   group_by(`Técnico de visita`, Tiempos) %>%  #Regresar a cols. separadas cada indicador
+#   summarise_by_time(
+#     .date_var    = Fecha_recepion,
+#     .by          = "month",
+#     hora_decimal = mean(hora_decimal)
+#   ) %>%
+#   mutate(Fecha_recepion = yearmonth(Fecha_recepion)) %>%
+#   filter(Fecha_recepion >= yearmonth("2018-02-03")) %>%
+#   as_tsibble(index = Fecha_recepion,
+#              key = c(`Técnico de visita`, Tiempos))
 
 # Graficar porcentajes de respuesta por ruta
 p4 <- tiempos_mensual_ruta_tsbl %>%
@@ -78,32 +78,32 @@ p4 <- tiempos_mensual_ruta_tsbl %>%
   theme(legend.position = "none")+
   ggtitle("Grafica cociente del tiempo de respuesta/limite de tiempo de respuesta por ruta")
 
+# # Gráfica de Baja Cal Sur coeficiente de tiempos Junio 2019 por técnico de visita
+# tiempos_ruta_tecnico_tsbl <- tiempos_os_tidy_tbl %>%
+#   filter(mes == yearmonth("2019 jun."),
+#          Ruta %in% c("BAJA CALIFORNIA SUR")) %>%
+#   group_by(`Técnico de visita`, Tiempos) %>%
+#   summarise_by_time(
+#     .date_var    = Fecha_recepion,
+#     .by          = "day",
+#     hora_decimal = mean(hora_decimal)
+#   ) %>%
+#   as_tsibble(index = Fecha_recepion,
+#              key = c(`Técnico de visita`, Tiempos))
 
-# Gráfica de Baja Cal Sur coeficiente de tiempos Junio 2019 por técnico de visita
-tiempos_ruta_tecnico_tsbl <- tiempos_os_tidy_tbl %>%
-  filter(mes == yearmonth("2019 jun."),
-         Ruta %in% c("BAJA CALIFORNIA SUR")) %>%
-  group_by(`Técnico de visita`, Tiempos) %>%
-  summarise_by_time(
-    .date_var    = Fecha_recepion,
-    .by          = "day",
-    hora_decimal = mean(hora_decimal)
-  ) %>%
-  as_tsibble(index = Fecha_recepion,
-             key = c(`Técnico de visita`, Tiempos))
+# #Estados donde el cociente fue mayor a 0.5
+# tiempos_cociente_M2_tsbl<- tiempos_os_tidy_tbl %>%
+#   filter(Fecha_recepion >= "2020-01-01",
+#          Tiempos %in% c("Cociente_tiempo"),
+#          hora_decimal>= 0.5) %>%
+#   group_by(`Técnico de visita`, Tiempos) %>%
+#   summarise_by_time(
+#     .date_var    = Fecha_recepion,
+#     .by          = "day",
+#     hora_decimal = mean(hora_decimal)) %>%
+#   as_tsibble(index = Fecha_recepion,
+#              key = c(`Técnico de visita`, Tiempos))
 
-#Estados donde el cociente fue mayor a 0.5
-tiempos_cociente_M2_tsbl<- tiempos_os_tidy_tbl %>%
-  filter(Fecha_recepion >= "2020-01-01",
-         Tiempos %in% c("Cociente_tiempo"),
-         hora_decimal>= 0.5) %>%
-  group_by(`Técnico de visita`, Tiempos) %>%
-  summarise_by_time(
-    .date_var    = Fecha_recepion,
-    .by          = "day",
-    hora_decimal = mean(hora_decimal)) %>%
-  as_tsibble(index = Fecha_recepion,
-             key = c(`Técnico de visita`, Tiempos))
 #grafica de estados con medias cociente al 0.5 y menor a 1
 p5 <- tiempos_mensual_ruta_tsbl %>%
   filter(Tiempos %in% c("Cociente_tiempo"),
@@ -124,7 +124,15 @@ p6 <- tiempos_mensual_ruta_tsbl %>%
   theme(legend.position = "none")+
   ggtitle("Rutas con media de cociente mayor a 1")
 
-
+#grafica de estados con medias cociente menores a 0.5
+p7 <- tiempos_mensual_ruta_tsbl %>%
+  filter(Tiempos %in% c("Cociente_tiempo"),
+         mean(hora_decimal) <= 0.5,
+         !is.na(Ruta)) %>%
+  autoplot(hora_decimal) +
+  facet_wrap(~Ruta, scales = "free_y") +
+  theme(legend.position = "none")+
+  ggtitle("Rutas con media de cociente menores a 0.5")
 # Correlaciones ---------------------------------------------------------
 
 # Correlaciones de `Tiempo efectivo en sitio`,`Tiempo de respuesta` y `Limite tiempo de solución total`
@@ -243,17 +251,20 @@ correlacion_tiempos3_True <- as_cordf(correlacion_tiempos2_True)
 
 # Tendencias --------------------------------------------------------------
 #Serie de tiempo de cociente para jalisco del 2019 al 2021
-Ten1Jal <- tiempos_mensual_ruta_tsbl %>%
+Ten1Jal_tsb <- tiempos_mensual_ruta_tsbl %>%
   filter(
-    Tiempos %in% c("Cociente_tiempo"),
+    Tiempos %in% c("Tiempo de respuesta"),
     Ruta%in% c("JALISCO"),
     Fecha_recepion >= yearmonth("2018-03"),
     !is.na(hora_decimal)
   )
 
 #descomposicion por el modelo STL
-dcmp_Jal <- Ten1Jal %>%
+dcmp_Jal <- Ten1Jal_tsb %>%
   model(STL(hora_decimal))
 #mostrar la ts
 components(dcmp_Jal)
+
+
+
 

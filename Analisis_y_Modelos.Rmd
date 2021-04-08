@@ -32,7 +32,6 @@ tiempos_os_tidy_tbl %>%
 
 ```
 
-
 ```{r,echo=FALSE}
 tiempos_os_tidy_tbl %>%
   filter(Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
@@ -69,6 +68,9 @@ plotly::ggplotly(p6)
 
 ```
 
+```{r, echo=FALSE}
+plotly::ggplotly(p7)
+```
 
 ## Busqueda de correlaciones 
 
@@ -101,38 +103,45 @@ Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una corr
 
 ## Series de tiempo
 ```{r}
-Ten1Jal %>%
-  autoplot(hora_decimal) +
-  xlab("Año") + ylab("Cociente") +
-  ggtitle("cociente JALISCO")
-
-Ten1Jal%>%
+Ten1Jal_tsb%>%
   autoplot(hora_decimal, color='blue') +
   autolayer(components(dcmp_Jal), trend, color='red') +
-  xlab("Año") + ylab("Cociente") +
-  ggtitle("cociente jalisco")
+  xlab("Año") + ylab("Tiempo de respuesta") +
+  ggtitle("Tiempo de respuesta Jalisco y su tendencia en rojo")
 #Grafica de la tendencia, ajuste estacional y remainder
 components(dcmp_Jal) %>% autoplot()+ xlab("Años")
 ```
 
+```{r}
+Ten1Jal_BC_tsb%>%
+  autoplot(hora_decimal, color='blue') +
+  autolayer(components(dcmp_Jal), trend, color='red') +
+  xlab("Año") + ylab("Tiempo de respuesta") +
+  ggtitle("Tiempo de respuesta Jalisco y su tendencia en rojo")
+
+
+#Grafica de la tendencia, ajuste estacional y remainder 
+components(dcmp_BC_Jal) %>% autoplot()+ xlab("Años")
+lambda1
+```
 
 ## Modelos 
 
-Grafica de los modelos usados 
+Grafica del test de los modelos
 
 ```{r}
 Modelos_fc %>% 
-  autoplot(filter_index(Train_tsb, "2018-03-01" ~ .), level = NULL) +
+  autoplot(filter_index(Train_tsb, "2018-03-01" ~ "2020-09-01"), level = NULL) +
   ggtitle("Entrenamiento") +
   xlab("Años") + ylab("horas") +
   guides(colour=guide_legend(title="Forecast")) +
   geom_vline(xintercept = as.Date("2020-05-01", color = "Red",
              linetype = "dashed"))+
-  geom_vline( xintercept = as.Date("2020-9-01", color = "Red",
-                                  linetype = "dashed"))+
-  annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-07-01"),as.Date("2020-11-01")),
-                        y = 3.5, label = c("Train set", "Test set","Validation set"),
-                        color = c("black","blue","green"))
+  # geom_vline( xintercept = as.Date("2020-09-01", color = "Red",
+  #                                 linetype = "dashed"))+
+  annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-08-01")),
+                        y = 3.5, label = c("Train set", "Test set"),
+                        color = c("black","blue"))
 ```
 
 
