@@ -19,6 +19,8 @@ library(readxl)
 library(tsibble)
 library(feasts)
 library(fable)
+library(fpp3)
+library(patchwork)
 ```
 
 ```{r}
@@ -111,7 +113,11 @@ datos_month_tsbl
 ```
 ## Visualización
 
-A continuación se muestran las gráficas según la ruta y el tiempo de agrupamiento seleccionado.
+<div style="text-align: justify">
+
+A continuación se muestran los datos de la ruta utilizada como ejemplo, siendo la de Jalisco.
+
+<div/>
 
 ```{r}
 datos_tsbl %>%
@@ -120,79 +126,205 @@ datos_tsbl %>%
   facet_wrap(~ SLA, scales = "free_y") +
   theme(legend.position = "none")
 
-
-
-datos_week_tsbl %>% 
-  filter(Ruta == "JALISCO") %>% 
+datos_week_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
   autoplot(Tiempos) + #aes(color = Ruta) +
   facet_wrap(~ SLA, scales = "free_y") +
   theme(legend.position = "none")
 
-
-
-datos_month_tsbl %>% 
-  filter(Ruta == "JALISCO") %>% 
+datos_month_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
   autoplot(Tiempos) + #aes(color = Ruta) +
   facet_wrap(~ SLA, scales = "free_y") +
   theme(legend.position = "none")
-
-
-```
-
-
-```{r}
-# p <- datos_tsbl %>%
-#   filter(Ruta == "JALISCO") %>%
-#   autoplot(Tiempos) + #aes(color = Ruta) +
-#   facet_wrap(~ SLA, scales = "free_y") +
-#   theme(legend.position = "none")
-# 
-# plotly::ggplotly(p)
-# 
-# p <- datos_week_tsbl %>% 
-#   filter(Ruta == "JALISCO") %>% 
-#   autoplot(Tiempos) + #aes(color = Ruta) +
-#   facet_wrap(~ SLA, scales = "free_y") +
-#   theme(legend.position = "none")
-# 
-# plotly::ggplotly(p)
-# 
-# p <- datos_month_tsbl %>% 
-#   filter(Ruta == "JALISCO") %>% 
-#   autoplot(Tiempos) + #aes(color = Ruta) +
-#   facet_wrap(~ SLA, scales = "free_y") +
-#   theme(legend.position = "none")
-# 
-# plotly::ggplotly(p)
 ```
 
 ## Modelado
 
-Se utilizó el modelo ETS y el modelo ARIMA para realizar un pronóstico de los SLA's, según el tiempo de agrupamiento.
+<div style="text-align: justify">
+
+En esta sección se analizaron distintos modelos, los cuales se explican brevemente a continuación, para realizar pronósticos de los SLA's, utilizando como ejemplo los tiempos de la ruta de Jalisco.
+
+- **AVERAGE**:
+- **NAÏVE**:
+- **SEASON NAÏVE**:
+- **DRIFT**:
+- **ETS**:
+- **ARIMA**:
+
+<div/>
 
 ```{r}
-datos_tsbl %>% 
+tiempos_daily_fit <- datos_tsbl %>% 
   filter(Ruta == "JALISCO") %>% 
-  model(ETS(Tiempos),
-        ARIMA(Tiempos)) %>% 
-  forecast(h = "1 year") %>% 
-  autoplot(datos_tsbl, level = NULL)+
-  facet_wrap(~SLA, scales = "free_y")
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos))
+  
+tiempos_week_fit <- datos_week_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos))
+  
+tiempos_month_fit <- datos_month_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos))
+```
 
-datos_week_tsbl %>% 
-  filter(Ruta == "JALISCO") %>% 
-  model(ETS(Tiempos),
-        ARIMA(Tiempos)) %>% 
-  forecast(h = "1 year") %>% 
-  autoplot(datos_week_tsbl, level = NULL)+
-  facet_wrap(~SLA, scales = "free_y")
+En las siguientes tablas, se observan cada uno de los reportes de los modelados.
 
-datos_month_tsbl %>% 
+- Diariamente:
+
+```{r}
+tiempos_daily_fit %>%  
+  report()
+```
+
+- Semanalmente:
+
+```{r}
+tiempos_week_fit %>% 
+  report()
+```
+
+- Mensualmente:
+
+```{r}
+tiempos_month_fit %>% 
+  select(`Mean`) %>% 
+  report()
+```
+
+### Exactitud y Errores
+
+<div style="text-align: justify">
+
+En nuestro proyecto es de suma importancia evaluar nuestros pronósticos, por lo que para realizar esto, utilizamos la información de nuestros datos hasta el año 2020, nombrando a estos datos como *datos de entrenamiento*, para de esta manera poder comparar los verdaderos tiempos contra los resultados de los modelos, a los que llamaremos como *datos de prueba*.
+
+En las siguientes gráficas podemos observar los distintos pronósticos realizados según la periodicidad, tomando los datos desde $2018-01-11$ hasta $2020-03-10$, y realizando pronósticos hasta un año después, que es la fecha de nuestro último dato $2021-03-10$.
+
+<div/>
+
+```{r}
+tiempos_dtrain <- datos_tsbl %>% 
+  filter_index("2018-01-11" ~ "2020-03-10")
+
+tiempos_dtrain_fit <- tiempos_dtrain %>% 
   filter(Ruta == "JALISCO") %>% 
-  model(ETS(Tiempos),
-        ARIMA(Tiempos)) %>% 
-  forecast(h = "1 year") %>% 
-  autoplot(datos_month_tsbl, level = NULL)+
-  facet_wrap(~SLA, scales = "free_y")
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos))
+
+tiempos_dtrain_fc <- tiempos_dtrain_fit %>% 
+  forecast(h = "1 year") 
+
+tiempos_dtrain_fc %>% 
+  autoplot(datos_tsbl, level = NULL) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme_minimal() +
+  labs(x = "Días",title = "Pronósticos SLA's") +
+  guides(colour = guide_legend(title = "Pronóstico"))
+```
+
+```{r}
+tiempos_wtrain <- datos_week_tsbl %>% 
+  filter_index("2018-01-11" ~ "2020-03-10")
+
+tiempos_wtrain_fit <- tiempos_wtrain %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos))
+
+tiempos_wtrain_fc <- tiempos_wtrain_fit %>% 
+  forecast(h = "1 year") 
+
+tiempos_wtrain_fc %>% 
+  autoplot(datos_week_tsbl, level = NULL) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme_minimal() +
+  labs(x = "Semanas",title = "Pronósticos SLA's") +
+  guides(colour = guide_legend(title = "Pronóstico"))
+
+```
+
+```{r}
+tiempos_mtrain <- datos_month_tsbl %>% 
+  filter_index("2018-01-11" ~ "2020-03-10")
+
+tiempos_mtrain_fit <- tiempos_mtrain %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos))
+
+tiempos_mtrain_fc <- tiempos_mtrain_fit %>% 
+  forecast(h = "1 year") 
+
+tiempos_mtrain_fc %>% 
+  autoplot(datos_month_tsbl, level = NULL) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme_minimal() +
+  labs(x = "Meses",title = "Pronósticos SLA's") +
+  guides(colour = guide_legend(title = "Pronóstico"))
+```
+
+> Aunque las conclusiones puedan ser algo claras gracias a las gráficas, con la función `accuracy()` podemos observar de una manera más clara, los resultados de cuál modelo es el mejor ajustado, según cada periodicidad distinta.
+
+- **Accuracy diariamente:**
+
+```{r}
+ acc_daily <- accuracy(tiempos_dtrain_fc, datos_tsbl)
+ acc_daily
+ 
+ acc_daily %>% 
+  summarise_if(is.numeric, min)
+```
+- **Accuracy semanalmente:**
+
+```{r}
+acc_week <- accuracy(tiempos_wtrain_fc, datos_week_tsbl)
+acc_week
+acc_week %>% 
+  summarise_if(is.numeric, min)
+```
+
+- **Accuracy mensualmente:**
+
+```{r}
+acc_month <- accuracy(tiempos_mtrain_fc, datos_month_tsbl)
+acc_month
+acc_month %>% 
+  group_by(SLA) %>% 
+  slice_min(RMSE)
+```
+
+```{r}
+
+```
+
+```{r}
+gg_tsresiduals
 ```
 
