@@ -118,10 +118,7 @@ state_popup <- paste0("<strong>Estado: </strong>",
 # Define UI for application that draws a histogram
 ui <- fluidPage(
     title = "Cobertura Exel Pitss",
-    setBackgroundColor(
-        color = c(az_cl, az_os),
-        gradient = "linear",
-        direction = "bottom"),
+    setBackgroundImage(src="fondo.png"),
     useShinyjs(),
     #Assign Dasbhoard title
     titlePanel(div("COBERTURA",style = "color:white; font-size: 70px; font-style:proxima nova; font-weight:bold; font-style:italic",align = "center",

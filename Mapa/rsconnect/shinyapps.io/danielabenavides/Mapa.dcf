@@ -1,0 +1,13 @@
+name: Mapa
+title: Mapa
+username:
+account: danielabenavides
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3938384
+bundleId: 4452063
+url: https://danielabenavides.shinyapps.io/Mapa/
+when: 1617997921.511
+lastSyncTime: 1617997921.511
+asMultiple: FALSE
+asStatic: FALSE
