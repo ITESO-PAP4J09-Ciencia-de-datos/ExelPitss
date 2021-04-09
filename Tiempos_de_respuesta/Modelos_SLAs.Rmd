@@ -299,7 +299,8 @@ tiempos_mtrain_fc %>%
  acc_daily
  
  acc_daily %>% 
-  summarise_if(is.numeric, min)
+  group_by(SLA) %>% 
+  slice_min(RMSE)
 ```
 - **Accuracy semanalmente:**
 
@@ -307,7 +308,8 @@ tiempos_mtrain_fc %>%
 acc_week <- accuracy(tiempos_wtrain_fc, datos_week_tsbl)
 acc_week
 acc_week %>% 
-  summarise_if(is.numeric, min)
+  group_by(SLA) %>% 
+  slice_min(RMSE)
 ```
 
 - **Accuracy mensualmente:**
@@ -320,11 +322,26 @@ acc_month %>%
   slice_min(RMSE)
 ```
 
-```{r}
+### Diagnóstico de Residuos
 
+```{r}
+tiempos_dtrain_fit %>% 
+  filter(SLA == "TST") %>% 
+  select("ETS") %>% 
+  gg_tsresiduals()
 ```
 
 ```{r}
-gg_tsresiduals
+tiempos_wtrain_fit %>%  
+  filter(SLA == "TMO") %>% 
+  select("Mean") %>% 
+  gg_tsresiduals()
+```
+
+```{r}
+tiempos_mtrain_fit %>%  
+  filter(SLA == "TR") %>% 
+  select("Seasonal naïve") %>% 
+  gg_tsresiduals()
 ```
 
