@@ -40,12 +40,15 @@ Train_tsb <- tiempos_os_tidy_tbl %>%
   group_by(Ruta, Tiempos) %>%
   summarise_by_time(
     .date_var    = Fecha_recepion,
-    .by          = "month",
+    .by          = "week",
     Tiempo_de_respuesta = mean(hora_decimal))%>% 
   ungroup() %>% 
-  mutate(Fecha_recepion = yearmonth(Fecha_recepion))%>%
+  mutate(Fecha_recepion = yearweek(Fecha_recepion))%>%
   as_tsibble(index = Fecha_recepion,
              key = c(Ruta, Tiempos))
+Train_tsb %>% 
+  filter(Ruta == "JALISCO") %>% 
+  gg_tsdisplay()
 
 # Entrenamiento del modelo ------------------------------------------------
 ## Optimisación de lamda para Box-Cox
@@ -56,41 +59,41 @@ lambda1 <- Train_tsb %>%
 
 ## Modelos de predicción
 Modelos_fit <- Train_tsb %>% 
-  filter(Ruta == "JALISCO", Fecha_recepion <= yearmonth("2020-04-01")) %>% 
+  filter(Ruta == "JALISCO", Fecha_recepion <= yearweek("2020-05-01")) %>% 
   model(
-     "ETS"   = ETS(Tiempo_de_respuesta ~ error("A")+ trend("A")+
-               season("N")),
+     # "ETS"   = ETS(Tiempo_de_respuesta ~ error("A")+ trend("A")+
+     #           season("N")),
     "ARIMA" = ARIMA(Tiempo_de_respuesta),
     
-    "ETS_BC"   = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("A")+
-                 season("N")),
-   "ARIMA_BC" = ARIMA(box_cox(Tiempo_de_respuesta,lambda1)),
+    "ETS_BC"   = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("N")+
+               season("N")),
+   "ARIMA_BC" = ARIMA(box_cox(Tiempo_de_respuesta,lambda1))
    
-    "ETS_AH" = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
-                   season("A")),
-    "ETS_MH"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
-          season("M")),
-    "ETS_HD"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("Ad")+
-          season("M"))
+    # "ETS_AH" = ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
+    #                season("A")),
+    # "ETS_MH"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("M")+ trend("A")+
+    #       season("M")),
+    # "ETS_HD"= ETS(box_cox(Tiempo_de_respuesta,lambda1) ~ error("A")+ trend("Ad")+
+    #       season("M"))
   )
 
 Modelos_fc <- Modelos_fit %>% 
-  forecast(h = "5 month")
+  forecast(h = "8 month")
 
 
-## Grafica de las predicciones contra los datos 
-# Modelos_fc %>% 
-#   autoplot(filter_index(Train_tsb, "2018-03-01" ~ "2020-09-01"), level = NULL) +
-#   ggtitle("Entrenamiento") +
-#   xlab("Años") + ylab("horas") +
-#   guides(colour=guide_legend(title="Forecast")) +
-#   geom_vline(xintercept = as.Date("2020-05-01", color = "Red",
-#              linetype = "dashed"))+
-#   # geom_vline( xintercept = as.Date("2020-09-01", color = "Red",
-#   #                                 linetype = "dashed"))+
-#   annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-08-01")),
-#                         y = 3.5, label = c("Train set", "Test set"),
-#                         color = c("black","blue"))
+# Grafica de las predicciones contra los datos
+Modelos_fc %>%
+  autoplot(filter_index(Train_tsb, "2018-03-01" ~ "2020-09-01"), level = NULL) +
+  ggtitle("Entrenamiento") +
+  xlab("Años") + ylab("horas") +
+  guides(colour=guide_legend(title="Forecast")) +
+  geom_vline(xintercept = as.Date("2020-05-01", color = "Red",
+             linetype = "dashed"))+
+  geom_vline( xintercept = as.Date("2020-09-01", color = "Red",
+                                  linetype = "dashed"))+
+  annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-08-01")),
+                        y = 3.5, label = c("Train set", "Test set"),
+                        color = c("black","blue"))
 
 
 ## Analisis de las metricas estadisticas 
@@ -104,19 +107,19 @@ Error_test <- accuracy(Modelos_fc, Train_tsb)
 
 # Descomposicion
 #descomposicion por el modelo STL con transformacion Box Cox
-Ten1Jal_BC_tsb <- tiempos_mensual_ruta_tsbl %>%
-  filter(
-    Tiempos %in% c("Tiempo de respuesta"),
-    Ruta%in% c("JALISCO"),
-    Fecha_recepion >= yearmonth("2018-03"),
-    !is.na(hora_decimal)
-  ) %>% 
-  mutate(hora_decimal = box_cox(hora_decimal, lambda1))
-
-dcmp_BC_Jal <- Ten1Jal %>%
-  model(STL(hora_decimal))
-#mostrar la ts
-components(dcmp_BC_Jal)
+# Ten1Jal_BC_tsb <- tiempos_mensual_ruta_tsbl %>%
+#   filter(
+#     Tiempos %in% c("Tiempo de respuesta"),
+#     Ruta%in% c("JALISCO"),
+#     Fecha_recepion >= yearmonth("2018-03"),
+#     !is.na(hora_decimal)
+#   ) %>% 
+#   mutate(hora_decimal = box_cox(hora_decimal, lambda1))
+# 
+# dcmp_BC_Jal <- Ten1Jal %>%
+#   model(STL(hora_decimal))
+# #mostrar la ts
+# components(dcmp_BC_Jal)
 
 # ANALISIS DE RESIDUOS
  Modelos_fit %>%
