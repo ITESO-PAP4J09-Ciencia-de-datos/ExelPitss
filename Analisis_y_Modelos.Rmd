@@ -12,6 +12,12 @@ Tras el analisis exploratorio mediante la limpieza de los datos dados, se proced
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
+source("Limpieza.R", 
+       local = knitr::knit_global(),
+       encoding = "utf-8")
+source("limpieza_reporte_Tiempo_respuesta.R", 
+       local = knitr::knit_global(),
+       encoding = "utf-8")
 source("Modelos.R", 
        local = knitr::knit_global(),
        encoding = "utf-8")
@@ -127,6 +133,13 @@ Train_tsb %>%
   features(Tiempo_de_respuesta,unitroot_kpss)
 ```
 
+```{r}
+Train_tsb %>% 
+  filter(Ruta == "JALISCO") %>% 
+  mutate(dif = difference(Tiempo_de_respuesta)) %>% 
+  features(dif,unitroot_kpss)
+```
+
 
 ```{r message=FALSE, warning=FALSE}
 Train_tsb %>% 
@@ -152,6 +165,8 @@ Modelos_fc %>%
 
 
 Analisis estadistico de los modelos  
+
+
 ```{r}
 Error_test <- accuracy(Modelos_fc, Train_tsb)
 Error_test
