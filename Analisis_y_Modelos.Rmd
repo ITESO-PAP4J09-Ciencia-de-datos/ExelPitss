@@ -10,7 +10,6 @@ La infromacion que se nos fue proporcionada es realcionda con las diferentes sol
 Tras el analisis exploratorio mediante la limpieza de los datos dados, se procedio a la busqeuda de un modelado del comportamieto en los tiempos de recepcion y tiempos limintes de respuesta, esto con el objetivo de presentar informacion relevante para la empresa y pudan tomar mejores decisiones a futuro, relacionadas con esta investigacion.
 
 
-# Script
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
 source("Modelos.R", 
@@ -112,43 +111,41 @@ Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una corr
 
 ## Series de tiempo
 ```{r}
-Ten1Jal_tsb%>%
-  autoplot(hora_decimal, color='blue') +
-  autolayer(components(dcmp_Jal), trend, color='red') +
-  xlab("Año") + ylab("Tiempo de respuesta") +
-  ggtitle("Tiempo de respuesta Jalisco y su tendencia en rojo")
-#Grafica de la tendencia, ajuste estacional y remainder
 components(dcmp_Jal) %>% autoplot()+ xlab("Años")
 ```
 
 ```{r}
-Ten1Jal_BC_tsb%>%
-  autoplot(hora_decimal, color='blue') +
-  autolayer(components(dcmp_Jal), trend, color='red') +
-  xlab("Año") + ylab("Tiempo de respuesta") +
-  ggtitle("Tiempo de respuesta Jalisco y su tendencia en rojo")
-
-
-#Grafica de la tendencia, ajuste estacional y remainder 
-components(dcmp_BC_Jal) %>% autoplot()+ xlab("Años")
-lambda1
+components(dcmp_Jal_sem) %>% autoplot()+ xlab("Semanas")
 ```
 
+
 ## Modelos 
+
+```{r}
+Train_tsb %>% 
+  filter(Ruta == "JALISCO") %>% 
+  features(Tiempo_de_respuesta,unitroot_kpss)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+Train_tsb %>% 
+  filter(Ruta == "JALISCO") %>%
+  mutate(Tiempo_de_respuesta = difference(Tiempo_de_respuesta, differences = 1)) %>% 
+  gg_tsdisplay(plot_type = 'partial')
+```
 
 Grafica del test de los modelos
 
 ```{r}
-Modelos_fc %>% 
-  autoplot(filter_index(Train_tsb, "2018-03-01" ~ "2020-09-01"), level = NULL) +
+Modelos_fc %>%
+  autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06"), level = NULL) +
   ggtitle("Entrenamiento") +
   xlab("Años") + ylab("horas") +
-  guides(colour=guide_legend(title="Forecast")) +
-  geom_vline(xintercept = as.Date("2020-05-01", color = "Red",
-             linetype = "dashed"))+
-  # geom_vline( xintercept = as.Date("2020-09-01", color = "Red",
-  #                                 linetype = "dashed"))+
-  annotate("label", x = c(as.Date("2019-03-01"),as.Date("2020-08-01")),
+  guides(colour=guide_legend(title="Forecast"))+
+   geom_vline(xintercept = as.Date("2020-11-08", color = "Red",
+              linetype = "dashed"))+
+  annotate("label", x = c(as.Date("2020-08-01"),as.Date("2020-12-01")),
                         y = 3.5, label = c("Train set", "Test set"),
                         color = c("black","blue"))
 ```
@@ -160,18 +157,6 @@ Error_test <- accuracy(Modelos_fc, Train_tsb)
 Error_test
 ```
 
-
-Analisis de residuos del modelo ARIMA con transformación Box-Cox
-```{r}
- Modelos_fit %>%
-   select(ARIMA_BC) %>% 
-   gg_tsresiduals()+
-   ggtitle("Residuales ARIMA_BC")
-```
-
-
-
-# Conclusiones 
 
 
 # Bibliografia / Referencias 

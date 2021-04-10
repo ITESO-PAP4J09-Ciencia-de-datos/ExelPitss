@@ -10,7 +10,8 @@ library(corrr)      # Libreria para la busqueda de correlaciones, para el analis
 library(psych)      # Funciones de ayuda para analisis multivariable a diferenetes escalas 
 library(ggcorrplot) # Forma de visualizar las correlaciones 
 
-source("Limpieza.R", local = knitr::knit_global(),encoding = "utf-8") 
+#Llamar la limpieza de datos
+#source("Limpieza.R", local = knitr::knit_global(),encoding = "utf-8") 
 
 # EDA ---------------------------------------------------------------------
 
