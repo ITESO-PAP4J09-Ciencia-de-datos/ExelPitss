@@ -117,7 +117,7 @@ Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una corr
 
 ## Series de tiempo
 ```{r}
-components(dcmp_Jal) %>% autoplot()+ xlab("Años")
+components(dcmp_Jal) %>% autoplot()+ xlab("Meses")
 ```
 
 ```{r}
