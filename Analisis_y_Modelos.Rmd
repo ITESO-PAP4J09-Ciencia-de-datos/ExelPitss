@@ -168,7 +168,6 @@ Analisis estadistico de los modelos
 
 
 ```{r}
-Error_test <- accuracy(Modelos_fc, Train_tsb)
 Error_test
 ```
 
