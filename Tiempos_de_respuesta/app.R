@@ -13,6 +13,7 @@ library(shinythemes)
 library(shinyWidgets)
 library(shinydashboard)
 library(shinyjs)
+library(shinycssloaders)
 
 # pronósticos
 library(tsibble)
@@ -106,6 +107,12 @@ modelos <- list(
   
 )
 
+tsbls <- list(
+  Diarios = datos_tsbl,
+  Semanales = datos_week_tsbl,
+  Mensuales = datos_month_tsbl
+)
+
 # training diarios
 tiempos_dtrain <- datos_tsbl %>% 
     filter_index("2018-01-11" ~ "2020-03-10")
@@ -117,6 +124,16 @@ tiempos_wtrain <- datos_week_tsbl %>%
 # training mensuales
 tiempos_mtrain <- datos_month_tsbl %>% 
     filter_index("2018-01-11" ~ "2020-03-10")
+
+trainings <- list(
+  Diarios = tiempos_dtrain,
+  Semanales = tiempos_wtrain,
+  Mensuales = tiempos_mtrain
+)
+
+tiempos <- datos_tsbl %>% 
+  distinct(SLA) %>% 
+  pull()
 
 # UI CODE ----------------------------------------------------------------------
 
@@ -142,10 +159,10 @@ ui <- fluidPage(
                          radioButtons("frecuencia1",
                                       label = h4("Frecuencia", style="color:#E27831; font-style:urw din italic; font-size:20px"),
                                       choices = frecuencias,
-                                      selected = "Mensualmente"),
-                         actionButton("go1","Visualizar los datos",
-                                      icon = icon(name="eye"),
-                                      style = "color: #fff; background-color: #F89438; border-color: #E27831")
+                                      selected = "Mensualmente")#,
+                         # actionButton("go1","Visualizar los datos",
+                         #              icon = icon(name="eye"),
+                         #              style = "color: #fff; background-color: #F89438; border-color: #E27831")
                      ),
                      
                      mainPanel(
@@ -156,7 +173,7 @@ ui <- fluidPage(
                                      tags$style(type = "text/css", "a{color: #fff}")
                                  ),
                                  style = "color: #fff",
-                                 plotOutput(outputId = "grafica1"))         
+                                 plotOutput(outputId = "grafica1") %>% withSpinner(color="#F89438") )         
                          )
                      )
                  )
@@ -177,13 +194,13 @@ ui <- fluidPage(
                                      label = h4("Modelo", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
                                      choices = names(modelos), 
                                      multiple = TRUE, 
-                                     selected = "SEASONAL NAÏVE"),
-                         actionButton("go2","Modelar",
-                                      icon = icon(name="tools"),
-                                      style = "color: #fff; background-color: #F89438; border-color: #E27831"),
-                         actionButton("error2","Obtener exactitud",
-                                      icon = icon(name="drafting-compass"),
-                                      style = "color: #fff; background-color: #F89438; border-color: #E27831")
+                                     selected = names(modelos))#,
+                         # actionButton("go2","Modelar",
+                         #              icon = icon(name="tools"),
+                         #              style = "color: #fff; background-color: #F89438; border-color: #E27831"),
+                         # actionButton("error2","Obtener exactitud",
+                         #              icon = icon(name="drafting-compass"),
+                         #              style = "color: #fff; background-color: #F89438; border-color: #E27831")
                      ),
                      mainPanel(
                          tabsetPanel(
@@ -193,17 +210,26 @@ ui <- fluidPage(
                                      tags$style(type = "text/css", "a{color: #fff}")
                                  ),
                                  style = "color: #fff",
-                                 plotOutput("grafica2"),
-                                 dataTableOutput("tabla2")), 
+                                 plotOutput("grafica2") %>% withSpinner(color="#F89438")), 
                              tabPanel(
-                                 "Reportes",
+                                 "Análisis",
                                  tags$head(
                                      tags$style(type = "text/css", "a{color: #fff}")
                                  ),
                                  style = "color: #fff",
-                                 dataTableOutput(outputId = "reporte"))         
-                             
-                             
+                                 splitLayout(
+                                   radioButtons("sla2",
+                                                label = h4("SLA", style="color:#E27831; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                choices = tiempos,
+                                                selected = "TR"),
+                                   radioButtons("modelresidual2",
+                                                label = h4("Modelo", style="color:#E27831; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                choices = names(modelos),
+                                                selected = "Suavización Exponencial")
+                                 ),
+                                 tableOutput(outputId = "reporte1") %>% withSpinner(color="#F89438"),
+                                 plotOutput(outputId = "reporte2") %>% withSpinner(color="#F89438")
+                                 )
                          )
                      )
                      )
@@ -256,9 +282,6 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
-    # observer para mostrar la visualización de datos
-    shiny::observeEvent(input$go1,{
-            
             plot_d <- reactive({
               datos_tsbl %>%
                 filter(Ruta == as.name(input$ruta1)) %>%
@@ -301,7 +324,7 @@ server <- function(input, output) {
                 scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
             })
             
-                output$grafica1 <- renderPlotly({
+                output$grafica1 <- renderPlot({
                   if (input$frecuencia1 == "Diariamente"){
                     plot_d()
                   } else if (input$frecuencia1 == "Semanalmente"){
@@ -310,95 +333,99 @@ server <- function(input, output) {
                     plot_m()
                   }
                 })
-    })
     
     # modelado diario
-    diarios_fit_filtrados <- reactive({
+    diarios_fit <- reactive({
       tiempos_dtrain %>% 
         filter(Ruta == input$ruta2) %>%
-        model(modelos[[input$modelo2]])
-      # model(Mean = MEAN(Tiempos),
-      #       `Naïve` = NAIVE(Tiempos),
-      #       `Seasonal naïve` = SNAIVE(Tiempos),
-      #       Drift = RW(Tiempos ~ drift()),
-      #       ETS = ETS(Tiempos),
-      #       ARIMA = ARIMA(Tiempos))
+        model(
+          Media = MEAN(Tiempos),
+          Ingenuo = NAIVE(Tiempos),
+          `Ingenuo Estacional` = SNAIVE(Tiempos),
+          Drift = RW(Tiempos ~ drift()),
+          `Suavización Exponencial` = ETS(Tiempos),
+          Arima = ARIMA(Tiempos)
+        )
     }) 
     
-    diarios_fc_filtrados <- reactive({
-      diarios_fit_filtrados() %>% 
-        forecast(h = "1 year")# %>% 
-      #select(input$modelo2)
+    diarios_fc <- reactive({
+      diarios_fit() %>% 
+        dplyr::select(input$modelo2)  %>% 
+        forecast(h = "1 year")
     })
     
-    
     plot_dtrain_fc <- reactive({
-      diarios_fc_filtrados() %>%
+      diarios_fc() %>%
         autoplot(datos_tsbl, level = NULL) +
         facet_wrap(~ SLA, scales = "free_y") +
+        ggtitle(paste("Pronósticos de",input$ruta1, tolower(input$frecuencia1))) +
         theme_minimal() +
-        labs(x = "Días",title = "Pronósticos SLA's") +
-        guides(colour = guide_legend(title = "Pronóstico"))
+        theme(plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)) +
+        labs(x = "Días")
     })
     
     # modelado semanal
-    semanal_fit_filtrados <- reactive({
+    semanal_fit <- reactive({
       tiempos_wtrain %>% 
         filter(Ruta == input$ruta2) %>%
-        model(modelos[[input$modelo2]])
-      # model(Mean = MEAN(Tiempos),
-      #       `Naïve` = NAIVE(Tiempos),
-      #       `Seasonal naïve` = SNAIVE(Tiempos),
-      #       Drift = RW(Tiempos ~ drift()),
-      #       ETS = ETS(Tiempos),
-      #       ARIMA = ARIMA(Tiempos))
+        model(
+          Media = MEAN(Tiempos),
+          Ingenuo = NAIVE(Tiempos),
+          `Ingenuo Estacional` = SNAIVE(Tiempos),
+          Drift = RW(Tiempos ~ drift()),
+          `Suavización Exponencial` = ETS(Tiempos),
+          Arima = ARIMA(Tiempos)
+        )
     }) 
     
-    semanal_fc_filtrados <- reactive({
-      semanal_fit_filtrados() %>% 
-        forecast(h = "1 year")# %>% 
-      #select(input$modelo2)
+    semanal_fc <- reactive({
+      semanal_fit() %>% 
+        dplyr::select(input$modelo2)  %>%
+        forecast(h = "1 year")
     })
     
     plot_wtrain_fc <- reactive({
-      semanal_fc_filtrados() %>% 
+      semanal_fc() %>% 
         autoplot(datos_week_tsbl, level = NULL) +
         facet_wrap(~ SLA, scales = "free_y") +
+        ggtitle(paste("Pronósticos de",input$ruta1, tolower(input$frecuencia1))) +
         theme_minimal() +
-        labs(x = "Semanas",title = "Pronósticos SLA's") +
-        guides(colour = guide_legend(title = "Pronóstico"))
+        theme(plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)) +
+        labs(x = "Semanas")
     }) 
     
     # modelado mensual
-    mensual_fit_filtrados <- reactive({
+    mensual_fit <- reactive({
       tiempos_mtrain %>% 
         filter(Ruta == input$ruta2) %>%
-        model(modelos[[input$modelo2]])
-        # model(Mean = MEAN(Tiempos),
-        #       `Naïve` = NAIVE(Tiempos),
-        #       `Seasonal naïve` = SNAIVE(Tiempos),
-        #       Drift = RW(Tiempos ~ drift()),
-        #       ETS = ETS(Tiempos),
-        #       ARIMA = ARIMA(Tiempos))
+        model(
+          Media = MEAN(Tiempos),
+          Ingenuo = NAIVE(Tiempos),
+          `Ingenuo Estacional` = SNAIVE(Tiempos),
+          Drift = RW(Tiempos ~ drift()),
+          `Suavización Exponencial` = ETS(Tiempos),
+          Arima = ARIMA(Tiempos)
+        )
     })
       
-    mensual_fc_filtrados <- reactive({
-      mensual_fit_filtrados() %>% 
-        forecast(h = "1 year")# %>% 
-        #select(input$modelo2)
+    mensual_fc <- reactive({
+      mensual_fit() %>%
+        dplyr::select(input$modelo2)  %>%
+        forecast(h = "1 year")
     })
       
     
     plot_mtrain_fc <- reactive({
-      mensual_fc_filtrados() %>% 
+      mensual_fc() %>% 
         autoplot(datos_month_tsbl, level = NULL) +
         facet_wrap(~ SLA, scales = "free_y") +
+        ggtitle(paste("Pronósticos SLA's de",input$ruta2, tolower(input$frecuencia2))) +
         theme_minimal() +
-        labs(x = "Meses",title = "Pronósticos SLA's") +
-        guides(colour = guide_legend(title = "Pronóstico"))
+        theme(plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)) +
+        labs(x = "Meses")
     })
           
-    output$grafica2 <- renderPlotly({
+    output$grafica2 <- renderPlot({
         if (input$frecuencia2 == "Diariamente"){
             plot_wtrain_fc()
         } else if (input$frecuencia2 == "Semanalmente"){
@@ -406,14 +433,69 @@ server <- function(input, output) {
         } else {
             plot_mtrain_fc()
         }
-                
     })
-            
-         
-            
-        
-        
-    #})
+    
+    acc_daily <- reactive({
+      diarios_fc() %>% 
+        accuracy(datos_tsbl) %>%
+        dplyr::group_by(SLA) %>% 
+        slice_min(RMSE)
+    })
+    
+    acc_semanal <- reactive({
+      semanal_fc() %>% 
+        accuracy(datos_week_tsbl) %>%
+        dplyr::group_by(SLA) %>% 
+        slice_min(RMSE)
+    })
+    
+    acc_mensual <- reactive({
+      mensual_fc() %>% 
+        accuracy(datos_month_tsbl) %>%
+        dplyr::group_by(SLA) %>% 
+        slice_min(RMSE)
+    })
+    
+      output$reporte1 <- renderTable({
+        if (input$frecuencia2 == "Diariamente"){
+          acc_daily()
+        } else if (input$frecuencia2 == "Semanalmente"){
+          acc_semanal()
+        } else {
+          acc_mensual()
+        } 
+      })
+    
+    diarios_residuals <- reactive({
+      diarios_fit() %>% 
+        filter(SLA == input$sla2) %>% 
+        select(input$modelresidual2) %>% 
+        gg_tsresiduals()
+    })
+    
+    semanal_residuals <- reactive({
+      semanal_fit() %>% 
+        filter(SLA == input$sla2) %>% 
+        select(input$modelresidual2) %>% 
+        gg_tsresiduals()
+    })
+    
+    mensual_residuals <- reactive({
+      mensual_fit() %>% 
+        filter(SLA == input$sla2) %>% 
+        select(input$modelresidual2) %>% 
+        gg_tsresiduals()
+    })
+    
+    output$reporte2 <- renderPlot({
+      if (input$frecuencia2 == "Diariamente"){
+        diarios_residuals()
+      } else if (input$frecuencia2 == "Semanalmente"){
+        semanal_residuals()
+      } else {
+        mensual_residuals()
+      }
+    })
     
 }
 
