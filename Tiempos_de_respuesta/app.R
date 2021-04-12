@@ -79,7 +79,8 @@ datos_tsbl <- datos %>% filter(IS.visita != "Consultoria Dual",
         # key : la(s) variable(s) que identifican a cada serie de tiempo
         key   = c(Ruta, SLA) 
     ) %>% 
-    fill_gaps(.full = TRUE, Tiempos = mean(Tiempos))
+    fill_gaps(.full = TRUE, Tiempos = mean(Tiempos)) %>% 
+    filter_index("2018-02-12" ~ "2021-03-10")
 
 datos_week_tsbl <- datos_tsbl %>% 
     group_by_key() %>% 
@@ -115,15 +116,15 @@ tsbls <- list(
 
 # training diarios
 tiempos_dtrain <- datos_tsbl %>% 
-    filter_index("2018-01-11" ~ "2020-03-10")
+    filter_index("2018-02-12" ~ "2020-03-10")
 
 # training semanales
 tiempos_wtrain <- datos_week_tsbl %>% 
-    filter_index("2018-01-11" ~ "2020-03-10")
+    filter_index("2018-02-12" ~ "2020-03-10")
 
 # training mensuales
 tiempos_mtrain <- datos_month_tsbl %>% 
-    filter_index("2018-01-11" ~ "2020-03-10")
+    filter_index("2018-02-12" ~ "2020-03-10")
 
 trainings <- list(
   Diarios = tiempos_dtrain,

@@ -88,7 +88,8 @@ datos_tsbl <- datos %>% filter(IS.visita != "Consultoria Dual",
     # key : la(s) variable(s) que identifican a cada serie de tiempo
     key   = c(Ruta, SLA) 
   ) %>% 
-  fill_gaps(.full = TRUE, Tiempos = mean(Tiempos))
+  fill_gaps(.full = TRUE, Tiempos = mean(Tiempos)) %>% 
+  filter_index("2018-02-01" ~ "2021-03-10")
 
 datos_tsbl
 ```
@@ -219,7 +220,7 @@ En las siguientes gráficas podemos observar los distintos pronósticos realizad
 
 ```{r}
 tiempos_dtrain <- datos_tsbl %>% 
-  filter_index("2018-01-11" ~ "2020-03-10")
+  filter_index("2018-02-01" ~ "2020-03-10")
 
 tiempos_dtrain_fit <- tiempos_dtrain %>% 
   filter(Ruta == "JALISCO") %>% 
@@ -243,7 +244,7 @@ tiempos_dtrain_fc %>%
 
 ```{r}
 tiempos_wtrain <- datos_week_tsbl %>% 
-  filter_index("2018-01-11" ~ "2020-03-10")
+  filter_index("2018-02-01" ~ "2020-03-10")
 
 tiempos_wtrain_fit <- tiempos_wtrain %>% 
   filter(Ruta == "JALISCO") %>% 
