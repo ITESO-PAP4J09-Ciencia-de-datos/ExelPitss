@@ -129,7 +129,7 @@ ui <- fluidPage(
       width = 3,
                 div(
             id = "form",
-            style = "text-align:center; color: #FFFFFF24; fill:transparent", #rgb(0,0,51/255);",
+            style = "text-align:center; color: #000033; fill:transparent", #rgb(0,0,51/255);",
             uiOutput(outputId = "select_marcas"),
             uiOutput(outputId = "select_models"),
             uiOutput(outputId = "select_zonas"),
@@ -137,10 +137,9 @@ ui <- fluidPage(
             uiOutput(outputId = "select_fechas")
         ),
         actionButton(
-                     #div(
                        "reset_input",
-                       label = "Reestablecer todo",
-                       icon = icon( name = "eraser"),
+                       label = "Reestablecer opciones",
+                       icon = icon( name = "redo"),
                        style = "color: #fff; background-color: #F89438; border-color: #E27831"
                     )
         
@@ -156,13 +155,13 @@ ui <- fluidPage(
                     # separate the box by a column
                     column(width = 10, 
                         shiny::actionButton( inputId = "clearMap"
-                                               , icon = icon( name = "eraser")
+                                               , icon = icon(name = "redo")
                                                , label = "Reestablecer mapa"
                                                , style = "color: #fff; background-color: #F89438; border-color: #E27831"
                         ),
                         leaflet::leafletOutput( outputId = "myMap",
-                                                height = 400,
-                                                width = 670
+                                                #height = 400,
+                                                #width = 900
                         ) %>% withSpinner(color="#F89438")
                     ), 
                     column(width = 2,
@@ -237,7 +236,7 @@ server <- function(input, output, session) {
     
     output$select_marcas <- renderUI({
         pickerInput(inputId  = "marcas",
-                    label    = h4("Marca", style="color:#70476F; font-style:urw din italic; font-size:20px"),
+                    label    = h4("Marca", style="color:#E27831; font-style:urw din italic; font-size:20px"),
                     choices  = marcas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -255,7 +254,7 @@ server <- function(input, output, session) {
     
     output$select_models <- renderUI({
         pickerInput(inputId  = "modelos",
-                    label = h4("Modelo", style="color:#70476F; font-style:urw din italic;font-size:20px"),
+                    label = h4("Modelo", style="color:#E27831; font-style:urw din italic;font-size:20px"),
                     choices = modelos(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -272,7 +271,7 @@ server <- function(input, output, session) {
     
     output$select_zonas <- renderUI({
         pickerInput(inputId  = "zonas",
-                    label = h4("Zona", style="color:#70476F; font-style:urw din italic; font-size:20px"),
+                    label = h4("Zona", style="color:#E27831; font-style:urw din italic; font-size:20px"),
                     choices = zonas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -290,7 +289,7 @@ server <- function(input, output, session) {
     
     output$select_is <- renderUI({
         pickerInput(inputId  = "is",
-                    label = h4("Ingeniero de Servicio", style="color:#70476F; font-style:urw din italic; font-size:20px"),
+                    label = h4("Ingeniero de Servicio", style="color:#E27831; font-style:urw din italic; font-size:20px"),
                     choices = is(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -442,6 +441,7 @@ server <- function(input, output, session) {
               label = ,
               icon = icons
             )
+          reset("form")
           output$text <- renderText({"Selecciona alguna zona"})
           tabla <- tibble(vacio=c(""))
           output$tabla_is <- renderTable(tabla,spacing='xs',align='l',colnames=FALSE)
