@@ -28,6 +28,7 @@ library(shinythemes)
 library(shinyWidgets)
 library(shinydashboard)
 library(shinyjs)
+library(shinycssloaders)
 
 
 
@@ -162,7 +163,7 @@ ui <- fluidPage(
                         leaflet::leafletOutput( outputId = "myMap",
                                                 height = 400,
                                                 width = 670
-                        )
+                        ) %>% withSpinner(color="#F89438")
                     ), 
                     column(width = 2,
                       div(style="text-align:center;
@@ -199,7 +200,7 @@ ui <- fluidPage(
                   tags$style(type = "text/css", "a{color: #fff}")
                   ),
                 style = "color: #fff",
-                dataTableOutput(outputId = "tabla1")# width = "120%")
+                dataTableOutput(outputId = "tabla1")  %>% withSpinner(color="#F89438")# width = "120%")
                 #código para devolver tabla
             )
             
