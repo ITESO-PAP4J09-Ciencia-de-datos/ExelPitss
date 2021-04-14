@@ -136,6 +136,17 @@ Train_tsb %>%
 ```{r}
 Train_tsb %>% 
   filter(Ruta == "JALISCO") %>% 
+  features(Tiempo_de_respuesta, unitroot_ndiffs)
+
+Train_tsb %>% 
+  filter(Ruta == "JALISCO") %>% 
+  features(Tiempo_de_respuesta, unitroot_nsdiffs)
+```
+
+
+```{r}
+Train_tsb %>% 
+  filter(Ruta == "JALISCO") %>% 
   mutate(dif = difference(Tiempo_de_respuesta)) %>% 
   features(dif,unitroot_kpss)
 ```
@@ -148,16 +159,51 @@ Train_tsb %>%
   gg_tsdisplay(plot_type = 'partial')
 ```
 
+```{r}
+Modelos_fit %>% 
+  select(ARIMA_fourier2) %>% 
+  report()
+```
+
+
+
 Grafica del test de los modelos
 
+
 ```{r}
-Modelos_fc %>%
+Modelos_fc %>% 
+  # filter(.model == "ARIMA_fourier2") %>% 
+  # autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06")) +
   autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06"), level = NULL) +
   ggtitle("Entrenamiento") +
   xlab("Años") + ylab("horas") +
   guides(colour=guide_legend(title="Forecast"))+
-   geom_vline(xintercept = as.Date("2020-11-08", color = "Red",
-              linetype = "dashed"))+
+   geom_vline(xintercept = as.Date("2020-11-08"), color = "Red",
+              linetype = "dashed")+
+  annotate("label", x = c(as.Date("2020-08-01"),as.Date("2020-12-01")),
+                        y = 3.5, label = c("Train set", "Test set"),
+                        color = c("black","blue"))
+```
+
+```{r}
+Train_tsb %>% 
+  filter_index("2020-01-01" ~ "2020-12-06") %>% 
+  filter(Ruta == "JALISCO") %>% 
+  autoplot(Tiempo_de_respuesta) + 
+  autolayer(Modelos_fc %>% filter(.model == "dynamic_reg"), level = NULL)
+```
+
+
+```{r}
+Modelos_fc %>% 
+  filter(.model %in% c("dynamic_reg")) %>% 
+  autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06")) +
+  # autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06"), level = NULL) +
+  ggtitle("Entrenamiento") +
+  xlab("Años") + ylab("horas") +
+  guides(colour=guide_legend(title="Forecast"))+
+   geom_vline(xintercept = as.Date("2020-11-08"), color = "Red",
+              linetype = "dashed")+
   annotate("label", x = c(as.Date("2020-08-01"),as.Date("2020-12-01")),
                         y = 3.5, label = c("Train set", "Test set"),
                         color = c("black","blue"))
@@ -168,7 +214,9 @@ Analisis estadistico de los modelos
 
 
 ```{r}
-Error_test
+Error_test %>% 
+  select(.model:.type, RMSE, MAE, MAPE, MASE) %>% 
+  arrange(RMSE)
 ```
 
 
