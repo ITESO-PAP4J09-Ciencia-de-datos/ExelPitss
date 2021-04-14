@@ -183,7 +183,7 @@ En las siguiente tablas podemos observar un sencillo reporte de calidad de datos
 dqr_numericos <-
   mutate(dlookr::describe(datos)) %>%
   mutate(dlookr::normality(datos)) %>% 
-  select(everything(), -c(p00,p01,p05,p10,p20,p30,p40,p60,p70,p80,p100,vars))
+  dplyr::select(everything(), -c(p00,p01,p05,p10,p20,p30,p40,p60,p70,p80,p100,vars))
 
 dqr_numericos
 diagnosis_numericos <- diagnose_numeric(datos)
