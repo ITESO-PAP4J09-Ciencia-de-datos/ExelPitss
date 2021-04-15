@@ -61,53 +61,43 @@ El data set se conforma de `r nrow(datos)` filas y de `r ncol(datos)` variables.
 
 - **`r names(datos)[4]`** es el número del equipo atendido. 
 
-- **`r names(datos)[5]`** el nombre del cliente atendido.
+- **`r names(datos)[5]`** es el número de cliente atendido.
 
-- **`r names(datos)[6]`** es el número de cliente atendido.
+- **`r names(datos)[6]`** es el nivel de servicio.
 
-- **`r names(datos)[7]`** es el nombre del distribuidor o cliente directo.
+- **`r names(datos)[7]`** es la fecha y hora en que se recibe la orden de servicio.
 
-- **`r names(datos)[8]`** es el nivel de servicio.
+- **`r names(datos)[8]`** es el estatus de la orden de servicio.
 
-- **`r names(datos)[9]`** es la fecha y hora en que se recibe la orden de servicio.
+- **`r names(datos)[9]`** es la referencia de la orden por parte del cliente.
 
-- **`r names(datos)[10]`** es el ejecutivo que captura la orden de servicio.
+- **`r names(datos)[10]`** es la prioridad asignada a la orden de servicio.
 
-- **`r names(datos)[11]`** es el ingeniero que se le asigna a la orden de servicio.
+- **`r names(datos)[11]`** es la categoría o tipo de la orden de servicio.
 
-- **`r names(datos)[12]`** es el estatus de la orden de servicio.
+- **`r names(datos)[12]`** es la ruta o zona de la orden de servicio.
 
-- **`r names(datos)[13]`** es la referencia de la orden por parte del cliente.
+- **`r names(datos)[13]`** es la cantidad de visitas realizadas.
 
-- **`r names(datos)[14]`** es la prioridad asignada a la orden de servicio.
+- **`r names(datos)[14]`** es la fecha en la que se cerró o concluyó la orden de servicio.
 
-- **`r names(datos)[15]`** es la categoría o tipo de la orden de servicio.
+- **`r names(datos)[15]`** es el tiempo de solución total que el cliente toma en cuenta.
 
-- **`r names(datos)[16]`** es la ruta o zona de la orden de servicio.
+- **`r names(datos)[16]`** es el tiempo de mano de obra.
 
-- **`r names(datos)[17]`** es el ingeniero que atendió la orden de servicio.
+- **`r names(datos)[17]`** es el tiempo de respuesta, lo que tarda el ingeniero en llegar a atender la orden desde que esta fue levantada.
 
-- **`r names(datos)[18]`** es la cantidad de visitas realizadas.
+- **`r names(datos)[18]`** es el tiempo límite de respuesta.
 
-- **`r names(datos)[19]`** es la fecha en la que se cerró o concluyó la orden de servicio.
+- **`r names(datos)[19]`** es el tiempo restante con respecto del tiempo de respuesta menos su límite.
 
-- **`r names(datos)[20]`** es el tiempo de solución total que el cliente toma en cuenta.
+- **`r names(datos)[20]`** es el tiempo de solución total para Exel Pitss.
 
-- **`r names(datos)[21]`** es el tiempo de mano de obra.
+- **`r names(datos)[21]`** es el tiempo límite de solución.
 
-- **`r names(datos)[22]`** es el tiempo de respuesta, lo que tarda el ingeniero en llegar a atender la orden desde que esta fue levantada.
+- **`r names(datos)[22]`** es el tiempo restante con respecto del tiempo de solución total menos su límite.
 
-- **`r names(datos)[23]`** es el tiempo límite de respuesta.
-
-- **`r names(datos)[24]`** es el tiempo restante con respecto del tiempo de respuesta menos su límite.
-
-- **`r names(datos)[25]`** es el tiempo de solución total para Exel Pitss.
-
-- **`r names(datos)[26]`** es el tiempo límite de solución.
-
-- **`r names(datos)[27]`** es el tiempo restante con respecto del tiempo de solución total menos su límite.
-
-- **`r names(datos)[28]`** es la clasificación de si se cumplió con el Límite del Tiempo de Respuesta, 1 = sí y 0 = no.
+- **`r names(datos)[23]`** es la clasificación de si se cumplió con el Límite del Tiempo de Respuesta, 1 = sí y 0 = no.
 
 A continuación se puede observar una vista anticipada de los datos.
 
@@ -156,11 +146,6 @@ diagnosis_categoricos
 ggplot(drop_na(categoricos), aes(x = Ruta)) +
   geom_bar(fill = "blue", width = 0.5) +
   xlab("Ruta") + ylab("Observaciones") +
-  coord_flip()
-
-ggplot(categoricos, aes(x = Distribuidor)) +
-  geom_bar(fill = "dark blue", width = 0.5) +
-  xlab("Distribuidor") + ylab("Observaciones") +
   coord_flip()
 ```
 <div style="text-align: justify">

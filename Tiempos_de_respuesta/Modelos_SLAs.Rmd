@@ -71,7 +71,7 @@ Por otra parte, para poder realizar los pronósticos, fue necesario agrupar los 
   * Diariamente
 
 ```{r}
-datos_tsbl <- datos %>% filter(IS.visita != "Consultoria Dual",
+datos_tsbl <- datos %>% filter(
          Estatus   == "RESUELTA",
          Categoría == "CORRECTIVO") %>% 
   group_by(Recepcion, Ruta) %>% 
@@ -122,7 +122,7 @@ A continuación se muestran los datos de la ruta utilizada como ejemplo, siendo 
 
 ```{r}
 datos_tsbl %>%
-  filter(Ruta == "JALISCO") %>%
+  filter(Ruta == "JALISCO") %>% 
   autoplot(Tiempos) + #aes(color = Ruta) +
   facet_wrap(~ SLA, scales = "free_y") +
   theme(legend.position = "none")
@@ -146,12 +146,31 @@ datos_month_tsbl %>%
 
 En esta sección se analizaron distintos modelos, los cuales se explican brevemente a continuación, para realizar pronósticos de los SLA's, utilizando como ejemplo los tiempos de la ruta de Jalisco.
 
-- **AVERAGE**:
-- **NAÏVE**:
-- **SEASON NAÏVE**:
-- **DRIFT**:
-- **ETS**:
-- **ARIMA**:
+- **MEDIA**: En este método, los pronósticos son equivalentes a la media de los datos históricos.
+$$\hat{y}_{T+h \mid T}=\bar{y}=\left(y_{1}+\cdots+y_{T}\right) / T$$
+
+- **INGENUO**: En este método, los pronósticos se basan en la última observación.
+$$\hat{y}_{T+h \mid T}=y_{T}$$
+
+- **INGENUO ESTACIONAL**: los pronósticos se basan en el último valor observado de cada periodo o estación del año.
+$$\begin{equation}
+\hat{y}_{T+h \mid T}=y_{T+h-m(k+1)},
+\end{equation}$$
+donde $m$ es el periodo estacional.
+
+- **DRIFT**: Este modelo permite que los pronósticos aumenten o disminuyan con el tiempo, a diferencia del método Ingenuo, el cual está dado por:
+$$\begin{equation}
+\hat{y}_{T+h \mid T}=y_{T}+\frac{h}{T-1} \sum_{t=2}^{T}\left(y_{t}-y_{t-1}\right)=y_{T}+h\left(\frac{y_{T}-y_{1}}{T-1}\right)
+\end{equation}$$
+
+- **SUAVIZACIÓN EXPONENCIAL**: Este método utiliza los promedios históricos de una variable en un período para intentar predecir su comportamiento futuro.
+$$\hat{y}_{t+1 \mid t} = \ell_{t-1} + \alpha \left(y_{t}-\ell_{t-1}\right)$$
+- **ARIMA**: En los modelos de autoregresión, pronosticamos la variable de interés usando una combinación lineal de valores pasados de la variable. Entonces, un modelo autorregresivo de orden $p$ se puede escribir como:
+$$y_{t}=c+\phi_{1} y_{t-1}+\phi_{2} y_{t-2}+\cdots+\phi_{p} y_{t-p}+\varepsilon_{t}$$
+donde $\varepsilon_{t}$ es ruido blanco. Por otra parte, un modelo de promedio móvil, en lugar de usar valores pasados de la variable de pronóstico en una regresión, usa errores de pronósticos pasados en un modelo similar a la regresión:
+$$y_{t}=c+\varepsilon_{t}+\theta_{1} \varepsilon_{t-1}+\theta_{2} \varepsilon_{t-2}+\cdots+\theta_{q} \varepsilon_{t-q}$$
+Entonces, si combinamos la diferenciación con la autorregresión y un modelo de media móvil, obtenemos un modelo ARIMA (Auto Regressive Integrated Moving Average) no estacional. El modelo completo, entonces se escribe de la siguiente manera:
+$$y_{t}^{\prime}=c+\phi_{1} y_{t-1}^{\prime}+\cdots+\phi_{p} y_{t-p}^{\prime}+\theta_{1} \varepsilon_{t-1}+\cdots+\theta_{q} \varepsilon_{t-q}+\varepsilon_{t}$$  
 
 <div/>
 
@@ -325,12 +344,17 @@ acc_month %>%
 
 ### Diagnóstico de Residuos
 
+- **Diariamente**
+
 ```{r}
 tiempos_dtrain_fit %>% 
   filter(SLA == "TST") %>% 
   select("ETS") %>% 
   gg_tsresiduals()
 ```
+> Aunque es un poco difícil de notarlo, en la primera gráfica podemos observar que los residuales varían en torno al 0, y que, al igual que en el histograma, parecen ser que los datos no son normales, ya que la cola derecha parece ser demasiado larga, inclusive si excluyéramos los outliers o datos atípicos. En conlcusión, podemos decir que el modelo es bastante bueno ya que en la segunda gráfica los datos no salen de los límites.
+
+- **Semanalmente**
 
 ```{r}
 tiempos_wtrain_fit %>%  
@@ -338,6 +362,9 @@ tiempos_wtrain_fit %>%
   select("Mean") %>% 
   gg_tsresiduals()
 ```
+> Para este segundo resultado los daos son un poco diferentes, ya que los datos sí sobrepasan los límites, y el histograma nos muestra claramente que los datos no son normales, quizás sería bueno analizar los resultados de otro modelo.
+
+- **Mensualmente**
 
 ```{r}
 tiempos_mtrain_fit %>%  
@@ -345,4 +372,5 @@ tiempos_mtrain_fit %>%
   select("Seasonal naïve") %>% 
   gg_tsresiduals()
 ```
+> Por último, aunque parecen ser pocos datos, debido que los pronósticos se realizaron únicamente por un año (12 meses), parece ser que es un modelo bastante bueno para este análisis, aunque los datos tampoco distribuyen de una manera normal.
 

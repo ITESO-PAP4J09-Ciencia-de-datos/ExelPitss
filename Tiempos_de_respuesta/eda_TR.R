@@ -39,5 +39,6 @@ datos <- datos %>%
          TLS = `Limite.tiempo.de.solución.total`,
          TLS.restante = `Tiempo.límite.restante...27`) %>% 
   mutate(Recepcion = as.Date(Recepcion),
-         Cierre    = as.Date(Cierre))
+         Cierre    = as.Date(Cierre)) %>% 
+  dplyr::select(everything(),-c(Num.Cliente,Distribuidor,IS.asignado,IS.visita,Ejecutivo))
 
