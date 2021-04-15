@@ -176,7 +176,7 @@ ui <- fluidPage(
                                      tags$style(type = "text/css", "a{color: #fff}")
                                  ),
                                  style = "color: #fff",
-                                 plotOutput(outputId = "grafica1") %>% withSpinner(color="#F89438") )         
+                                 plotlyOutput(outputId = "grafica1") %>% withSpinner(color="#F89438") )         
                          )
                      )
                  )
@@ -312,6 +312,7 @@ server <- function(input, output) {
                 autoplot(Tiempos) + #aes(color = SLA) +
                 facet_wrap(~ SLA, scales = "free_y") +
                 ggtitle(paste("Tiempos de",input$ruta1, tolower(input$frecuencia1))) +
+                geom_vline(xintercept = as.Date("2020-03-10"), linetype = "longdash", size = 1) +
                 theme_minimal() +
                 theme(
                     legend.position = "none",
@@ -326,6 +327,7 @@ server <- function(input, output) {
                 autoplot(Tiempos) + #aes(color = SLA) +
                 facet_wrap(~ SLA, scales = "free_y") +
                 ggtitle(paste("Tiempos de",input$ruta1, tolower(input$frecuencia1))) +
+                geom_vline(xintercept = as.Date("2020-03-10"), linetype = "longdash", size = 1) +
                 theme_minimal() +
                 theme(
                     legend.position = "none",
@@ -339,16 +341,17 @@ server <- function(input, output) {
                 filter(Ruta == as.name(input$ruta1)) %>%
                 autoplot(Tiempos) +# aes(color = SLA) +
                 facet_wrap(~ SLA, scales = "free_y") +
+                geom_vline(xintercept = as.Date("2020-03-10"), linetype = "longdash", size = 1) +
                 ggtitle(paste("Tiempos de",input$ruta1, tolower(input$frecuencia1))) +
                 theme_minimal() +
                 theme(
                     legend.position = "none",
                     plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)
                 ) + 
-                scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+                scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831")) 
             })
             
-                output$grafica1 <- renderPlot({
+                output$grafica1 <- renderPlotly({
                   if (input$frecuencia1 == "Diariamente"){
                     plot_d()
                   } else if (input$frecuencia1 == "Semanalmente"){

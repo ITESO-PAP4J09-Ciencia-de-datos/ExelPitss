@@ -241,6 +241,28 @@ En las siguientes gráficas podemos observar los distintos pronósticos realizad
 tiempos_dtrain <- datos_tsbl %>% 
   filter_index("2018-02-01" ~ "2020-03-10")
 
+tiempos_wtrain <- datos_week_tsbl %>% 
+  filter_index("2018-02-01" ~ "2020-03-10")
+
+tiempos_mtrain <- datos_month_tsbl %>% 
+  filter_index("2018-01-11" ~ "2020-03-10")
+```
+
+```{r}
+datos_month_tsbl %>% 
+  filter(Ruta == "JALISCO") %>%
+  autoplot(Tiempos) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  ggtitle("Tiempos de JALISCO mensualmente") +
+  theme_minimal() +
+  theme(legend.position = "none") + 
+  geom_vline(xintercept = as.Date("2020-03-10"), linetype = "longdash", size = 1) +
+  scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+
+```
+
+
+```{r}
 tiempos_dtrain_fit <- tiempos_dtrain %>% 
   filter(Ruta == "JALISCO") %>% 
   model(Mean = MEAN(Tiempos),
@@ -262,9 +284,6 @@ tiempos_dtrain_fc %>%
 ```
 
 ```{r}
-tiempos_wtrain <- datos_week_tsbl %>% 
-  filter_index("2018-02-01" ~ "2020-03-10")
-
 tiempos_wtrain_fit <- tiempos_wtrain %>% 
   filter(Ruta == "JALISCO") %>% 
   model(Mean = MEAN(Tiempos),
@@ -287,9 +306,6 @@ tiempos_wtrain_fc %>%
 ```
 
 ```{r}
-tiempos_mtrain <- datos_month_tsbl %>% 
-  filter_index("2018-01-11" ~ "2020-03-10")
-
 tiempos_mtrain_fit <- tiempos_mtrain %>% 
   filter(Ruta == "JALISCO") %>% 
   model(Mean = MEAN(Tiempos),
