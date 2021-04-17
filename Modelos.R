@@ -52,7 +52,7 @@ Modelos_fit <- Train_tsb %>%
     ) 
   ) %>% 
   mutate(
-    Combinado1 = (ARIMA_fourier2 +  + ARIMA213)/3 
+    Combinado1 = (ARIMA_fourier2 + Prophet)/2
   )
 
 

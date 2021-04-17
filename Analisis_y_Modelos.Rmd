@@ -31,7 +31,7 @@ Tras el analisis exploratorio mediante la limpieza de los datos dados, se proced
 
 # Desarrollo 
 ## Gráficas del análisis exploratorio
-```{r echo=FALSE}
+```{r echo=FALSE} 
 tiempos_os_tidy_tbl %>%
   filter(Ruta == "JALISCO",
          Tiempos %in% c("Tiempo efectivo en sitio", "Tiempo de respuesta")) %>%
@@ -177,7 +177,7 @@ Modelos_fc %>%
    # filter(.model %in% c("ARIMA_fourier2BC", "ARIMA_BC","ARIMA_fourier2" )) %>% 
   # autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06")) +
   autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06"), level = NULL ) +
-  ggtitle("Entrenamiento") +
+  ggtitle("Forecast") +
   xlab("Semanas") + ylab("horas") +
   guides(colour=guide_legend(title="Forecast"))+
    geom_vline(xintercept = as.Date("2020-11-08"), color = "Red",
@@ -193,6 +193,7 @@ Train_D_tsb %>%
 filter_index("2020-01-01" ~ "2020-12-06") %>% 
   filter(Ruta == "JALISCO") %>% 
   autoplot(Tiempo_de_respuesta) +
+  ggtitle("Forecast") +
   xlab("Semanas") + ylab("horas") +
   guides(colour=guide_legend(title="Forecast"))+
   geom_vline(xintercept = as.Date("2020-11-08"), color = "Red",
