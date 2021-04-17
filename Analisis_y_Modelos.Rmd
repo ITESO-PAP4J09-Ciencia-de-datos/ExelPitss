@@ -225,13 +225,17 @@ Error_test %>%
   https://rstudio.com/products/rstudio/download/
 
 * Pagina de inicio de estudios
-  https://r4ds-en-espaniol.netlify.app
+
+  Wickham, H & Grolemund, G.. (2017). R for Data Science. Texas: Rice.
 
 * Principios basicos de las series de tiempo
-  https://bookdown.org/content/2274/series-temporales.html
-  https://otexts.com/fpp2/
+
+  Parra, F.. (2019). Series Temporales. En Estadística y Machine Learning con R(8.1-8.4). Cantabria: ICANE.
+  
+ Hyndman, R.J., & Athanasopoulos, G. (2018) Forecasting: principles and practice, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2. Accessed on march 12, 2021.
 
 * Ayuda de modelos en R
-  https://github.com/tidymodels
-  https://www.tidymodels.org/
-    
+ 
+ Community. (2020). Tidymodels. Recuperado en: marzo 18, 2021, de GitHub Sitio web: https://github.com/tidymodels?page=1
+ 
+ Community. (s.f.). Tidymodels packages. Recuperado en: enero 20, 2021, de Tidymodels Sitio web: https://www.tidymodels.org/packages/
