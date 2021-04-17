@@ -11,16 +11,20 @@ Tras el analisis exploratorio mediante la limpieza de los datos dados, se proced
 
 
 
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
-source("Limpieza.R", 
-       local = knitr::knit_global(),
-       encoding = "utf-8")
-source("limpieza_reporte_Tiempo_respuesta.R", 
-       local = knitr::knit_global(),
-       encoding = "utf-8")
-source("Modelos.R", 
-       local = knitr::knit_global(),
-       encoding = "utf-8")
+ source("Limpieza.R", 
+        local = knitr::knit_global(),
+        encoding = "utf-8")
+ source("limpieza_reporte_Tiempo_respuesta.R", 
+        local = knitr::knit_global(),
+        encoding = "utf-8")
+ source("Modelos.R", 
+        local = knitr::knit_global(),
+        encoding = "utf-8")
+ source("ModelosD.R", 
+        local = knitr::knit_global(),
+        encoding = "utf-8")
 ```
 
 
@@ -115,7 +119,7 @@ Las siguientes tablas contienen correlaciones especificas:  **LRespuesta_TRespue
 Las 3 tablas no muestran correlaciones fiables o que podamos tomar como una correlación válida, en algunos casos esto se debe a la naturaleza de los mismos datos, adicional a esto, se puede ver que no existen correlaciones lineales entre las variables utilizadas. 
 
 
-## Series de tiempo
+## Descomposicion de la serie de tiempo de Jalisco 
 ```{r}
 components(dcmp_Jal) %>% autoplot()+ xlab("Meses")
 ```
@@ -126,6 +130,7 @@ components(dcmp_Jal_sem) %>% autoplot()+ xlab("Semanas")
 
 
 ## Modelos 
+### Obtención de las ordenes parte autoregresiva y media movil
 
 ```{r}
 Train_tsb %>% 
@@ -143,14 +148,12 @@ Train_tsb %>%
   features(Tiempo_de_respuesta, unitroot_nsdiffs)
 ```
 
-
 ```{r}
 Train_tsb %>% 
   filter(Ruta == "JALISCO") %>% 
   mutate(dif = difference(Tiempo_de_respuesta)) %>% 
   features(dif,unitroot_kpss)
 ```
-
 
 ```{r message=FALSE, warning=FALSE}
 Train_tsb %>% 
@@ -167,16 +170,15 @@ Modelos_fit %>%
 
 
 
-Grafica del test de los modelos
-
+### Grafica del test de los modelos ARIMA y modelo Prophet 
 
 ```{r}
 Modelos_fc %>% 
-  # filter(.model == "ARIMA_fourier2") %>% 
+   # filter(.model %in% c("ARIMA_fourier2BC", "ARIMA_BC","ARIMA_fourier2" )) %>% 
   # autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06")) +
-  autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06"), level = NULL) +
+  autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06"), level = NULL ) +
   ggtitle("Entrenamiento") +
-  xlab("Años") + ylab("horas") +
+  xlab("Semanas") + ylab("horas") +
   guides(colour=guide_legend(title="Forecast"))+
    geom_vline(xintercept = as.Date("2020-11-08"), color = "Red",
               linetype = "dashed")+
@@ -185,37 +187,28 @@ Modelos_fc %>%
                         color = c("black","blue"))
 ```
 
+### Grafica del test de los modelos dinamicos 
 ```{r}
-Train_tsb %>% 
-  filter_index("2020-01-01" ~ "2020-12-06") %>% 
+Train_D_tsb %>% 
+filter_index("2020-01-01" ~ "2020-12-06") %>% 
   filter(Ruta == "JALISCO") %>% 
-  autoplot(Tiempo_de_respuesta) + 
-  autolayer(Modelos_fc %>% filter(.model == "dynamic_reg"), level = NULL)
-```
-
-
-```{r}
-Modelos_fc %>% 
-  filter(.model %in% c("dynamic_reg")) %>% 
-  autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06")) +
-  # autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06"), level = NULL) +
-  ggtitle("Entrenamiento") +
-  xlab("Años") + ylab("horas") +
+  autoplot(Tiempo_de_respuesta) +
+  xlab("Semanas") + ylab("horas") +
   guides(colour=guide_legend(title="Forecast"))+
-   geom_vline(xintercept = as.Date("2020-11-08"), color = "Red",
-              linetype = "dashed")+
+  geom_vline(xintercept = as.Date("2020-11-08"), color = "Red",
+             linetype = "dashed")+
   annotate("label", x = c(as.Date("2020-08-01"),as.Date("2020-12-01")),
-                        y = 3.5, label = c("Train set", "Test set"),
-                        color = c("black","blue"))
+           y = 3.5, label = c("Train set", "Test set"),
+           color = c("black","blue"))+
+  autolayer(Modelos_D_fc %>% filter(.model == "dynamic_reg"), level = NULL)
+
 ```
 
-
-Analisis estadistico de los modelos  
-
+### Analisis estadistico de los modelos  
 
 ```{r}
 Error_test %>% 
-  select(.model:.type, RMSE, MAE, MAPE, MASE) %>% 
+  select(.model:.type, RMSE, MAE, MAPE, MASE, RMSSE) %>% 
   arrange(RMSE)
 ```
 
