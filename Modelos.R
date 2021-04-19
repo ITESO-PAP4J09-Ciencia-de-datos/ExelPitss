@@ -48,17 +48,19 @@ Modelos_fit <- Train_tsb %>%
     #"SN_42"              = SNAIVE(Tiempo_de_respuesta ~ lag(42)),
     #"SN_44"              = SNAIVE(Tiempo_de_respuesta ~ lag(44)),
     #"Dr"                 = RW(Tiempo_de_respuesta ~ drift()),
-    "SN_44"           = SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()),
-    "SN_42"           = SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()),
+    # "SN_44"           = SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()),
+    # "SN_42"           = SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()),
+    "Best"            = (SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
+                         SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2 , 
     # "FORSADO1"    = (ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2))         + 
     #                 SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()) +
     #                 SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()) +
     #                 RW(Tiempo_de_respuesta ~ drift())      
     #                 )/4,
-    # "FORSADO2"    = (ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2))         + 
-    #                    SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()) +
-    #                    SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())      
-    #                   )/3,
+     "FORSADO2"    = (ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2))         + 
+                        SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()) +
+                        SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())      
+                       )/3,
     # "NAI"    = NAIVE(Tiempo_de_respuesta),
     # "M"     = MEAN(Tiempo_de_respuesta),
     #"ETS2"  = ETS(Tiempo_de_respuesta ~ error("A") + trend("N") + season("N")),
@@ -74,7 +76,7 @@ Modelos_fit <- Train_tsb %>%
      # SNB_Dr_ARF2 = (SN_42_44+ Dr + ARIMA_fourier2)/3,
      # SN_44_Dr_ARF2 = (SN_44+Dr+ARIMA_fourier2 )/3,
      # SN_44_Dr_ARBC = (SN_44+Dr+ ARIMA_BC)/3,
-     SN_42_44 = (SN_42 + SN_44)/2,
+     # SN_42_44 = (SN_42 + SN_44)/2,
      # Best_ARF2 = (SN_42_44+ ARIMA_fourier2)/2,
      # Best_ARBC = (SN_42_44+ARIMA_BC)/2
   )
@@ -115,6 +117,54 @@ dcmp_Jal_sem <- Train_tsb %>%
 #   gg_tsresiduals()+
 #   ggtitle("Residuales ARIMA_BC")
 
+# Validacion Cruzada  -----------------------------------------------------
+# Time series cross-validation accuracy
+Train_tsb_tr <-  Train_tsb %>% 
+  filter(Ruta == "JALISCO", Fecha_recepion < yearweek("2020-11-15")) %>% 
+  stretch_tsibble(.init = 46, .step = 1) %>%
+  relocate(Fecha_recepion, Ruta, .id)
+
+# TSCV accuracy
+ValCru_Ts <- Train_tsb_tr %>%
+  model(
+    "SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
+           SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2,
+    # "FORSADO2"    = (ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2)) + 
+    #                    SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()) +
+    #                    SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())      
+    #                  )/3
+    ) %>%
+  forecast(h = "2 week") %>%
+  accuracy(Train_tsb)
+
+# Training set accuracy
+ValCru_Tr <- Train_tsb %>%
+  filter(Ruta == "JALISCO", Fecha_recepion < yearweek("2020-11-15")) %>% 
+  model( 
+    "SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
+                   SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2,
+    # "ARF2"    = ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2)) 
+          ) %>%
+  accuracy()
+
+# Previsión de la precisión del horizonte con validación cruzada
+fc <- Train_tsb_tr %>%
+  model(
+    "SN_44"=SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()),
+    "SN_42"=SNAIVE(Tiempo_de_respuesta~ lag(42) + drift())
+  ) %>%
+  mutate(
+    SN_44_42  = (SN_44+SN_42)/2
+  ) %>% 
+  forecast(h = "2 week") %>%  
+  group_by(.id ) %>%
+  mutate(h = row_number()) %>%
+  ungroup() 
+
+RMSE <- fc %>%
+  accuracy(Train_tsb, by = c("h", ".model")) %>%
+  ggplot(aes(x = h, y = RMSE)) +
+  geom_point()
 
 # Validación modelos  ----------------------------------------------
 
@@ -133,16 +183,3 @@ Modelos_val_fc <- Modelos_Val_fit %>%
 
 Error_Val <- accuracy(Modelos_val_fc, Train_tsb)
 
-# Modelos_val_fc %>% 
-#   filter(.model %in% c("SN_42_44")) %>% 
-#   autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2021-01-31")) +
-#   ggtitle("Forecast") +
-#   xlab("Semanas") + ylab("horas") +
-#   guides(colour=guide_legend(title="Forecast"))+
-#   geom_vline(xintercept = as.Date("2020-11-08"), color = "Red",
-#              linetype = "dashed")+
-#   geom_vline(xintercept = as.Date("2020-12-01"), color = "Red",
-#              linetype = "dashed")+
-#   annotate("label", x = c(as.Date("2020-08-01"),as.Date("2020-12-01"),as.Date("2021-03-01")),
-#            y = 3.5, label = c("Train set", "Test set","Val set"),
-#            color = c("black","blue", "green"))
