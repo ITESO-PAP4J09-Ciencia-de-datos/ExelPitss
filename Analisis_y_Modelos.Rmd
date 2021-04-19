@@ -172,11 +172,12 @@ Modelos_fit %>%
 
 ### Grafica del test de los modelos ARIMA y modelo Prophet 
 
+
 ```{r}
 Modelos_fc %>% 
-   # filter(.model %in% c("ARIMA_fourier2BC", "ARIMA_BC","ARIMA_fourier2" )) %>% 
+  filter(.model %in% c("SN_42_44")) %>% 
   # autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06")) +
-  autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06"), level = NULL ) +
+  autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2020-12-06")) +
   ggtitle("Forecast") +
   xlab("Semanas") + ylab("horas") +
   guides(colour=guide_legend(title="Forecast"))+
@@ -186,6 +187,25 @@ Modelos_fc %>%
                         y = 3.5, label = c("Train set", "Test set"),
                         color = c("black","blue"))
 ```
+Validacion 
+```{r}
+Modelos_val_fc %>% 
+  filter(.model %in% c("SN_42_44")) %>% 
+  autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2021-01-31")) +
+  ggtitle("Forecast") +
+  xlab("Semanas") + ylab("horas") +
+  guides(colour=guide_legend(title="Forecast"))+
+  geom_vline(xintercept = as.Date("2020-11-08"), color = "Red",
+             linetype = "dashed")+
+  geom_vline(xintercept = as.Date("2020-12-01"), color = "Red",
+             linetype = "dashed")+
+  annotate("label", x = c(as.Date("2020-08-01"),as.Date("2020-12-01"),as.Date("2021-01-15")),
+           y = 3.5, label = c("Train set", "Test set","Val set"),
+           color = c("black","blue", "green"))
+```
+
+
+
 
 ### Grafica del test de los modelos dinamicos 
 ```{r}
@@ -206,9 +226,15 @@ filter_index("2020-01-01" ~ "2020-12-06") %>%
 ```
 
 ### Analisis estadistico de los modelos  
-
 ```{r}
 Error_test %>% 
+  select(.model:.type, RMSE, MAE, MAPE, MASE, RMSSE) %>% 
+  arrange(RMSE)
+```
+
+
+```{r}
+Error_Val %>% 
   select(.model:.type, RMSE, MAE, MAPE, MASE, RMSSE) %>% 
   arrange(RMSE)
 ```
