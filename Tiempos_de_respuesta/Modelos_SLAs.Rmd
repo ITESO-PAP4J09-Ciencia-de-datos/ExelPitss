@@ -67,6 +67,8 @@ datos %>% ggplot(aes(x = TR, y = TSP)) +
 Por otra parte, para poder realizar los pronósticos, fue necesario agrupar los datos según la fecha de Recepción, seguido de la Ruta. La primera tabla a continuación, muestra los datos agrupados diariamente, la segunda los muestra agrupados semanalmente, y por último, la tercera, los muestra mensualmente.
 
 <div/>
+
+# Series de Tiempo
   
   * Diariamente
 
@@ -140,7 +142,33 @@ datos_month_tsbl %>%
   theme(legend.position = "none")
 ```
 
-## Modelado
+## Descomposición STL
+
+"Seasonal and Trend decomposition using Loess" o STL, por sus siglas en inglés, es un método versátil y robusto para descomponer series de tiempo.
+
+- `t.window` es el número de observaciones consecutivas usadas para estimar el ciclo de tendencia.
+- `s.window` es el número de años consecutivos para usar en la estimación de cada valor en el componente estacional.
+
+```{r}
+datos_week_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  filter(SLA == "TR") %>% 
+  model(
+    STL(Tiempos ~ trend(window = 7) +
+             season(window = "periodic"),
+        robust = TRUE)) %>% 
+  components() %>% 
+  autoplot(colour = "#F89438")+
+      theme_minimal() +
+      theme(
+        legend.position = "none",
+        plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)
+      ) +
+      scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+```
+
+
+# Modelado
 
 <div style="text-align: justify">
 
@@ -260,7 +288,6 @@ datos_month_tsbl %>%
   scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
 
 ```
-
 
 ```{r}
 tiempos_dtrain_fit <- tiempos_dtrain %>% 

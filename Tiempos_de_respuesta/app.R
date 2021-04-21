@@ -13,6 +13,7 @@ library(shinyWidgets)
 library(shinydashboard)
 library(shinyjs)
 library(shinycssloaders)
+library(shinymanager)
 
 # pronósticos
 library(tsibble)
@@ -105,7 +106,7 @@ modelos <- list(
   Ingenuo                   = NAIVE(Tiempos),
   `Ingenuo Estacional`      = SNAIVE(Tiempos),
   Drift                     = RW(Tiempos ~ drift()),
-  `Suavización Exponencial` = ETS(Tiempos),
+  `Suavizacion Exponencial` = ETS(Tiempos),
   Arima                     = ARIMA(Tiempos)
 
 )
@@ -128,13 +129,50 @@ tiempos <- datos_tsbl %>%
 
 colores <- c("#E27831","#009ACB","#EEB422","#00008B","#8B4500","#EE4000")
 
+credentials <- data.frame(
+  user             = c("admin", "visita"), # mandatory
+  password         = c("ExelPitss_ad21", "ExelPitss_vis21"), # mandatory
+  start            = c("2021-01-01"), # optinal (all others)
+  expire           = c(NA, NA),
+  admin            = c(TRUE, FALSE),
+  comment          = "Simple and secure authentification mechanism 
+  for single ‘Shiny Exel Pitss’ applications.",
+  stringsAsFactors = FALSE
+)
+
 # UI CODE ----------------------------------------------------------------------
 
-# Define UI for application that draws a histogram
-ui <- fluidPage(
-
+# Define UI 
+ui <- 
+    fluidPage(
+      title = "Exel Pitss APP's",
+      navlistPanel(
+      tabPanel("Inicio",icon = icon("house-user"), style = "color:#000033",
+               absolutePanel(
+                 tags$img( 
+                   style = "max-width: 100%; height: auto !important;",
+                   src = "logo_blanco.png"
+                 ),
+                 h1("Aplicaciones",style = "text-align:center; font-weight:bold; color: white; fill:transparent"),
+                 fluidRow(
+                   column(12, align = "center",
+                          h2("SLA's               ",style = "text-align:center; color: white; display: inline-block"),
+                          h2("              Cursos",style = "text-align:center; color: white; display: inline-block")
+                   )
+                 ),
+                 fluidRow(
+                   column(12, align = "center",
+                          div(style="display: inline-block;",img(src="sla.gif", height = 200)),
+                          div(style="display: inline-block;",img(src="mapa.gif", height = 200))    
+                          )
+                   )
+               )   
+               ),
+      tabPanel("SLA's",icon = icon("stopwatch"),style = "color:#000033",
+               
+               
     # Application title
-    title = "Modelos SLA's",
+    
     shinyWidgets::setBackgroundImage(src = "fondo.png"),
     shinyjs::useShinyjs(),
     #Assign Dasbhoard title
@@ -143,7 +181,7 @@ ui <- fluidPage(
     navbarPage("Menú",
 
 # tab: visualización ------------------------------------------------------
-        tabPanel("Visualización de Datos",
+        tabPanel("Visualización de Datos",icon = icon("eye"),
                  sidebarLayout(
                      sidebarPanel(
                          selectInput("ruta1",
@@ -174,8 +212,48 @@ ui <- fluidPage(
                  )
                  ),
 
+# tab: descomposicion -----------------------------------------------------
+
+        tabPanel("Descomposición", icon = icon("expand-alt"), 
+                 sidebarLayout(
+                   sidebarPanel(
+                     selectInput("rutaD",
+                                 label = h4("Ruta", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
+                                 choices = rutas, 
+                                 multiple = FALSE, 
+                                 selected = "JALISCO"),
+                     radioButtons("frecuenciaD",
+                                  label = h4("Frecuencia", style="color:#E27831; font-style:urw din italic; font-size:20px"),
+                                  choices = frecuencias,
+                                  selected = "Mensual"),
+                     radioGroupButtons("slaD",
+                                       label      = h4("SLA", style="color:#E27831; font-style:urw din italic; font-size:20px"),
+                                       choices    = tiempos,
+                                       selected   = "TR",
+                                       direction  = "vertical",
+                                       individual = FALSE,
+                                       checkIcon  = list(
+                                         yes      = tags$i(class = "fa fa-circle",
+                                                           style    = "color: #F89438"),  
+                                         no       = tags$i(class = "fa fa-circle-o",
+                                                           style    = "color: #F89438")))
+                     ),
+                   mainPanel(
+                     tabsetPanel(
+                       tabPanel(
+                         "Gráfica",
+                         tags$head(
+                           tags$style(type = "text/css", "a{color: #fff}")
+                         ),
+                         style = "color: #fff",
+                         plotOutput(outputId = "graficaD") %>% withSpinner(color="#F89438") )         
+                     )
+                   )
+                 )
+        ),
+
 # tab: modelado -----------------------------------------------------------
-        tabPanel("Modelado",
+        tabPanel("Modelado",icon = icon("tools"),
                  sidebarLayout(
                      sidebarPanel(
                          selectInput("ruta2",
@@ -191,13 +269,7 @@ ui <- fluidPage(
                                      label = h4("Modelo", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
                                      choices = names(modelos), 
                                      multiple = TRUE, 
-                                     selected = names(modelos))#,
-                         # actionButton("go2","Modelar",
-                         #              icon = icon(name="tools"),
-                         #              style = "color: #fff; background-color: #F89438; border-color: #E27831"),
-                         # actionButton("error2","Obtener exactitud",
-                         #              icon = icon(name="drafting-compass"),
-                         #              style = "color: #fff; background-color: #F89438; border-color: #E27831")
+                                     selected = names(modelos))
                      ),
                      mainPanel(
                          tabsetPanel(
@@ -230,7 +302,7 @@ ui <- fluidPage(
                                    radioGroupButtons("modelresidual2",
                                                 label      = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
                                                 choices    = names(modelos),
-                                                selected   = "Suavización Exponencial",
+                                                selected   = "Suavizacion Exponencial",
                                                 direction  = "vertical",
                                                 individual = TRUE,
                                                 checkIcon  = list(
@@ -256,7 +328,7 @@ ui <- fluidPage(
         ),
 
 # tab: pronósticos --------------------------------------------------------
-        tabPanel("Pronósticos",
+        tabPanel("Pronósticos",icon = icon("chart-line"),
                  sidebarLayout(
                      sidebarPanel(
                          selectInput("ruta3",
@@ -300,9 +372,24 @@ ui <- fluidPage(
         )
     
 )
-)
+),#tabPanel SLA's
+
+# MAPA COBERTURA ----------------------------------------------------------
+tabPanel("Cursos", icon = icon("user-cog"), style = "color:#000033 "),
+widths=c(2,10)
+    ) #navlistPanel
+    ) #fluidPage
+#       ), # tab sla's
+#   tabItem(tabName = "cursos")
+#     ) # tabitems
+# ) # dashboardBody
+# ) # dashboardPage
 
 
+
+# SECURE APP --------------------------------------------------------------
+
+#ui <- secure_app(ui, language = "en")
 
 # SERVER ------------------------------------------------------------------
 
@@ -351,6 +438,29 @@ server <- function(input, output) {
       ) +
       scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
   })
+  
+
+# tab - descomposición  ---------------------------------------------------
+
+output$graficaD <- renderPlot({
+  tsbls[[input$frecuenciaD]] %>%  
+      dplyr::filter(Ruta == input$rutaD) %>%
+      filter(SLA %in% input$slaD) %>% 
+      model(
+        STL(Tiempos ~ trend(window = 7) +
+              season(window = "periodic"),
+            robust = TRUE)) %>% 
+      components() %>% 
+      autoplot(colour = "#03B2ED") +
+    ggtitle(paste("Descomposición del",input$slaD,"de:",input$rutaD, tolower(input$frecuencia1))) +
+      theme_minimal() +
+      theme(
+        legend.position = "none",
+        plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)
+      ) +
+      scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+})
+  
   
 # tab - modelado ----------------------------------------------------------
 
@@ -422,6 +532,35 @@ server <- function(input, output) {
       scale_colour_manual("Modelos", values = colores)
   })
     
+# SECURE SERVER -----------------------------------------------------------
+  res_auth <- secure_server(
+    check_credentials = check_credentials(credentials)
+  )
+
+# change password ---------------------------------------------------------
+  # observeEvent(input$ask, {
+  #   insertUI(
+  #     selector = "#ask",
+  #     ui = tags$div(
+  #       id = "module-pwd",
+  #       pwd_ui(id = "pwd")
+  #     )
+  #   )
+  # })
+  # pwd_out <- callModule(
+  #   module = pwd_server,
+  #   id = "pwd",
+  #   user = reactiveValues(user = "me"),
+  #   update_pwd = function(user, pwd) {
+  #     # store the password somewhere
+  #     list(result = TRUE)
+  #   }
+  # )
+  # observeEvent(pwd_out$relog, {
+  #   removeUI(selector = "#module-pwd")
+  # })
+
+  
 }
 
 # Run the application 
