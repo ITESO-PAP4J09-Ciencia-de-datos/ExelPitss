@@ -1,6 +1,6 @@
 ---
 title: "Presentación"
-author: "Gabriel Antonio Aguiar Ochoa","Orson Eduardo Moctezuma Herrera","Elberto Román Galán"
+author: "Gabriel Antonio Aguiar Ochoa, Orson Eduardo Moctezuma Herrera, Aberto Román Galán"
 date: "16/4/2021"
 output:
   slidy_presentation: default

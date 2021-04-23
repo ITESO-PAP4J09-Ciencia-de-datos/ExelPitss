@@ -155,13 +155,13 @@ ValCru_Tr <- Train_tsb %>%
 fc <- Train_tsb_tr %>%
   model("SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
                       SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2) %>%
-  forecast(h = "1 week") %>%  
+  forecast(h = "8 week") %>%  
   group_by(.id ) %>%
   mutate(h = row_number()) %>%
   ungroup() 
 
 RMSE <- fc %>%
-  fabletools::accuracy(Train_tsb, by = c("h", ".model")) %>%
+  fabletools::accuracy(Train_tsb, by = c("h", ".model","Ruta")) %>%
   ggplot(aes(x = h, y = RMSE)) +
   geom_point()
 
