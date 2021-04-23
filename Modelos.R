@@ -1,14 +1,18 @@
 # Librerias ---------------------------------------------------------------
-library(tidymodels) # Utilizado para la creacion de modelos matemacticos
+##library(tidymodels) # Utilizado para la creacion de modelos matemacticos
 library(patchwork)# Utilizado para la creación de modelos matematicos
-library(forecast) # Libreria con funciones para realizar predicciones 
-library(easypackages)
+##library(forecast) # Libreria con funciones para realizar predicciones 
+##library(easypackages)
 library(fpp3)
+library(tsibble)
+library(feasts)
+library(fable)
 library(fable.prophet) # Modelo Prophet
+
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
 
-#source("Limpieza.R", encoding = "utf-8")
+source("Limpieza.R", encoding = "utf-8")
 
 # series de tiempo de RUta 
 Train_tsb <- tiempos_os_tidy_tbl %>%
@@ -157,9 +161,10 @@ fc <- Train_tsb_tr %>%
   ungroup() 
 
 RMSE <- fc %>%
-  accuracy(Train_tsb, by = c("h", ".model")) %>%
+  fabletools::accuracy(Train_tsb, by = c("h", ".model")) %>%
   ggplot(aes(x = h, y = RMSE)) +
   geom_point()
+
 
 # Validación modelos  ----------------------------------------------
 
