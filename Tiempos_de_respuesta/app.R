@@ -14,6 +14,7 @@ library(shinydashboard)
 library(shinyjs)
 library(shinycssloaders)
 library(shinymanager)
+library(shinyalert)
 
 # pronósticos
 library(tsibble)
@@ -146,246 +147,265 @@ credentials <- data.frame(
 ui <- 
     fluidPage(
       title = "Exel Pitss APP's",
-      navlistPanel(
-      tabPanel("Inicio",icon = icon("house-user"), style = "color:#000033",
-               absolutePanel(
-                 tags$img( 
-                   style = "max-width: 100%; height: auto !important;",
-                   src = "logo_blanco.png"
-                 ),
-                 h1("Aplicaciones",style = "text-align:center; font-weight:bold; color: white; fill:transparent"),
-                 fluidRow(
-                   column(12, align = "center",
-                          h2("SLA's               ",style = "text-align:center; color: white; display: inline-block"),
-                          h2("              Cursos",style = "text-align:center; color: white; display: inline-block")
-                   )
-                 ),
-                 fluidRow(
-                   column(12, align = "center",
-                          div(style="display: inline-block;",img(src="sla.gif", height = 200)),
-                          div(style="display: inline-block;",img(src="mapa.gif", height = 200))    
-                          )
-                   )
-               )   
-               ),
-      tabPanel("SLA's",icon = icon("stopwatch"),style = "color:#000033",
-               
-               
-    # Application title
-    
-    shinyWidgets::setBackgroundImage(src = "fondo.png"),
-    shinyjs::useShinyjs(),
-    #Assign Dasbhoard title
-    titlePanel(div("Modelos SLA's",style = "color:white; font-size: 70px; font-style:proxima nova; font-weight:bold; font-style:italic",align = "center",
-                   img(height = 105, width = 400, src = "logo_blanco.png"))),
-    navbarPage("Menú",
+      tags$head(tags$style(HTML(".nav.nav-pills.nav-stacked > .active > a, .nav.nav-pills.nav-stacked > .active > a:hover {
+    background-color: #009ACB;
+  }
+
+.well {
+    min-height: 20px;
+    max-width: 200px;
+    padding: 19px;
+    margin-bottom: 20px;
+    background-color: #F89438;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+
+      }
+
+                            "))),
+      navlistPanel(id = "TODO",well = TRUE,
+                    tabPanel("Inicio",icon = icon("house-user"), style = "color:#000033",
+                             absolutePanel(
+                               tags$img( 
+                                 style = "max-width: 100%; height: auto !important;",
+                                 src = "logo_blanco.png"
+                               ),
+                               h1("Aplicaciones",style = "text-align:center; font-weight:bold; color: white; fill:transparent"),
+                               fluidRow(align = "center",
+                                 column(6, 
+                                        div(style="display: inline-block;",img(id="gif_slas",src="slas.gif", height = 330,style="cursor:pointer;"))),
+                                 column(6,
+                                        div(style="display: inline-block;",img(id="gif_cursos",src="cursos.gif", height = 330,style="cursor:pointer;"))    
+                                        )
+                                 )
+                             ),
+                             shinyjs::useShinyjs()
+                             ),
+                    
+                    tabPanel("SLA's",icon = icon("stopwatch"),style = "color:#000033",
+                             
+                             
+                  # Application title
+                  
+                  shinyWidgets::setBackgroundImage(src = "fondo.png"),
+                  #Assign Dasbhoard title
+                  titlePanel(div("Modelos SLA's",style = "color:white; font-size: 70px; font-style:proxima nova; font-weight:bold; font-style:italic",align = "center",
+                                 img(height = 105, width = 400, src = "logo_blanco.png"))),
+                  navbarPage("Menú",
 
 # tab: visualización ------------------------------------------------------
-        tabPanel("Visualización de Datos",icon = icon("eye"),
-                 sidebarLayout(
-                     sidebarPanel(
-                         selectInput("ruta1",
-                                     label = h4("Ruta", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
-                                     choices = rutas, 
-                                     multiple = FALSE, 
-                                     selected = "JALISCO"),
-                         radioButtons("frecuencia1",
-                                      label = h4("Frecuencia", style="color:#E27831; font-style:urw din italic; font-size:20px"),
-                                      choices = frecuencias,
-                                      selected = "Mensual")#,
-                         # actionButton("go1","Visualizar los datos",
-                         #              icon = icon(name="eye"),
-                         #              style = "color: #fff; background-color: #F89438; border-color: #E27831")
-                     ),
-                     
-                     mainPanel(
-                         tabsetPanel(
-                             tabPanel(
-                                 "Gráfica",
-                                 tags$head(
-                                     tags$style(type = "text/css", "a{color: #fff}")
-                                 ),
-                                 style = "color: #fff",
-                                 plotlyOutput(outputId = "grafica1") %>% withSpinner(color="#F89438") )         
-                         )
-                     )
-                 )
-                 ),
+                      tabPanel("Visualización de Datos",icon = icon("eye"),
+                               sidebarLayout(
+                                   sidebarPanel(
+                                       selectInput("ruta1",
+                                                   label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                                   choices = rutas, 
+                                                   multiple = FALSE, 
+                                                   selected = "JALISCO"),
+                                       radioButtons("frecuencia1",
+                                                    label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    choices = frecuencias,
+                                                    selected = "Mensual")#,
+                                       # actionButton("go1","Visualizar los datos",
+                                       #              icon = icon(name="eye"),
+                                       #              style = "color: #fff; background-color: #F89438; border-color: #E27831")
+                                   ),
+                                   
+                                   mainPanel(
+                                       tabsetPanel(
+                                           tabPanel(
+                                               "Gráfica",
+                                               tags$head(
+                                                   tags$style(type = "text/css", "a{color: #fff}")
+                                               ),
+                                               style = "color: #fff",
+                                               plotlyOutput(outputId = "grafica1") %>% withSpinner(color="#F89438") )         
+                                       )
+                                   )
+                               )
+                               ),
 
 # tab: descomposicion -----------------------------------------------------
 
-        tabPanel("Descomposición", icon = icon("expand-alt"), 
-                 sidebarLayout(
-                   sidebarPanel(
-                     selectInput("rutaD",
-                                 label = h4("Ruta", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
-                                 choices = rutas, 
-                                 multiple = FALSE, 
-                                 selected = "JALISCO"),
-                     radioButtons("frecuenciaD",
-                                  label = h4("Frecuencia", style="color:#E27831; font-style:urw din italic; font-size:20px"),
-                                  choices = frecuencias,
-                                  selected = "Mensual"),
-                     radioGroupButtons("slaD",
-                                       label      = h4("SLA", style="color:#E27831; font-style:urw din italic; font-size:20px"),
-                                       choices    = tiempos,
-                                       selected   = "TR",
-                                       direction  = "vertical",
-                                       individual = FALSE,
-                                       checkIcon  = list(
-                                         yes      = tags$i(class = "fa fa-circle",
-                                                           style    = "color: #F89438"),  
-                                         no       = tags$i(class = "fa fa-circle-o",
-                                                           style    = "color: #F89438")))
-                     ),
-                   mainPanel(
-                     tabsetPanel(
-                       tabPanel(
-                         "Gráfica",
-                         tags$head(
-                           tags$style(type = "text/css", "a{color: #fff}")
-                         ),
-                         style = "color: #fff",
-                         plotOutput(outputId = "graficaD") %>% withSpinner(color="#F89438") )         
-                     )
-                   )
-                 )
-        ),
+                      tabPanel("Descomposición", icon = icon("expand-alt"), 
+                               sidebarLayout(
+                                 sidebarPanel(
+                                   selectInput("rutaD",
+                                               label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                               choices = rutas, 
+                                               multiple = FALSE, 
+                                               selected = "JALISCO"),
+                                   radioButtons("frecuenciaD",
+                                                label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                choices = frecuencias,
+                                                selected = "Mensual"),
+                                   radioGroupButtons("slaD",
+                                                     label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                     choices    = tiempos,
+                                                     selected   = "TR",
+                                                     direction  = "vertical",
+                                                     individual = FALSE,
+                                                     checkIcon  = list(
+                                                       yes      = tags$i(class = "fa fa-circle",
+                                                                         style    = "color: #009ACB"),  
+                                                       no       = tags$i(class = "fa fa-circle-o",
+                                                                         style    = "color: #009ACB")))
+                                   ),
+                                 mainPanel(
+                                   tabsetPanel(
+                                     tabPanel(
+                                       "Gráfica",
+                                       tags$head(
+                                         tags$style(type = "text/css", "a{color: #fff}")
+                                       ),
+                                       style = "color: #fff",
+                                       plotOutput(outputId = "graficaD") %>% withSpinner(color="#F89438") )         
+                                   )
+                                 )
+                               )
+                      ),
 
 # tab: modelado -----------------------------------------------------------
-        tabPanel("Modelado",icon = icon("tools"),
-                 sidebarLayout(
-                     sidebarPanel(
-                         selectInput("ruta2",
-                                     label = h4("Ruta", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
-                                     choices = rutas, 
-                                     multiple = FALSE, 
-                                     selected = "JALISCO"),
-                         radioButtons("frecuencia2",
-                                      label = h4("Frecuencia", style="color:#E27831; font-style:urw din italic; font-size:20px"),
-                                      choices = frecuencias,
-                                      selected = "Mensual"),
-                         selectInput("modelo2",
-                                     label = h4("Modelo", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
-                                     choices = names(modelos), 
-                                     multiple = TRUE, 
-                                     selected = names(modelos))
-                     ),
-                     mainPanel(
-                         tabsetPanel(
-                             tabPanel(
-                                 "Gráfica",
-                                 tags$head(
-                                     tags$style(type = "text/css", "a{color: #fff}")
-                                 ),
-                                 style = "color: #fff",
-                                 plotOutput("grafica2") %>% withSpinner(color="#F89438")), 
-                             tabPanel(
-                                 "Análisis",
-                                 tags$head(
-                                     tags$style(type = "text/css", "a{color: #fff}")
-                                 ),
-                                 style = "color: #fff",
-                                 splitLayout(
-                                   radioGroupButtons("sla2",
-                                                label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                                choices    = tiempos,
-                                                selected   = "TR",
-                                                direction  = "vertical",
-                                                individual = TRUE,
-                                                checkIcon  = list(
-                                                  yes      = tags$i(class = "fa fa-circle",
-                                                  style    = "color: #F89438"),  
-                                                  no       = tags$i(class = "fa fa-circle-o",
-                                                  style    = "color: #F89438"))
-                                                  ),
-                                   radioGroupButtons("modelresidual2",
-                                                label      = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                                choices    = names(modelos),
-                                                selected   = "Suavizacion Exponencial",
-                                                direction  = "vertical",
-                                                individual = TRUE,
-                                                checkIcon  = list(
-                                                  yes      = tags$i(class = "fa fa-square",
-                                                  style    = "color: #F89438"),  
-                                                  no       = tags$i(class = "fa fa-square-o",
-                                                  style    = "color: #F89438"))
-                                                  )
-                                 ),
-                                 verticalLayout(
-                                   h4("Accuracy", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                   tableOutput(outputId = "reporte1") %>% withSpinner(color="#F89438"),
-                                   h4("Reporte", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                   verbatimTextOutput(outputId = "reporte2") %>% withSpinner(color="#F89438"),
-                                   h4("Residuales", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                   plotOutput(outputId = "reporte3") %>% withSpinner(color="#F89438")
-                                 )
-                             )
-                         )
-                     )
-                 )
-                 
-        ),
+                      tabPanel("Modelado",icon = icon("tools"),
+                               sidebarLayout(
+                                   sidebarPanel(
+                                       selectInput("ruta2",
+                                                   label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                                   choices = rutas, 
+                                                   multiple = FALSE, 
+                                                   selected = "JALISCO"),
+                                       radioButtons("frecuencia2",
+                                                    label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    choices = frecuencias,
+                                                    selected = "Mensual"),
+                                       selectInput("modelo2",
+                                                   label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                                   choices = names(modelos), 
+                                                   multiple = TRUE, 
+                                                   selected = names(modelos))
+                                   ),
+                                   mainPanel(
+                                       tabsetPanel(
+                                           tabPanel(
+                                               "Gráfica",
+                                               tags$head(
+                                                   tags$style(type = "text/css", "a{color: #fff}")
+                                               ),
+                                               style = "color: #fff",
+                                               plotOutput("grafica2") %>% withSpinner(color="#F89438")), 
+                                           tabPanel(
+                                               "Análisis",
+                                               tags$head(
+                                                   tags$style(type = "text/css", "a{color: #fff}")
+                                               ),
+                                               style = "color: #fff",
+                                               splitLayout(
+                                                 radioGroupButtons("sla2",
+                                                              label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                              choices    = tiempos,
+                                                              selected   = "TR",
+                                                              direction  = "vertical",
+                                                              individual = TRUE,
+                                                              checkIcon  = list(
+                                                                yes      = tags$i(class = "fa fa-circle",
+                                                                style    = "color: #F89438"),  
+                                                                no       = tags$i(class = "fa fa-circle-o",
+                                                                style    = "color: #F89438"))
+                                                                ),
+                                                 radioGroupButtons("modelresidual2",
+                                                              label      = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                              choices    = names(modelos),
+                                                              selected   = "Suavizacion Exponencial",
+                                                              direction  = "vertical",
+                                                              individual = TRUE,
+                                                              checkIcon  = list(
+                                                                yes      = tags$i(class = "fa fa-square",
+                                                                style    = "color: #F89438"),  
+                                                                no       = tags$i(class = "fa fa-square-o",
+                                                                style    = "color: #F89438"))
+                                                                )
+                                               ),
+                                               verticalLayout(
+                                                 h4("Accuracy", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                 tableOutput(outputId = "reporte1") %>% withSpinner(color="#F89438"),
+                                                 h4("Reporte", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                 verbatimTextOutput(outputId = "reporte2") %>% withSpinner(color="#F89438"),
+                                                 h4("Residuales", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                 plotOutput(outputId = "reporte3") %>% withSpinner(color="#F89438")
+                                               )
+                                           )
+                                       )
+                                   )
+                               )
+                               
+                      ),
 
 # tab: pronósticos --------------------------------------------------------
-        tabPanel("Pronósticos",icon = icon("chart-line"),
-                 sidebarLayout(
-                     sidebarPanel(
-                         selectInput("ruta3",
-                                     label = h4("Ruta", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
-                                     choices = rutas, 
-                                     multiple = FALSE, 
-                                     selected = "JALISCO"),
-                         radioButtons("frecuencia3",
-                                      label = h4("Frecuencia", style="color:#E27831; font-style:urw din italic; font-size:20px"),
-                                      choices = frecuencias,
-                                      selected = "Mensual"),
-                         selectInput("modelo3",
-                                     label = h4("Modelo", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
-                                     choices = names(modelos), 
-                                     multiple = TRUE, 
-                                     selected = "Ingenuo Estacional"),
-                         awesomeCheckboxGroup(
-                           inputId = "tiempos3",
-                           label = h4("SLA", style="color:#E27831; font-style:urw din italic; font-size:20px"), 
-                           choices = tiempos,
-                           selected = tiempos,
-                           inline = TRUE, 
-                           status = "primary"
-                         ),
-                         sliderInput("forecast3",
-                                     label = h4("Rango de pronóstico según la periodicidad escogida", style="color:#E27831; font-style:urw din italic; font-size:20px"),
-                                     min = 1, max = 1000, value = 5)
-                     ),
-                     mainPanel(
-                         tabsetPanel(
-                             tabPanel(
-                                 "Gráfica",
-                                 tags$head(
-                                     tags$style(type = "text/css", "a{color: #fff}")
-                                 ),
-                                 style = "color: #fff",
-                                 plotOutput("grafica3") %>% withSpinner(color="#F89438"))
-                         )
-                     )
-                 )
-        )
-    
-)
-),#tabPanel SLA's
+                      tabPanel("Pronósticos",icon = icon("chart-line"),
+                               sidebarLayout(
+                                   sidebarPanel(
+                                       selectInput("ruta3",
+                                                   label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                                   choices = rutas, 
+                                                   multiple = FALSE, 
+                                                   selected = "JALISCO"),
+                                       radioButtons("frecuencia3",
+                                                    label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    choices = frecuencias,
+                                                    selected = "Mensual"),
+                                       selectInput("modelo3",
+                                                   label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                                   choices = names(modelos), 
+                                                   multiple = TRUE, 
+                                                   selected = "Ingenuo Estacional"),
+                                       awesomeCheckboxGroup(
+                                         inputId = "tiempos3",
+                                         label = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                         choices = tiempos,
+                                         selected = tiempos,
+                                         inline = TRUE, 
+                                         status = "primary"
+                                       ),
+                                       sliderInput("forecast3",
+                                                   label = h4("Rango de pronóstico según la periodicidad escogida", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                   min = 1, max = 1000, value = 5)
+                                   ),
+                                   mainPanel(
+                                       tabsetPanel(
+                                           tabPanel(
+                                               "Gráfica",
+                                               tags$head(
+                                                   tags$style(type = "text/css", "a{color: #fff}")
+                                               ),
+                                               style = "color: #fff",
+                                               plotOutput("grafica3") %>% withSpinner(color="#F89438"))
+                                       )
+                                   )
+                               )
+                      )
+                  
+              )
+              ),#tabPanel SLA's
 
 # MAPA COBERTURA ----------------------------------------------------------
-tabPanel("Cursos", icon = icon("user-cog"), style = "color:#000033 "),
-widths=c(2,10)
-    ) #navlistPanel
-    ) #fluidPage
-#       ), # tab sla's
-#   tabItem(tabName = "cursos")
-#     ) # tabitems
-# ) # dashboardBody
-# ) # dashboardPage
+                    tabPanel("Cursos", icon = icon("user-cog"), style = "color:#000033"
+                             
+                             ),
 
-
+# Menú Más ----------------------------------------------------------------
+                    navbarMenu("Más", 
+                               tabPanel("Usuario",
+                                        titlePanel(div("Información de Usuario",style = "color:white; font-size: 70px; font-style:proxima nova; font-weight:bold; font-style:italic",align = "center")
+                                                   ),
+                                        fluidRow(align = "center",
+                                        actionButton("ask","Cambiar Contraseña",icon = icon("edit"), style = "color: #fff; background-color: #F89438; padding:20px; font-size:100%")
+                                        )
+                               )
+                    ), #menu mas
+                    widths=c(2,10)
+                        ) #navlistPanel
+                        ) #fluidPage
 
 # SECURE APP --------------------------------------------------------------
 
@@ -394,8 +414,13 @@ widths=c(2,10)
 # SERVER ------------------------------------------------------------------
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output, session) {
 
+
+# cambiar páneles ---------------------------------------------------------
+  shinyjs::onclick("gif_slas",  updateTabsetPanel(session, inputId="TODO", selected="SLA's"))
+  shinyjs::onclick("gif_cursos",  updateTabsetPanel(session, inputId="TODO", selected="Cursos"))                                                
+  
 # fit ---------------------------------------------------------------------
   
   modelos_fit <- reactive({
@@ -537,29 +562,53 @@ output$graficaD <- renderPlot({
     check_credentials = check_credentials(credentials)
   )
 
+# user --------------------------------------------------------------------
+  user <- reactive({
+    session$user
+  })
+  
+  isManager <- reactive({
+    if (user() == "admin"){
+      return(TRUE)
+    } else {
+      return(FALSE)
+    }
+  })
+  
+  datos <- reactive({
+    if(isManager()){
+      return()
+    } else {
+      return()
+    }
+  })
 # change password ---------------------------------------------------------
-  # observeEvent(input$ask, {
-  #   insertUI(
-  #     selector = "#ask",
-  #     ui = tags$div(
-  #       id = "module-pwd",
-  #       pwd_ui(id = "pwd")
-  #     )
-  #   )
-  # })
-  # pwd_out <- callModule(
-  #   module = pwd_server,
-  #   id = "pwd",
-  #   user = reactiveValues(user = "me"),
-  #   update_pwd = function(user, pwd) {
-  #     # store the password somewhere
-  #     list(result = TRUE)
-  #   }
-  # )
-  # observeEvent(pwd_out$relog, {
-  #   removeUI(selector = "#module-pwd")
-  # })
-
+  observeEvent(input$ask, {
+    insertUI(
+      selector = "#ask",
+      ui = tags$div(id = "module-pwd",
+          pwd_ui(id = "pwd"),
+          actionButton("cancel","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%")
+          )
+        
+      )
+  })
+  pwd_out <- callModule(
+    module = pwd_server,
+    id = "pwd",
+    user = reactiveValues(user = "me"),
+    update_pwd = function(user, pwd) {
+      # store the password somewhere
+      list(result = TRUE)
+    }
+  )
+  observeEvent({
+    pwd_out$relog
+    input$cancel
+    }, {
+    removeUI(selector = "#module-pwd")
+  })
+  
   
 }
 

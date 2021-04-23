@@ -44,6 +44,11 @@ El propósito de este proyecto es generar un modelo de regresión a partir de lo
 
 <div/>
 
+```{r}
+datos <- datos
+```
+
+
 # Modelo de Regresión
 
 <div style="text-align: justify">
