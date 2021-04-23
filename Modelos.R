@@ -149,14 +149,9 @@ ValCru_Tr <- Train_tsb %>%
 
 # Previsión de la precisión del horizonte con validación cruzada
 fc <- Train_tsb_tr %>%
-  model(
-    "SN_44"=SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()),
-    "SN_42"=SNAIVE(Tiempo_de_respuesta~ lag(42) + drift())
-  ) %>%
-  mutate(
-    SN_44_42  = (SN_44+SN_42)/2
-  ) %>% 
-  forecast(h = "2 week") %>%  
+  model("SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
+                      SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2) %>%
+  forecast(h = "1 week") %>%  
   group_by(.id ) %>%
   mutate(h = row_number()) %>%
   ungroup() 
