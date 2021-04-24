@@ -12,7 +12,7 @@ library(fable.prophet) # Modelo Prophet
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
 
-source("SLA's/Limpieza.R", encoding = "utf-8")
+#source("SLA's/Limpieza.R", encoding = "utf-8")
 
 # series de tiempo de RUta 
 Train_tsb <- tiempos_os_tidy_tbl %>%
@@ -39,6 +39,12 @@ lambda1 <- Train_tsb %>%
   filter(Ruta == "JALISCO") %>% 
   features(Tiempo_de_respuesta, features = guerrero) %>%
   pull(lambda_guerrero)
+## Descomposicion SLT para modelos 
+dcmp <- Train_tsb %>%
+  filter(Ruta == "JALISCO") %>% 
+  model(STL(Tiempo_de_respuesta ~ trend(window = 7) ,  robust=TRUE)) %>%
+  components() %>%
+  select(-.model)
 
 ## Modelos de predicción
 Modelos_fit <- Train_tsb %>% 
@@ -69,7 +75,16 @@ Modelos_fit <- Train_tsb %>%
     # "M"     = MEAN(Tiempo_de_respuesta),
     #"ETS2"  = ETS(Tiempo_de_respuesta ~ error("A") + trend("N") + season("N")),
     # "ETS1"  = ETS(Tiempo_de_respuesta ~ error("A") + trend("M") + season("N"))
-    
+    "Des_ARF2"  = decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 7), robust = TRUE),
+      ARIMA(season_adjust~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(44) + drift())
+    ),
+    "Des2_ARF2"  = decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 7), robust = TRUE),
+      ARIMA(season_adjust~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(42) + drift())
+    )
   ) %>% 
   mutate(
      # SN_42_44 = (SN_42 + SN_44)/2,
@@ -136,9 +151,19 @@ ValCru_Ts <- Train_tsb_tr %>%
     # "FORSADO2"    = (ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2)) + 
     #                    SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()) +
     #                    SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())      
-    #                  )/3
+    #                  )/3,
+    "Des_ARF2"  = decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 7), robust = TRUE),
+      ARIMA(season_adjust~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(44) + drift())
+    ),
+    "Des2_ARF2"  = decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 7), robust = TRUE),
+      ARIMA(season_adjust~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(42) + drift())
+    )
     ) %>%
-  forecast(h = "2 week") %>%
+  forecast(h = "4 week") %>%
   accuracy(Train_tsb)
 
 # Training set accuracy
