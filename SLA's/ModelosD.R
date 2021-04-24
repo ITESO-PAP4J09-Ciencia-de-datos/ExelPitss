@@ -7,7 +7,7 @@ library(easypackages)
 library(fpp3)
  
 # Datos  ------------------------------------------------------------------
-#source("Limpieza.R", encoding = "utf-8")
+#source("SLA's/Limpieza.R", encoding = "utf-8")
 
 Train_D_tsb <- tiempos_os_tidy_tbl %>%
   filter(Fecha_recepion >= "2018-03-01",

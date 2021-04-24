@@ -13,16 +13,16 @@ Tras el analisis exploratorio mediante la limpieza de los datos dados, se proced
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=TRUE}
- source("Limpieza.R", 
+ source("SLA's/Limpieza.R", 
         local = knitr::knit_global(),
         encoding = "utf-8")
- source("limpieza_reporte_Tiempo_respuesta.R", 
+ source("SLA's/limpieza_reporte_Tiempo_respuesta.R", 
         local = knitr::knit_global(),
         encoding = "utf-8")
- source("Modelos.R", 
+ source("SLA's/Modelos.R", 
         local = knitr::knit_global(),
         encoding = "utf-8")
- source("ModelosD.R", 
+ source("SLA's/ModelosD.R", 
         local = knitr::knit_global(),
         encoding = "utf-8")
 ```

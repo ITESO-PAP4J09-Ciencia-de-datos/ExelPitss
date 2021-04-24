@@ -12,7 +12,7 @@ library(fable.prophet) # Modelo Prophet
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
 
-source("Limpieza.R", encoding = "utf-8")
+source("SLA's/Limpieza.R", encoding = "utf-8")
 
 # series de tiempo de RUta 
 Train_tsb <- tiempos_os_tidy_tbl %>%
