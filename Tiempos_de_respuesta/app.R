@@ -8,6 +8,7 @@ library(tidyverse)
 library(readxl)
 
 # elementos de shiny 
+library(shiny)
 library(shinythemes)
 library(shinyWidgets)
 library(shinydashboard)
@@ -63,79 +64,32 @@ datos <- datos %>%
     mutate(Recepcion = as.Date(Recepcion),
            Cierre    = as.Date(Cierre))
 
-# datos diarios
-datos_tsbl <- datos %>% dplyr::filter(IS.visita != "Consultoria Dual",
-                               Estatus   == "RESUELTA",
-                               Categoría == "CORRECTIVO") %>% 
-    group_by(Recepcion, Ruta) %>% 
-    summarise(across(.cols = c(TR, TSP, TMO, TST), mean),
-              .groups = "drop") %>% 
-    pivot_longer(
-        cols      = starts_with("T"), 
-        names_to  = "SLA", 
-        values_to = "Tiempos"
-    ) %>% 
-    as_tsibble(
-        # index : la variable temporal
-        index = Recepcion,
-        # key : la(s) variable(s) que identifican a cada serie de tiempo
-        key   = c(Ruta, SLA) 
-    ) %>% 
-    fill_gaps(.full = TRUE, Tiempos = mean(Tiempos)) %>% 
-    filter_index("2018-02-12" ~ "2021-03-10")
-
-# datos semanales
-datos_week_tsbl <- datos_tsbl %>% 
-    group_by_key() %>% 
-    index_by(Semana = yearweek(Recepcion)) %>% 
-    summarise(Tiempos = mean(Tiempos), .groups = "drop")
-
-# datos mensuales
-datos_month_tsbl <- datos_tsbl %>% 
-    group_by_key() %>% 
-    index_by(Mes = yearmonth(Recepcion)) %>% 
-    summarise(Tiempos = mean(Tiempos), .groups = "drop")
-
-rutas <- datos %>%  
-    distinct(Ruta) %>% 
-    pull()
-
 # frecuencias <- c("Diariamente","Semanalmente","Mensualmente")
 
 modelos <- list(
-  Media                     = MEAN(Tiempos),
-  Ingenuo                   = NAIVE(Tiempos),
-  `Ingenuo Estacional`      = SNAIVE(Tiempos),
-  Drift                     = RW(Tiempos ~ drift()),
-  `Suavizacion Exponencial` = ETS(Tiempos),
-  Arima                     = ARIMA(Tiempos)
-
+  #Media                     = MEAN(Tiempos),
+  #Ingenuo                   = NAIVE(Tiempos),
+  SNAIVE              = SNAIVE(Tiempos),
+  #Drift                     = RW(Tiempos ~ drift()),
+  ETS                 = ETS(Tiempos),
+  #Arima                     = ARIMA(Tiempos),
+  `STLF ARIMA`        = decomposition_model(
+    STL(Tiempos ~ trend(window = 13) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+  `STLF SNAIVE`       = decomposition_model(
+    STL(Tiempos ~ trend(window = 13) +season(window = "periodic"),robust = TRUE), SNAIVE(season_adjust)),
+  `STLF ETS & SNAIVE` = decomposition_model(
+    STL(Tiempos ~ trend(window = 13) +season(window = "periodic"),robust = TRUE), ETS(season_adjust), SNAIVE(season_year))
 )
-
-# crear una lista con todas las tsibbles
-tsbls <- list(
-  Diaria  = datos_tsbl,
-  Semanal = datos_week_tsbl,
-  Mensual = datos_month_tsbl
-)
-
-frecuencias <- names(tsbls)
-
-train <- tsbls %>% 
-  map(. %>% filter_index("2018-03-01" ~ "2020-03-10"))
-
-tiempos <- datos_tsbl %>% 
-  distinct(SLA) %>% 
-  pull()
 
 colores <- c("#E27831","#009ACB","#EEB422","#00008B","#8B4500","#EE4000")
 
-credentials <- data.frame(
-  user             = c("admin", "visita"), # mandatory
-  password         = c("ExelPitss_ad21", "ExelPitss_vis21"), # mandatory
+credentials <- tibble(
+  user             = c("admin", "visita", "xerox"), # mandatory
+  password         = c("ExelPitss_ad21", "ExelPitss_vis21", "Xerox_21"), # mandatory
+  cliente          = c(NA, NA, "XEROX MEXICANA SA DE CV"),
   start            = c("2021-01-01"), # optinal (all others)
-  expire           = c(NA, NA),
-  admin            = c(TRUE, FALSE),
+  expire           = c(NA, NA, NA),
+  admin            = c(TRUE, FALSE, FALSE),
   comment          = "Simple and secure authentification mechanism 
   for single ‘Shiny Exel Pitss’ applications.",
   stringsAsFactors = FALSE
@@ -150,10 +104,9 @@ ui <-
       tags$head(tags$style(HTML(".nav.nav-pills.nav-stacked > .active > a, .nav.nav-pills.nav-stacked > .active > a:hover {
     background-color: #009ACB;
   }
-
 .well {
     min-height: 20px;
-    max-width: 200px;
+    max-width: 300px;
     padding: 19px;
     margin-bottom: 20px;
     background-color: #F89438;
@@ -162,7 +115,6 @@ ui <-
     box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
 
       }
-
                             "))),
       navlistPanel(id = "TODO",well = TRUE,
                     tabPanel("Inicio",icon = icon("house-user"), style = "color:#000033",
@@ -178,7 +130,8 @@ ui <-
                                  column(6,
                                         div(style="display: inline-block;",img(id="gif_cursos",src="cursos.gif", height = 330,style="cursor:pointer;"))    
                                         )
-                                 )
+                                 ),
+                               verbatimTextOutput(outputId = "user")
                              ),
                              shinyjs::useShinyjs()
                              ),
@@ -198,18 +151,19 @@ ui <-
                       tabPanel("Visualización de Datos",icon = icon("eye"),
                                sidebarLayout(
                                    sidebarPanel(
-                                       selectInput("ruta1",
-                                                   label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                                   choices = rutas, 
-                                                   multiple = FALSE, 
-                                                   selected = "JALISCO"),
-                                       radioButtons("frecuencia1",
-                                                    label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                                                    choices = frecuencias,
-                                                    selected = "Mensual")#,
-                                       # actionButton("go1","Visualizar los datos",
-                                       #              icon = icon(name="eye"),
-                                       #              style = "color: #fff; background-color: #F89438; border-color: #E27831")
+                                     uiOutput(outputId = "select_rutas1"),
+                                       # selectInput("ruta1",
+                                       #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                       #             choices = rutas, 
+                                       #             multiple = FALSE, 
+                                       #             selected = "JALISCO"),
+                                       uiOutput(outputId = "select_frecuencias1"),
+                                       # radioGroupButtons("frecuencia1",
+                                       #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                       #              choices = frecuencias,
+                                       #              selected = "Mensual",
+                                       #              status = "primary",
+                                       #              direction = "vertical")#,
                                    ),
                                    
                                    mainPanel(
@@ -231,26 +185,31 @@ ui <-
                       tabPanel("Descomposición", icon = icon("expand-alt"), 
                                sidebarLayout(
                                  sidebarPanel(
-                                   selectInput("rutaD",
-                                               label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                               choices = rutas, 
-                                               multiple = FALSE, 
-                                               selected = "JALISCO"),
-                                   radioButtons("frecuenciaD",
-                                                label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                                                choices = frecuencias,
-                                                selected = "Mensual"),
-                                   radioGroupButtons("slaD",
-                                                     label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"),
-                                                     choices    = tiempos,
-                                                     selected   = "TR",
-                                                     direction  = "vertical",
-                                                     individual = FALSE,
-                                                     checkIcon  = list(
-                                                       yes      = tags$i(class = "fa fa-circle",
-                                                                         style    = "color: #009ACB"),  
-                                                       no       = tags$i(class = "fa fa-circle-o",
-                                                                         style    = "color: #009ACB")))
+                                   uiOutput(outputId = "select_rutasD"),
+                                   # selectInput("rutaD",
+                                   #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                   #             choices = rutas, 
+                                   #             multiple = FALSE, 
+                                   #             selected = "JALISCO"),
+                                   uiOutput(outputId = "select_frecuenciasD"),
+                                   # radioGroupButtons("frecuenciaD",
+                                   #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                   #              choices = frecuencias,
+                                   #              selected = "Mensual",
+                                   #              status = "primary",
+                                   #              direction = "vertical"),
+                                   uiOutput(outputId = "select_tiemposD")
+                                   # radioGroupButtons("slaD",
+                                   #                   label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"),
+                                   #                   choices    = tiempos,
+                                   #                   selected   = "TR",
+                                   #                   direction  = "vertical",
+                                   #                   individual = FALSE,
+                                   #                   checkIcon  = list(
+                                   #                     yes      = tags$i(class = "fa fa-circle",
+                                   #                                       style    = "color: #009ACB"),  
+                                   #                     no       = tags$i(class = "fa fa-circle-o",
+                                   #                                       style    = "color: #009ACB")))
                                    ),
                                  mainPanel(
                                    tabsetPanel(
@@ -270,19 +229,24 @@ ui <-
                       tabPanel("Modelado",icon = icon("tools"),
                                sidebarLayout(
                                    sidebarPanel(
-                                       selectInput("ruta2",
-                                                   label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                                   choices = rutas, 
-                                                   multiple = FALSE, 
-                                                   selected = "JALISCO"),
-                                       radioButtons("frecuencia2",
-                                                    label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                                                    choices = frecuencias,
-                                                    selected = "Mensual"),
+                                     uiOutput(outputId = "select_rutas2"),
+                                       # selectInput("ruta2",
+                                       #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                       #             choices = rutas, 
+                                       #             multiple = FALSE, 
+                                       #             selected = "JALISCO"),
+                                     uiOutput(outputId = "select_frecuencias2"),
+                                       # radioGroupButtons("frecuencia2",
+                                       #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                       #              choices = frecuencias,
+                                       #              selected = "Mensual",
+                                       #              status = "primary",
+                                       #              direction = "vertical"),
+                                     # uiOutput(outputId = "select_modelos2")
                                        selectInput("modelo2",
-                                                   label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                                   choices = names(modelos), 
-                                                   multiple = TRUE, 
+                                                   label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                   choices = names(modelos),
+                                                   multiple = TRUE,
                                                    selected = names(modelos))
                                    ),
                                    mainPanel(
@@ -301,27 +265,28 @@ ui <-
                                                ),
                                                style = "color: #fff",
                                                splitLayout(
-                                                 radioGroupButtons("sla2",
-                                                              label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                                              choices    = tiempos,
-                                                              selected   = "TR",
-                                                              direction  = "vertical",
-                                                              individual = TRUE,
-                                                              checkIcon  = list(
-                                                                yes      = tags$i(class = "fa fa-circle",
-                                                                style    = "color: #F89438"),  
-                                                                no       = tags$i(class = "fa fa-circle-o",
-                                                                style    = "color: #F89438"))
-                                                                ),
+                                                 uiOutput(outputId = "select_sla2"),
+                                                 # radioGroupButtons("sla2",
+                                                 #              label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                 #              choices    = tiempos,
+                                                 #              selected   = "TR",
+                                                 #              direction  = "vertical",
+                                                 #              individual = TRUE,
+                                                 #              checkIcon  = list(
+                                                 #                yes      = tags$i(class = "fa fa-circle",
+                                                 #                style    = "color: #F89438"),  
+                                                 #                no       = tags$i(class = "fa fa-circle-o",
+                                                 #                style    = "color: #F89438"))
+                                                 #                ),
                                                  radioGroupButtons("modelresidual2",
                                                               label      = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
                                                               choices    = names(modelos),
-                                                              selected   = "Suavizacion Exponencial",
+                                                              selected   = "STLF ARIMA",
                                                               direction  = "vertical",
                                                               individual = TRUE,
                                                               checkIcon  = list(
                                                                 yes      = tags$i(class = "fa fa-square",
-                                                                style    = "color: #F89438"),  
+                                                                style    = "color: #F89438"),
                                                                 no       = tags$i(class = "fa fa-square-o",
                                                                 style    = "color: #F89438"))
                                                                 )
@@ -345,28 +310,33 @@ ui <-
                       tabPanel("Pronósticos",icon = icon("chart-line"),
                                sidebarLayout(
                                    sidebarPanel(
-                                       selectInput("ruta3",
-                                                   label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                                   choices = rutas, 
-                                                   multiple = FALSE, 
-                                                   selected = "JALISCO"),
-                                       radioButtons("frecuencia3",
-                                                    label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                                                    choices = frecuencias,
-                                                    selected = "Mensual"),
+                                     uiOutput(outputId = "select_rutas3"),
+                                       # selectInput("ruta3",
+                                       #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                       #             choices = rutas, 
+                                       #             multiple = FALSE, 
+                                       #             selected = "JALISCO"),
+                                     uiOutput(outputId = "select_frecuencias3"),
+                                       # radioGroupButtons("frecuencia3",
+                                       #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                       #              choices = frecuencias,
+                                       #              selected = "Mensual",
+                                       #              status = "primary",
+                                       #              direction = "vertical"),
                                        selectInput("modelo3",
-                                                   label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                                   choices = names(modelos), 
-                                                   multiple = TRUE, 
+                                                   label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                   choices = names(modelos),
+                                                   multiple = TRUE,
                                                    selected = "Ingenuo Estacional"),
-                                       awesomeCheckboxGroup(
-                                         inputId = "tiempos3",
-                                         label = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                         choices = tiempos,
-                                         selected = tiempos,
-                                         inline = TRUE, 
-                                         status = "primary"
-                                       ),
+                                     uiOutput(outputId = "select_sla3"),
+                                       # awesomeCheckboxGroup(
+                                       #   inputId = "tiempos3",
+                                       #   label = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"), 
+                                       #   choices = tiempos,
+                                       #   selected = tiempos,
+                                       #   inline = TRUE, 
+                                       #   status = "primary"
+                                       # ),
                                        sliderInput("forecast3",
                                                    label = h4("Rango de pronóstico según la periodicidad escogida", style="color:white; font-style:urw din italic; font-size:20px"),
                                                    min = 1, max = 1000, value = 5)
@@ -389,8 +359,8 @@ ui <-
               ),#tabPanel SLA's
 
 # MAPA COBERTURA ----------------------------------------------------------
-                    tabPanel("Cursos", icon = icon("user-cog"), style = "color:#000033"
-                             
+                    tabPanel("Cursos", icon = icon("user-cog"), style = "color:#000033",
+                             dataTableOutput(outputId = "tablaprueba")
                              ),
 
 # Menú Más ----------------------------------------------------------------
@@ -409,18 +379,228 @@ ui <-
 
 # SECURE APP --------------------------------------------------------------
 
-#ui <- secure_app(ui, language = "en")
+ui <- secure_app(ui, language = "en")
 
 # SERVER ------------------------------------------------------------------
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
 
-
+# SECURE SERVER -----------------------------------------------------------
+  res_auth <- secure_server(
+    check_credentials = check_credentials(credentials)
+  )
+  
 # cambiar páneles ---------------------------------------------------------
   shinyjs::onclick("gif_slas",  updateTabsetPanel(session, inputId="TODO", selected="SLA's"))
   shinyjs::onclick("gif_cursos",  updateTabsetPanel(session, inputId="TODO", selected="Cursos"))                                                
   
+# user --------------------------------------------------------------------
+  user <- reactive({
+    #return(session$user)
+    # Sys.getenv()["USERNAME"]
+    return(check_credentials(credentials)("admin")$user_info)
+  })
+  
+  
+  
+  # is_admin <- reactive({
+  #   return(user() == "admin")
+  # })
+  
+  output$user <- renderPrint({
+    user()
+  })
+  
+# datos filtrados ---------------------------------------------------------
+  datos_filtrados <- reactive({
+    if (user() == "admin"){
+      d <- datos
+    }else{
+      d <- datos %>% 
+        filter(
+          str_detect(Cliente, credentials %>% filter(user == user()) %>% pull(cliente))
+        )
+    }
+    return(d)
+  })
+  
+  # datos diarios
+  datos_tsbl <- reactive({
+    datos_filtrados() %>% dplyr::filter(IS.visita != "Consultoria Dual",
+                                        Estatus   == "RESUELTA",
+                                        Categoría == "CORRECTIVO") %>% 
+      group_by(Recepcion, Ruta) %>% 
+      summarise(across(.cols = c(TR, TSP, TMO, TST), mean),
+                .groups = "drop") %>% 
+      pivot_longer(
+        cols      = starts_with("T"), 
+        names_to  = "SLA", 
+        values_to = "Tiempos"
+      ) %>% 
+      as_tsibble(
+        # index : la variable temporal
+        index = Recepcion,
+        # key : la(s) variable(s) que identifican a cada serie de tiempo
+        key   = c(Ruta, SLA) 
+      ) %>% 
+      fill_gaps(.full = TRUE, Tiempos = mean(Tiempos)) %>% 
+      filter_index("2018-02-12" ~ "2021-03-10")
+  })
+  
+  # datos semanales
+  datos_week_tsbl <- reactive({ 
+    datos_tsbl() %>% 
+      group_by_key() %>% 
+      index_by(Semana = yearweek(Recepcion)) %>% 
+      summarise(Tiempos = mean(Tiempos), .groups = "drop")
+  })
+  
+  # datos mensuales
+  datos_month_tsbl <- reactive({
+    datos_tsbl() %>% 
+      group_by_key() %>% 
+      index_by(Mes = yearmonth(Recepcion)) %>% 
+      summarise(Tiempos = mean(Tiempos), .groups = "drop")
+  })
+  
+  rutas <- reactive({
+    datos_filtrados() %>%  
+      distinct(Ruta) %>% 
+      pull()
+  })
+  
+  # crear una lista con todas las tsibbles
+  tsbls <- reactive({
+    list(
+      Diaria  = datos_tsbl(),
+      Semanal = datos_week_tsbl(),
+      Mensual = datos_month_tsbl()
+    )
+  })
+  
+  frecuencias <- reactive({names(tsbls())})
+  
+  train <- reactive({
+    tsbls() %>% 
+      map(. %>% filter_index("2018-03-01" ~ "2020-03-10"))
+  }) 
+  
+  tiempos <- reactive({
+    datos_tsbl() %>% 
+      distinct(SLA) %>% 
+      pull()
+  })
+  
+# inputs ------------------------------------------------------------------
+  output$select_rutas1 <- renderUI({
+    selectInput("ruta1",
+                label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"),
+                choices = rutas(),
+                multiple = FALSE,
+                selected = "JALISCO")
+  })
+  
+  output$select_frecuencias1 <- renderUI({
+    radioGroupButtons("frecuencia1",
+                 label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                 choices = frecuencias(),
+                 selected = "Mensual",
+                 status = "primary",
+                 direction = "vertical")
+  })
+  
+  output$select_rutasD <- renderUI({
+    selectInput("rutaD",
+                label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"),
+                choices = rutas(),
+                multiple = FALSE,
+                selected = "JALISCO")
+  })
+  
+  output$select_frecuenciasD <- renderUI ({
+    radioGroupButtons("frecuenciaD",
+                 label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                 choices = frecuencias(),
+                 selected = "Mensual",
+                 status = "primary",
+                 direction = "vertical")
+  })
+  
+  output$select_tiemposD <- renderUI({
+    radioGroupButtons("slaD",
+                      label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"),
+                      choices    = tiempos,
+                      selected   = "TR",
+                      direction  = "vertical",
+                      individual = FALSE,
+                      checkIcon  = list(
+                        yes      = tags$i(class = "fa fa-circle",
+                                          style    = "color: #009ACB"),  
+                        no       = tags$i(class = "fa fa-circle-o",
+                                          style    = "color: #009ACB")))
+  })
+  
+  output$select_rutas2 <- renderUI({
+    selectInput("ruta2",
+                label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"),
+                choices = rutas(),
+                multiple = FALSE,
+                selected = "JALISCO")
+  })
+  
+  output$select_frecuencias2 <- renderUI({
+    radioGroupButtons("frecuencia2",
+                 label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                 choices = frecuencias(),
+                 selected = "Mensual",
+                 status = "primary",
+                 direction = "vertical")
+  })
+  
+  output$select_sla2 <- renderUI({
+    radioGroupButtons("sla2",
+                 label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                 choices    = tiempos(),
+                 selected   = "TR",
+                 direction  = "vertical",
+                 individual = TRUE,
+                 checkIcon  = list(
+                   yes      = tags$i(class = "fa fa-circle",
+                   style    = "color: #F89438"),
+                   no       = tags$i(class = "fa fa-circle-o",
+                   style    = "color: #F89438"))
+                   )
+  })
+  
+  output$select_rutas3 <- renderUI({
+    selectInput("ruta3",
+                label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"),
+                choices = rutas(),
+                multiple = FALSE,
+                selected = "JALISCO")
+  })
+  
+  output$select_frecuencias3 <- renderUI({
+    radioGroupButtons("frecuencia3",
+                 label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                 choices = frecuencias(),
+                 selected = "Mensual",
+                 status = "primary",
+                 direction = "vertical")
+  })
+  
+  output$select_sla3 <- renderUI({
+    awesomeCheckboxGroup(
+      inputId = "tiempos3",
+      label = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"),
+      choices = tiempos(),
+      selected = tiempos(),
+      inline = TRUE,
+      status = "primary"
+    )
+  })
+    
 # fit ---------------------------------------------------------------------
   
   modelos_fit <- reactive({
@@ -428,12 +608,18 @@ server <- function(input, output, session) {
       map(
         . %>% dplyr::filter(Ruta == input$ruta2) %>% 
           model(
-            Media                     = MEAN(Tiempos),
-            Ingenuo                   = NAIVE(Tiempos),
-            `Ingenuo Estacional`      = SNAIVE(Tiempos),
-            Drift                     = RW(Tiempos ~ drift()),
-            `Suavización Exponencial` = ETS(Tiempos),
-            Arima                     = ARIMA(Tiempos)
+            #Media                     = MEAN(Tiempos),
+            #Ingenuo                   = NAIVE(Tiempos),
+            SNAIVE              = SNAIVE(Tiempos),
+            #Drift                     = RW(Tiempos ~ drift()),
+            ETS                 = ETS(Tiempos),
+            #Arima                     = ARIMA(Tiempos),
+            `STLF ARIMA`        = decomposition_model(
+              STL(Tiempos ~ trend(window = 13) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+            `STLF SNAIVE`       = decomposition_model(
+              STL(Tiempos ~ trend(window = 13) +season(window = "periodic"),robust = TRUE), SNAIVE(season_adjust)),
+            `STLF ETS & SNAIVE` = decomposition_model(
+              STL(Tiempos ~ trend(window = 13) +season(window = "periodic"),robust = TRUE), ETS(season_adjust), SNAIVE(season_year))
           )
       )
   })
@@ -533,7 +719,10 @@ output$graficaD <- renderPlot({
   future_fit <- reactive({
     modelos_fit() %>% 
       map2(tsbls, ~ .x %>% refit(.y)
-      )
+      ) #%>% 
+      # mutate(
+      #   combinado = ()
+      # )
   })
   
   future_fc <- reactive({
@@ -557,38 +746,13 @@ output$graficaD <- renderPlot({
       scale_colour_manual("Modelos", values = colores)
   })
     
-# SECURE SERVER -----------------------------------------------------------
-  res_auth <- secure_server(
-    check_credentials = check_credentials(credentials)
-  )
-
-# user --------------------------------------------------------------------
-  user <- reactive({
-    session$user
-  })
-  
-  isManager <- reactive({
-    if (user() == "admin"){
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
-  })
-  
-  datos <- reactive({
-    if(isManager()){
-      return()
-    } else {
-      return()
-    }
-  })
 # change password ---------------------------------------------------------
   observeEvent(input$ask, {
     insertUI(
-      selector = "#ask",
+      selector = "body",
       ui = tags$div(id = "module-pwd",
-          pwd_ui(id = "pwd"),
-          actionButton("cancel","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%")
+                    actionButton("cancel","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%"),
+          pwd_ui(id = "pwd")
           )
         
       )
@@ -610,6 +774,11 @@ output$graficaD <- renderPlot({
   })
   
   
+# tabla prueba ------------------------------------------------------------
+
+  output$tablaprueba <- renderDataTable({
+    datos_filtrados()
+  })  
 }
 
 # Run the application 

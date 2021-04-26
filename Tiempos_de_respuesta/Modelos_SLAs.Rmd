@@ -155,11 +155,48 @@ datos_month_tsbl %>%
 - `s.window` es el número de años consecutivos para usar en la estimación de cada valor en el componente estacional.
 
 ```{r}
+datos_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  filter(SLA == "TR") %>% 
+  model(
+    STL(Tiempos ~ trend(window = 15) +
+             season(window = "periodic"),
+        robust = TRUE)) %>% 
+  components() %>% 
+  autoplot(colour = "#F89438")+
+      theme_minimal() +
+      theme(
+        legend.position = "none",
+        plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)
+      ) +
+      scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+```
+
+
+```{r}
 datos_week_tsbl %>% 
   filter(Ruta == "JALISCO") %>% 
   filter(SLA == "TR") %>% 
   model(
-    STL(Tiempos ~ trend(window = 7) +
+    STL(Tiempos ~ trend(window = 15) +
+             season(window = "periodic"),
+        robust = TRUE)) %>% 
+  components() %>% 
+  autoplot(colour = "#F89438")+
+      theme_minimal() +
+      theme(
+        legend.position = "none",
+        plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)
+      ) +
+      scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+#season_adjust = trend + remainder
+```
+```{r}
+datos_month_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  filter(SLA == "TR") %>% 
+  model(
+    STL(Tiempos ~ trend(window = 15) +
              season(window = "periodic"),
         robust = TRUE)) %>% 
   components() %>% 
@@ -203,7 +240,9 @@ $$y_{t}=c+\phi_{1} y_{t-1}+\phi_{2} y_{t-2}+\cdots+\phi_{p} y_{t-p}+\varepsilon_
 donde $\varepsilon_{t}$ es ruido blanco. Por otra parte, un modelo de promedio móvil, en lugar de usar valores pasados de la variable de pronóstico en una regresión, usa errores de pronósticos pasados en un modelo similar a la regresión:
 $$y_{t}=c+\varepsilon_{t}+\theta_{1} \varepsilon_{t-1}+\theta_{2} \varepsilon_{t-2}+\cdots+\theta_{q} \varepsilon_{t-q}$$
 Entonces, si combinamos la diferenciación con la autorregresión y un modelo de media móvil, obtenemos un modelo ARIMA (Auto Regressive Integrated Moving Average) no estacional. El modelo completo, entonces se escribe de la siguiente manera:
-$$y_{t}^{\prime}=c+\phi_{1} y_{t-1}^{\prime}+\cdots+\phi_{p} y_{t-p}^{\prime}+\theta_{1} \varepsilon_{t-1}+\cdots+\theta_{q} \varepsilon_{t-q}+\varepsilon_{t}$$  
+$$y_{t}^{\prime}=c+\phi_{1} y_{t-1}^{\prime}+\cdots+\phi_{p} y_{t-p}^{\prime}+\theta_{1} \varepsilon_{t-1}+\cdots+\theta_{q} \varepsilon_{t-q}+\varepsilon_{t}$$
+
+- **DESCOMPOSICIÓN**: En este caso, utilizaremos las series de tiempo descompuestas que se mostraron en el punto anterior, para poder generar modelos a partir de esto mismo y comparar cuál es mejor.
 
 <div/>
 
@@ -215,26 +254,50 @@ tiempos_daily_fit <- datos_tsbl %>%
         `Seasonal naïve` = SNAIVE(Tiempos),
         Drift = RW(Tiempos ~ drift()),
         ETS = ETS(Tiempos),
-        ARIMA = ARIMA(Tiempos))
-  
-tiempos_week_fit <- datos_week_tsbl %>% 
-  filter(Ruta == "JALISCO") %>% 
-  model(Mean = MEAN(Tiempos),
-        `Naïve` = NAIVE(Tiempos),
-        `Seasonal naïve` = SNAIVE(Tiempos),
-        Drift = RW(Tiempos ~ drift()),
-        ETS = ETS(Tiempos),
-        ARIMA = ARIMA(Tiempos))
-  
-tiempos_month_fit <- datos_month_tsbl %>% 
-  filter(Ruta == "JALISCO") %>% 
-  model(Mean = MEAN(Tiempos),
-        `Naïve` = NAIVE(Tiempos),
-        `Seasonal naïve` = SNAIVE(Tiempos),
-        Drift = RW(Tiempos ~ drift()),
-        ETS = ETS(Tiempos),
-        ARIMA = ARIMA(Tiempos))
+        ARIMA = ARIMA(Tiempos),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_year)
+        )
+  )
 ```
+
+```{r}
+tiempos_week_fit <- datos_week_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_year)
+        )
+  )
+```
+
+```{r}
+tiempos_month_fit <- datos_month_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_year)
+        )
+  )
+```
+
+
 
 En las siguientes tablas, se observan cada uno de los reportes de los modelados.
 
@@ -297,12 +360,20 @@ datos_month_tsbl %>%
 ```{r}
 tiempos_dtrain_fit <- tiempos_dtrain %>% 
   filter(Ruta == "JALISCO") %>% 
-  model(Mean = MEAN(Tiempos),
-        `Naïve` = NAIVE(Tiempos),
-        `Seasonal naïve` = SNAIVE(Tiempos),
-        Drift = RW(Tiempos ~ drift()),
-        ETS = ETS(Tiempos),
-        ARIMA = ARIMA(Tiempos))
+  model(#Mean = MEAN(Tiempos),
+        # `Naïve` = NAIVE(Tiempos),
+        # `Seasonal naïve` = SNAIVE(Tiempos),
+        # Drift = RW(Tiempos ~ drift()),
+        # ETS = ETS(Tiempos),
+        # ARIMA = ARIMA(Tiempos),
+        `STLF arima adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        `STLF snaive adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_adjust)),
+        `STLF ets y snaive` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ETS(season_adjust), SNAIVE(season_year)
+        )
+  )
 
 tiempos_dtrain_fc <- tiempos_dtrain_fit %>% 
   forecast(h = "1 year") 
@@ -318,18 +389,27 @@ tiempos_dtrain_fc %>%
 ```{r}
 tiempos_wtrain_fit <- tiempos_wtrain %>% 
   filter(Ruta == "JALISCO") %>% 
-  model(Mean = MEAN(Tiempos),
-        `Naïve` = NAIVE(Tiempos),
-        `Seasonal naïve` = SNAIVE(Tiempos),
-        Drift = RW(Tiempos ~ drift()),
-        ETS = ETS(Tiempos),
-        ARIMA = ARIMA(Tiempos))
+  model(#Mean = MEAN(Tiempos),
+        # `Naïve` = NAIVE(Tiempos),
+        # `Seasonal naïve` = SNAIVE(Tiempos),
+        # Drift = RW(Tiempos ~ drift()),
+        # ETS = ETS(Tiempos),
+        # ARIMA = ARIMA(Tiempos),
+        `STLF arima adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        `STLF snaive adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_adjust)),
+        `STLF ets y snaive` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ETS(season_adjust), SNAIVE(season_year))#,
+        # `STLF ets adjust` = decomposition_model(
+        #   STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ETS(season_year))
+        )
 
 tiempos_wtrain_fc <- tiempos_wtrain_fit %>% 
   forecast(h = "1 year") 
 
 tiempos_wtrain_fc %>% 
-  autoplot(datos_week_tsbl, level = NULL) +
+  autoplot(datos_week_tsbl, level = NULL, size = 1) +
   facet_wrap(~ SLA, scales = "free_y") +
   theme_minimal() +
   labs(x = "Semanas",title = "Pronósticos SLA's") +
@@ -340,12 +420,19 @@ tiempos_wtrain_fc %>%
 ```{r}
 tiempos_mtrain_fit <- tiempos_mtrain %>% 
   filter(Ruta == "JALISCO") %>% 
-  model(Mean = MEAN(Tiempos),
-        `Naïve` = NAIVE(Tiempos),
-        `Seasonal naïve` = SNAIVE(Tiempos),
-        Drift = RW(Tiempos ~ drift()),
-        ETS = ETS(Tiempos),
-        ARIMA = ARIMA(Tiempos))
+  model(#Mean = MEAN(Tiempos),
+        # `Naïve` = NAIVE(Tiempos),
+        # `Seasonal naïve` = SNAIVE(Tiempos),
+        # Drift = RW(Tiempos ~ drift()),
+        # ETS = ETS(Tiempos),
+        # ARIMA = ARIMA(Tiempos),
+        `STLF arima adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        `STLF snaive adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_adjust)),
+        `STLF ets y snaive` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ETS(season_adjust), SNAIVE(season_year))
+        )
 
 tiempos_mtrain_fc <- tiempos_mtrain_fit %>% 
   forecast(h = "1 year") 
@@ -421,4 +508,10 @@ tiempos_mtrain_fit %>%
   gg_tsresiduals()
 ```
 > Por último, aunque parecen ser pocos datos, debido que los pronósticos se realizaron únicamente por un año (12 meses), parece ser que es un modelo bastante bueno para este análisis, aunque los datos tampoco distribuyen de una manera normal.
+
+# Pronósticos
+
+```{r}
+
+```
 
