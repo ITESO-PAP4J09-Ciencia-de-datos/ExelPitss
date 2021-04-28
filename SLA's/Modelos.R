@@ -42,7 +42,7 @@ lambda1 <- Train_tsb %>%
 ## Descomposicion SLT para modelos 
 dcmp <- Train_tsb %>%
   filter(Ruta == "JALISCO") %>% 
-  model(STL(Tiempo_de_respuesta ~ trend(window = 7) ,  robust=TRUE)) %>%
+  model(STL(box_cox(Tiempo_de_respuesta,lambda1) ~ trend(window = 7)+ season(window = "periodic") ,  robust=TRUE)) %>%
   components() %>%
   select(-.model)
 
@@ -55,36 +55,36 @@ Modelos_fit <- Train_tsb %>%
      #                               fourier(K = 2)),
     # "ARIMA213"          = ARIMA(Tiempo_de_respuesta ~ pdq(2, 1, 3) + PDQ(0,0,0)),
     # "Prophet"           = prophet(Tiempo_de_respuesta ~ season(order = 2)),
-    #"SN_42"              = SNAIVE(Tiempo_de_respuesta ~ lag(42)),
+   # "SN_42"              = SNAIVE(Tiempo_de_respuesta ~ lag(42)),
     #"SN_44"              = SNAIVE(Tiempo_de_respuesta ~ lag(44)),
     #"Dr"                 = RW(Tiempo_de_respuesta ~ drift()),
     # "SN_44"           = SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()),
     # "SN_42"           = SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()),
-    "Best"            = (SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
+    "SN_42_44"            = (SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
                          SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2 , 
-    # "FORSADO1"    = (ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2))         + 
-    #                 SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()) +
-    #                 SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()) +
-    #                 RW(Tiempo_de_respuesta ~ drift())      
-    #                 )/4,
-     "FORSADO2"    = (ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2))         + 
-                        SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()) +
-                        SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())      
-                       )/3,
-    # "NAI"    = NAIVE(Tiempo_de_respuesta),
-    # "M"     = MEAN(Tiempo_de_respuesta),
     #"ETS2"  = ETS(Tiempo_de_respuesta ~ error("A") + trend("N") + season("N")),
     # "ETS1"  = ETS(Tiempo_de_respuesta ~ error("A") + trend("M") + season("N"))
-    "Des_ARF2"  = decomposition_model(
-      STL(Tiempo_de_respuesta ~ trend(window = 7), robust = TRUE),
-      ARIMA(season_adjust~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
-      SNAIVE(season_year~ lag(44) + drift())
-    ),
-    "Des2_ARF2"  = decomposition_model(
-      STL(Tiempo_de_respuesta ~ trend(window = 7), robust = TRUE),
-      ARIMA(season_adjust~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
-      SNAIVE(season_year~ lag(42) + drift())
-    )
+    # "Des_ARF2"  = decomposition_model(
+    #   STL(Tiempo_de_respuesta ~ trend(window = 7)+ season(window = "periodic") , robust = TRUE),
+    #   ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+    #   SNAIVE(season_year~ lag(44) + drift()),
+    # )
+    "Com3_T7"  =  (decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 7)+ season(window = "periodic") , robust = TRUE),
+      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(44) + drift())) +
+        SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
+        RW(Tiempo_de_respuesta ~ drift())
+    )/3, 
+    "Com3_T5"  =  (decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(44) + drift())) +
+        SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
+        RW(Tiempo_de_respuesta ~ drift())
+    )/3
+    
+
   ) %>% 
   mutate(
      # SN_42_44 = (SN_42 + SN_44)/2,
@@ -98,6 +98,8 @@ Modelos_fit <- Train_tsb %>%
      # SN_42_44 = (SN_42 + SN_44)/2,
      # Best_ARF2 = (SN_42_44+ ARIMA_fourier2)/2,
      # Best_ARBC = (SN_42_44+ARIMA_BC)/2
+    # Com2 = (Des_ARF2 + SN_42)/2, 
+    # Com3 = (Com2 + Dr)/2
   )
 
 
@@ -116,7 +118,12 @@ Error_test <- accuracy(Modelos_fc, Train_tsb)
 # Descomposicion
 dcmp_Jal_sem <- Train_tsb %>%
   filter(Ruta == "JALISCO") %>% 
-  model(STL(Tiempo_de_respuesta))
+  model(STL(Tiempo_de_respuesta ~ trend(window = 7)+ season(window = "periodic") ,  robust=TRUE))
+
+dcmp_Jal_semBC <- Train_tsb %>%
+  filter(Ruta == "JALISCO") %>% 
+  model(STL(box_cox(Tiempo_de_respuesta,lambda1) ~ trend(window = 7)+
+              season(window = "periodic") ,  robust=TRUE))
 # components(dcmp_Jal) %>% autoplot()+ xlab("Semanas")
 
 # ANALISIS DE RESIDUOS
@@ -143,27 +150,21 @@ Train_tsb_tr <-  Train_tsb %>%
   stretch_tsibble(.init = 46, .step = 1) %>%
   relocate(Fecha_recepion, Ruta, .id)
 
+
 # TSCV accuracy
 ValCru_Ts <- Train_tsb_tr %>%
   model(
     "SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
            SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2,
-    # "FORSADO2"    = (ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2)) + 
-    #                    SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()) +
-    #                    SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())      
-    #                  )/3,
-    "Des_ARF2"  = decomposition_model(
-      STL(Tiempo_de_respuesta ~ trend(window = 7), robust = TRUE),
-      ARIMA(season_adjust~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
-      SNAIVE(season_year~ lag(44) + drift())
-    ),
-    "Des2_ARF2"  = decomposition_model(
-      STL(Tiempo_de_respuesta ~ trend(window = 7), robust = TRUE),
-      ARIMA(season_adjust~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
-      SNAIVE(season_year~ lag(42) + drift())
-    )
+    "Com3_T5"  =  (decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(44) + drift())) +
+        SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
+        RW(Tiempo_de_respuesta ~ drift())
+    )/3
     ) %>%
-  forecast(h = "4 week") %>%
+  forecast(h = "11 week") %>%
   accuracy(Train_tsb)
 
 # Training set accuracy
@@ -172,37 +173,66 @@ ValCru_Tr <- Train_tsb %>%
   model( 
     "SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
                    SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2,
-    # "ARF2"    = ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) +  fourier(K = 2)) 
+    "Com3_T5"  =  (decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(44) + drift())) +
+        SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
+        RW(Tiempo_de_respuesta ~ drift())
+    )/3
           ) %>%
   accuracy()
 
 # Previsión de la precisión del horizonte con validación cruzada
 fc <- Train_tsb_tr %>%
-  model("SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
-                      SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2) %>%
+  model(
+    "Com3_T5"  =  (decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(44) + drift())) +
+        SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
+        RW(Tiempo_de_respuesta ~ drift())
+                  )/3
+    ) %>%
   forecast(h = "8 week") %>%  
   group_by(.id ) %>%
   mutate(h = row_number()) %>%
   ungroup() 
 
-RMSE <- fc %>%
+RMSE1 <- fc %>%
   fabletools::accuracy(Train_tsb, by = c("h", ".model","Ruta")) %>%
   ggplot(aes(x = h, y = RMSE)) +
+  ggtitle("RMSE vs h del Modelo Com3_T5")+
   geom_point()
 
+fc2 <- Train_tsb_tr %>%
+  model(
+     "SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
+                       SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2
+  ) %>%
+  forecast(h = "8 week") %>%  
+  group_by(.id ) %>%
+  mutate(h = row_number()) %>%
+  ungroup() 
 
+RMSE2 <- fc2 %>%
+  fabletools::accuracy(Train_tsb, by = c("h", ".model","Ruta")) %>%
+  ggplot(aes(x = h, y = RMSE)) +
+  ggtitle("RMSE vs h del Modelo SN_42_44")+
+  geom_point()
 # Validación modelos  ----------------------------------------------
 
 Modelos_Val_fit <- Train_tsb %>% 
   filter(Ruta == "JALISCO", Fecha_recepion < yearweek("2020-11-15")) %>% 
   model(
-    "SN_44"           = SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()),
-    "SN_42"           = SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()),
-  ) %>% 
-  mutate(
-    SN_42_44 = (SN_42 + SN_44)/2
+    "Com3_T5"  =  (decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(44) + drift())) +
+        SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
+        RW(Tiempo_de_respuesta ~ drift())
+    )/3
   )
-
 Modelos_val_fc <- Modelos_Val_fit %>% 
   forecast(h = "11 week")
 
