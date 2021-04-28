@@ -14,7 +14,7 @@ library(tsibble)   # Convertir tibbles a tsibbles
 library(feasts)    # Metodos para analizar series de tiempo
 # Limpieza ----------------------------------------------------------------
 
-tiempos_os_tbl <- read_xlsx("SLA's/Reporte_Tiempo_respuesta.xlsx") # Lectura del archivo
+tiempos_os_tbl <- read_xlsx("Reporte_Tiempo_respuesta.xlsx") # Lectura del archivo
 
 tiempos_os_tidy_tbl <- tiempos_os_tbl %>% #Limpieza de datos
   
