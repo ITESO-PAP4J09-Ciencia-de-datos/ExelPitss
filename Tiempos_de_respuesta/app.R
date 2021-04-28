@@ -39,30 +39,30 @@ datos <- read_xlsx("tiempos_respuesta.xlsx")
 #glimpse(datos)
 
 datos <- datos %>% 
-    mutate(across(contains("Tiempo"), as.numeric)) %>% 
-    rename_all(funs(make.names(.))) %>% 
-    rename(Orden = N...de.orden,
-           Serie = N...de.serie,
-           Equipo = N...de.equipo,
-           Num.Cliente = N..de.cliente,
-           Distribuidor = Grupo.empresarial,
-           Nivel = Nivel.de.servicio,
-           Recepcion = `Fecha.recepción`,
-           Ejecutivo = Usuario.captura,
-           IS.asignado = `Técnico.asignado`,
-           IS.visita = `Técnico.de.visita`,
-           Visitas = N...de.visitas,
-           Cierre = Fecha.cierre,
-           TST = Tiempo.transcurrido,
-           TMO = Tiempo.efectivo.en.sitio,
-           TR = Tiempo.de.respuesta,
-           TLR = Limite.de.tiempo.de.respuesta,
-           TLR.restante = `Tiempo.límite.restante...24`,
-           TSP = Tiempo.efectivo,
-           TLS = `Limite.tiempo.de.solución.total`,
-           TLS.restante = `Tiempo.límite.restante...27`) %>% 
-    mutate(Recepcion = as.Date(Recepcion),
-           Cierre    = as.Date(Cierre))
+  mutate(across(contains("Tiempo"), as.numeric)) %>% 
+  rename_all(funs(make.names(.))) %>% 
+  rename(Orden = N...de.orden,
+         Serie = N...de.serie,
+         Equipo = N...de.equipo,
+         Num.Cliente = N..de.cliente,
+         Distribuidor = Grupo.empresarial,
+         Nivel = Nivel.de.servicio,
+         Recepcion = `Fecha.recepción`,
+         Ejecutivo = Usuario.captura,
+         IS.asignado = `Técnico.asignado`,
+         IS.visita = `Técnico.de.visita`,
+         Visitas = N...de.visitas,
+         Cierre = Fecha.cierre,
+         TST = Tiempo.transcurrido,
+         TMO = Tiempo.efectivo.en.sitio,
+         TR = Tiempo.de.respuesta,
+         TLR = Limite.de.tiempo.de.respuesta,
+         TLR.restante = `Tiempo.límite.restante...24`,
+         TSP = Tiempo.efectivo,
+         TLS = `Limite.tiempo.de.solución.total`,
+         TLS.restante = `Tiempo.límite.restante...27`) %>% 
+  mutate(Recepcion = as.Date(Recepcion),
+         Cierre    = as.Date(Cierre))
 
 # frecuencias <- c("Diariamente","Semanalmente","Mensualmente")
 
@@ -83,25 +83,11 @@ modelos <- list(
 
 colores <- c("#E27831","#009ACB","#EEB422","#00008B","#8B4500","#EE4000")
 
-credentials <- tibble(
-  user             = c("admin", "visita", "xerox"), # mandatory
-  password         = c("ExelPitss_ad21", "ExelPitss_vis21", "Xerox_21"), # mandatory
-  cliente          = c(NA, NA, "XEROX MEXICANA SA DE CV"),
-  start            = c("2021-01-01"), # optinal (all others)
-  expire           = c(NA, NA, NA),
-  admin            = c(TRUE, FALSE, FALSE),
-  comment          = "Simple and secure authentification mechanism 
-  for single ‘Shiny Exel Pitss’ applications.",
-  stringsAsFactors = FALSE
-)
+# UI ----------------------------------------------------------------------
 
-# UI CODE ----------------------------------------------------------------------
-
-# Define UI 
-ui <- 
-    fluidPage(
-      title = "Exel Pitss APP's",
-      tags$head(tags$style(HTML(".nav.nav-pills.nav-stacked > .active > a, .nav.nav-pills.nav-stacked > .active > a:hover {
+ui <- fluidPage(
+  title = "Exel Pitss APP's",
+  tags$head(tags$style(HTML(".nav.nav-pills.nav-stacked > .active > a, .nav.nav-pills.nav-stacked > .active > a:hover {
     background-color: #009ACB;
   }
 .well {
@@ -116,311 +102,485 @@ ui <-
 
       }
                             "))),
-      navlistPanel(id = "TODO",well = TRUE,
-                    tabPanel("Inicio",icon = icon("house-user"), style = "color:#000033",
-                             absolutePanel(
-                               tags$img( 
-                                 style = "max-width: 100%; height: auto !important;",
-                                 src = "logo_blanco.png"
-                               ),
-                               h1("Aplicaciones",style = "text-align:center; font-weight:bold; color: white; fill:transparent"),
-                               fluidRow(align = "center",
-                                 column(6, 
-                                        div(style="display: inline-block;",img(id="gif_slas",src="slas.gif", height = 330,style="cursor:pointer;"))),
-                                 column(6,
-                                        div(style="display: inline-block;",img(id="gif_cursos",src="cursos.gif", height = 330,style="cursor:pointer;"))    
-                                        )
-                                 ),
-                               verbatimTextOutput(outputId = "user")
-                             ),
-                             shinyjs::useShinyjs()
-                             ),
-                    
-                    tabPanel("SLA's",icon = icon("stopwatch"),style = "color:#000033",
-                             
-                             
-                  # Application title
-                  
-                  shinyWidgets::setBackgroundImage(src = "fondo.png"),
-                  #Assign Dasbhoard title
-                  titlePanel(div("Modelos SLA's",style = "color:white; font-size: 70px; font-style:proxima nova; font-weight:bold; font-style:italic",align = "center",
-                                 img(height = 105, width = 400, src = "logo_blanco.png"))),
-                  navbarPage("Menú",
+shinyWidgets::setBackgroundImage(src = "fondo.png"),
+shinyjs::useShinyjs(),
+# shinyauthr login ui module here
+shinyauthr::loginUI("login"),
+absolutePanel(
+  div(class = "pull-right", shinyauthr::logoutUI(id = "logout")),
+  uiOutput("tab1_ui")
+)
+)
 
-# tab: visualización ------------------------------------------------------
-                      tabPanel("Visualización de Datos",icon = icon("eye"),
-                               sidebarLayout(
-                                   sidebarPanel(
-                                     uiOutput(outputId = "select_rutas1"),
-                                       # selectInput("ruta1",
-                                       #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                       #             choices = rutas, 
-                                       #             multiple = FALSE, 
-                                       #             selected = "JALISCO"),
-                                       uiOutput(outputId = "select_frecuencias1"),
-                                       # radioGroupButtons("frecuencia1",
-                                       #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                                       #              choices = frecuencias,
-                                       #              selected = "Mensual",
-                                       #              status = "primary",
-                                       #              direction = "vertical")#,
-                                   ),
-                                   
-                                   mainPanel(
-                                       tabsetPanel(
-                                           tabPanel(
-                                               "Gráfica",
-                                               tags$head(
-                                                   tags$style(type = "text/css", "a{color: #fff}")
-                                               ),
-                                               style = "color: #fff",
-                                               plotlyOutput(outputId = "grafica1") %>% withSpinner(color="#F89438") )         
-                                       )
-                                   )
-                               )
-                               ),
-
-# tab: descomposicion -----------------------------------------------------
-
-                      tabPanel("Descomposición", icon = icon("expand-alt"), 
-                               sidebarLayout(
-                                 sidebarPanel(
-                                   uiOutput(outputId = "select_rutasD"),
-                                   # selectInput("rutaD",
-                                   #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                   #             choices = rutas, 
-                                   #             multiple = FALSE, 
-                                   #             selected = "JALISCO"),
-                                   uiOutput(outputId = "select_frecuenciasD"),
-                                   # radioGroupButtons("frecuenciaD",
-                                   #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                                   #              choices = frecuencias,
-                                   #              selected = "Mensual",
-                                   #              status = "primary",
-                                   #              direction = "vertical"),
-                                   uiOutput(outputId = "select_tiemposD")
-                                   # radioGroupButtons("slaD",
-                                   #                   label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"),
-                                   #                   choices    = tiempos,
-                                   #                   selected   = "TR",
-                                   #                   direction  = "vertical",
-                                   #                   individual = FALSE,
-                                   #                   checkIcon  = list(
-                                   #                     yes      = tags$i(class = "fa fa-circle",
-                                   #                                       style    = "color: #009ACB"),  
-                                   #                     no       = tags$i(class = "fa fa-circle-o",
-                                   #                                       style    = "color: #009ACB")))
-                                   ),
-                                 mainPanel(
-                                   tabsetPanel(
-                                     tabPanel(
-                                       "Gráfica",
-                                       tags$head(
-                                         tags$style(type = "text/css", "a{color: #fff}")
-                                       ),
-                                       style = "color: #fff",
-                                       plotOutput(outputId = "graficaD") %>% withSpinner(color="#F89438") )         
-                                   )
-                                 )
-                               )
-                      ),
-
-# tab: modelado -----------------------------------------------------------
-                      tabPanel("Modelado",icon = icon("tools"),
-                               sidebarLayout(
-                                   sidebarPanel(
-                                     uiOutput(outputId = "select_rutas2"),
-                                       # selectInput("ruta2",
-                                       #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                       #             choices = rutas, 
-                                       #             multiple = FALSE, 
-                                       #             selected = "JALISCO"),
-                                     uiOutput(outputId = "select_frecuencias2"),
-                                       # radioGroupButtons("frecuencia2",
-                                       #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                                       #              choices = frecuencias,
-                                       #              selected = "Mensual",
-                                       #              status = "primary",
-                                       #              direction = "vertical"),
-                                     # uiOutput(outputId = "select_modelos2")
-                                       selectInput("modelo2",
-                                                   label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"),
-                                                   choices = names(modelos),
-                                                   multiple = TRUE,
-                                                   selected = names(modelos))
-                                   ),
-                                   mainPanel(
-                                       tabsetPanel(
-                                           tabPanel(
-                                               "Gráfica",
-                                               tags$head(
-                                                   tags$style(type = "text/css", "a{color: #fff}")
-                                               ),
-                                               style = "color: #fff",
-                                               plotOutput("grafica2") %>% withSpinner(color="#F89438")), 
-                                           tabPanel(
-                                               "Análisis",
-                                               tags$head(
-                                                   tags$style(type = "text/css", "a{color: #fff}")
-                                               ),
-                                               style = "color: #fff",
-                                               splitLayout(
-                                                 uiOutput(outputId = "select_sla2"),
-                                                 # radioGroupButtons("sla2",
-                                                 #              label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                                 #              choices    = tiempos,
-                                                 #              selected   = "TR",
-                                                 #              direction  = "vertical",
-                                                 #              individual = TRUE,
-                                                 #              checkIcon  = list(
-                                                 #                yes      = tags$i(class = "fa fa-circle",
-                                                 #                style    = "color: #F89438"),  
-                                                 #                no       = tags$i(class = "fa fa-circle-o",
-                                                 #                style    = "color: #F89438"))
-                                                 #                ),
-                                                 radioGroupButtons("modelresidual2",
-                                                              label      = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                                              choices    = names(modelos),
-                                                              selected   = "STLF ARIMA",
-                                                              direction  = "vertical",
-                                                              individual = TRUE,
-                                                              checkIcon  = list(
-                                                                yes      = tags$i(class = "fa fa-square",
-                                                                style    = "color: #F89438"),
-                                                                no       = tags$i(class = "fa fa-square-o",
-                                                                style    = "color: #F89438"))
-                                                                )
-                                               ),
-                                               verticalLayout(
-                                                 h4("Accuracy", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                                 tableOutput(outputId = "reporte1") %>% withSpinner(color="#F89438"),
-                                                 h4("Reporte", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                                 verbatimTextOutput(outputId = "reporte2") %>% withSpinner(color="#F89438"),
-                                                 h4("Residuales", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                                                 plotOutput(outputId = "reporte3") %>% withSpinner(color="#F89438")
-                                               )
-                                           )
-                                       )
-                                   )
-                               )
-                               
-                      ),
-
-# tab: pronósticos --------------------------------------------------------
-                      tabPanel("Pronósticos",icon = icon("chart-line"),
-                               sidebarLayout(
-                                   sidebarPanel(
-                                     uiOutput(outputId = "select_rutas3"),
-                                       # selectInput("ruta3",
-                                       #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                       #             choices = rutas, 
-                                       #             multiple = FALSE, 
-                                       #             selected = "JALISCO"),
-                                     uiOutput(outputId = "select_frecuencias3"),
-                                       # radioGroupButtons("frecuencia3",
-                                       #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                                       #              choices = frecuencias,
-                                       #              selected = "Mensual",
-                                       #              status = "primary",
-                                       #              direction = "vertical"),
-                                       selectInput("modelo3",
-                                                   label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"),
-                                                   choices = names(modelos),
-                                                   multiple = TRUE,
-                                                   selected = "Ingenuo Estacional"),
-                                     uiOutput(outputId = "select_sla3"),
-                                       # awesomeCheckboxGroup(
-                                       #   inputId = "tiempos3",
-                                       #   label = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"), 
-                                       #   choices = tiempos,
-                                       #   selected = tiempos,
-                                       #   inline = TRUE, 
-                                       #   status = "primary"
-                                       # ),
-                                       sliderInput("forecast3",
-                                                   label = h4("Rango de pronóstico según la periodicidad escogida", style="color:white; font-style:urw din italic; font-size:20px"),
-                                                   min = 1, max = 1000, value = 5)
-                                   ),
-                                   mainPanel(
-                                       tabsetPanel(
-                                           tabPanel(
-                                               "Gráfica",
-                                               tags$head(
-                                                   tags$style(type = "text/css", "a{color: #fff}")
-                                               ),
-                                               style = "color: #fff",
-                                               plotOutput("grafica3") %>% withSpinner(color="#F89438"))
-                                       )
-                                   )
-                               )
-                      )
-                  
-              )
-              ),#tabPanel SLA's
-
-# MAPA COBERTURA ----------------------------------------------------------
-                    tabPanel("Cursos", icon = icon("user-cog"), style = "color:#000033",
-                             dataTableOutput(outputId = "tablaprueba")
-                             ),
-
-# Menú Más ----------------------------------------------------------------
-                    navbarMenu("Más", 
-                               tabPanel("Usuario",
-                                        titlePanel(div("Información de Usuario",style = "color:white; font-size: 70px; font-style:proxima nova; font-weight:bold; font-style:italic",align = "center")
-                                                   ),
-                                        fluidRow(align = "center",
-                                        actionButton("ask","Cambiar Contraseña",icon = icon("edit"), style = "color: #fff; background-color: #F89438; padding:20px; font-size:100%")
-                                        )
-                               )
-                    ), #menu mas
-                    widths=c(2,10)
-                        ) #navlistPanel
-                        ) #fluidPage
-
-# SECURE APP --------------------------------------------------------------
-
-ui <- secure_app(ui, language = "en")
 
 # SERVER ------------------------------------------------------------------
 
-# Define server logic required to draw a histogram
 server <- function(input, output, session) {
-
-# SECURE SERVER -----------------------------------------------------------
-  res_auth <- secure_server(
-    check_credentials = check_credentials(credentials)
+  
+  # user --------------------------------------------------------------------
+  users <- data.frame(
+      user             = c("admin", "seiton", "xerox"), # mandatory
+      password         = c("ExelPitss_ad21", "Seiton_21", "Xerox_21"), # mandatory
+      cliente          = c(NA, "Seiton de Mexico SA de CV", "XEROX MEXICANA SA DE CV"),
+      start            = c("2021-01-01"), # optinal (all others)
+      expire           = c(NA, NA, NA),
+      admin            = c(TRUE, FALSE, FALSE),
+      comment          = "Simple and secure authentification mechanism for single ‘Shiny Exel Pitss’ applications.",
+      stringsAsFactors = FALSE
   )
   
-# cambiar páneles ---------------------------------------------------------
+  credentials <- callModule(shinyauthr::login, "login", 
+                            data = users,
+                            user_col = user,
+                            pwd_col = password,
+                            sodium_hashed = FALSE,
+                            log_out = reactive(logout_init()))
+  
+  user <- reactive({
+    credentials()$info
+  })
+  
+  output$logo_user_header <- renderUI({
+    if (user()$user == "xerox"){
+      div(align = "right",img(height = 50, width = 91.17, src = "xerox.png"))
+    } else if (user()$user == "admin") {
+      div("Admin",align = "right", style = "color:white; font-size: 20px")
+    } else if (user()$user == "seiton"){
+      div(align = "right",img(height = 50, width = 400, src = "seiton.png"))
+    }
+  })
+  
+  output$user_info <- renderUI({
+    if (user()$user == "xerox"){
+      #div(align = "center",img(height = 105, width = 191.45, src = "xerox.png"))
+      tags$img(style = "max-width: 100%; height: auto !important;",src = "xerox.png")
+    } else if (user()$user == "admin") {
+      #div(align = "center",img(height = 105, width = 400, src = "logo_blanco.png"))
+      tags$img(style = "max-width: 100%; height: auto !important;",src = "logo_blanco.png")
+    } else if (user()$user == "seiton"){
+      #div(align = "center",img(height = 105, width = 191.45, src = "seiton.png"))
+      tags$img(style = "max-width: 100%; height: auto !important;",src = "seiton.png")
+    }
+  })
+  
+  # change password ---------------------------------------------------------
+  observeEvent(input$ask, {
+    insertUI(
+      selector = "#placeholder",
+      ui = tags$div(id = "module-pwd",
+                    textInput("nueva_pwd1",
+                              label = h3("New password", style="color:white; font-style:urw din italic;")),
+                    textInput("nueva_pwd2",
+                              label = h3("Confirm new password", style="color:white;")),
+                    actionButton("cancel","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%"),
+                    actionButton("submit","Actualizar contraseña", icon = icon("save"), style = "color: #fff; background-color: #009ACB; padding:10px; font-size:100%")
+      )
+      
+    )
+  })
+  
+  observeEvent(input$submit,{
+    if (user()$user == "admin"){
+      #users[1,2] = input$nueva_pwd2
+      users <<- data.frame(
+        user             = c("admin", "seiton", "xerox"), # mandatory
+        password         = c(input$nueva_pwd2, "Seiton_21", "Xerox_21"), # mandatory
+        cliente          = c(NA, "Seiton de Mexico SA de CV", "XEROX MEXICANA SA DE CV"),
+        start            = c("2021-01-01"), # optinal (all others)
+        expire           = c(NA, NA, NA),
+        admin            = c(TRUE, FALSE, FALSE),
+        comment          = "Simple and secure authentification mechanism for single ‘Shiny Exel Pitss’ applications.",
+        stringsAsFactors = FALSE
+      )
+    } else if (user()$user == "seiton"){
+      #users[2,2] = input$nueva_pwd2
+      users <<- data.frame(
+        user             = c("admin", "seiton", "xerox"), # mandatory
+        password         = c("ExelPitss_ad21",input$nueva_pwd2, "Xerox_21"), # mandatory
+        cliente          = c(NA, "Seiton de Mexico SA de CV", "XEROX MEXICANA SA DE CV"),
+        start            = c("2021-01-01"), # optinal (all others)
+        expire           = c(NA, NA, NA),
+        admin            = c(TRUE, FALSE, FALSE),
+        comment          = "Simple and secure authentification mechanism for single ‘Shiny Exel Pitss’ applications.",
+        stringsAsFactors = FALSE
+      )
+    } else {
+      #users[3,1] = input$nueva_pwd2
+      users <<- data.frame(
+        user             = c("admin", "seiton", "xerox"), # mandatory
+        password         = c("ExelPitss_ad21", "Seiton_21", input$nueva_pwd2), # mandatory
+        cliente          = c(NA, "Seiton de Mexico SA de CV", "XEROX MEXICANA SA DE CV"),
+        start            = c("2021-01-01"), # optinal (all others)
+        expire           = c(NA, NA, NA),
+        admin            = c(TRUE, FALSE, FALSE),
+        comment          = "Simple and secure authentification mechanism for single ‘Shiny Exel Pitss’ applications.",
+        stringsAsFactors = FALSE
+      )
+    }
+    
+    removeUI(selector = "#module-pwd")
+  })
+  
+  observeEvent({
+    input$cancel
+  }, {
+    removeUI(selector = "#module-pwd")
+  })
+  
+  
+  # login -------------------------------------------------------------------
+  
+  credentials <- callModule(shinyauthr::login, "login", 
+                            data = users,
+                            user_col = user,
+                            pwd_col = password,
+                            sodium_hashed = FALSE,
+                            log_out = reactive(logout_init()))
+  
+  
+  # logout status managed by shinyauthr module and stored here
+  logout_init <- callModule(shinyauthr::logout, "logout", reactive(credentials()$user_auth))
+  
+  
+  # renderUI ----------------------------------------------------------------
+  output$tab1_ui <- renderUI({
+    
+    req(credentials()$user_auth)
+    
+    fluidPage(
+      # title = "Exel Pitss APP's",
+      # tags$head(tags$style(HTML(".nav.nav-pills.nav-stacked > .active > a, .nav.nav-pills.nav-stacked > .active > a:hover {
+      #     background-color: #009ACB;
+      #   }
+      # .well {
+      #     min-height: 20px;
+      #     max-width: 300px;
+      #     padding: 19px;
+      #     margin-bottom: 20px;
+      #     background-color: #F89438;
+      #     border-radius: 4px;
+      #     -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+      #     box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+      # 
+      #       }
+      #                             "))),
+      tags$head(tags$style("#title{
+                         color: white;
+                        text-align: center;
+                     } ")),
+      tags$div(class = "header",
+               titlePanel(
+                 fluidRow(
+                   column(6,img(height = 50, width = 190.47, src = "logo_blanco.png")), 
+                   column(6, uiOutput(outputId = "logo_user_header"))
+                          )
+                )
+              ),
+      navlistPanel(id = "TODO",well = TRUE,
+                   tabPanel("Inicio",icon = icon("house-user"), style = "color:#000033",
+                            titlePanel(div("Aplicaciones",style = "color:white; font-size: 80px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center",
+                                           tags$img(style = "max-width: 100%; height: auto !important;",
+                                                    src = "logo_blanco.png"))),
+                            fluidRow(align = "center",
+                                     column(6,
+                                            div(style="display: inline-block;",img(id="gif_slas",src="slas.gif", height = 330,style="cursor:pointer;"))),
+                                     column(6,
+                                            div(style="display: inline-block;",img(id="gif_cursos",src="cursos.gif", height = 330,style="cursor:pointer;"))
+                                     )
+                            ),
+                            shinyauthr::logoutUI("logout"),
+                            shinyjs::useShinyjs()
+                   ),
+
+# tabPanel: SLA's ---------------------------------------------------------
+                   tabPanel("SLA's",icon = icon("stopwatch"),style = "color:#000033",
+                            shinyWidgets::setBackgroundImage(src = "fondo.png"),
+                            tags$head(tags$style("#title{
+                                                 color: white;
+                                                text-align: center;
+                                             } ")),
+                            tags$div(class = "header",
+                              titlePanel(
+                                fluidRow(
+                                  column(5,"Modelos SLA's",style = "color:white; font-size: 60px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center"), 
+                                  column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "logo_blanco.png"))
+                                )
+                              )),
+                            navbarPage("Menú",
+                                       
+# tab: visualización ------------------------------------------------------
+                                       tabPanel("Visualización de Datos",icon = icon("eye"),
+                                                sidebarLayout(
+                                                  sidebarPanel(
+                                                    uiOutput(outputId = "select_rutas1"),
+                                                    # selectInput("ruta1",
+                                                    #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #             choices = rutas,
+                                                    #             multiple = FALSE,
+                                                    #             selected = "JALISCO"),
+                                                    uiOutput(outputId = "select_frecuencias1"),
+                                                    # radioGroupButtons("frecuencia1",
+                                                    #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #              choices = frecuencias,
+                                                    #              selected = "Mensual",
+                                                    #              status = "primary",
+                                                    #              direction = "vertical")#,
+                                                  ),
+                                                  
+                                                  mainPanel(
+                                                    tabsetPanel(
+                                                      tabPanel(
+                                                        "Gráfica",
+                                                        tags$head(
+                                                          tags$style(type = "text/css", "a{color: #fff}")
+                                                        ),
+                                                        style = "color: #fff",
+                                                        plotlyOutput(outputId = "grafica1") %>% withSpinner(color="#F89438") )
+                                                    )
+                                                  )
+                                                )
+                                       ),
+                                       
+# tab: descomposicion -----------------------------------------------------
+                                       
+                                       tabPanel("Descomposición", icon = icon("expand-alt"),
+                                                sidebarLayout(
+                                                  sidebarPanel(
+                                                    uiOutput(outputId = "select_rutasD"),
+                                                    # selectInput("rutaD",
+                                                    #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #             choices = rutas,
+                                                    #             multiple = FALSE,
+                                                    #             selected = "JALISCO"),
+                                                    uiOutput(outputId = "select_frecuenciasD"),
+                                                    # radioGroupButtons("frecuenciaD",
+                                                    #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #              choices = frecuencias,
+                                                    #              selected = "Mensual",
+                                                    #              status = "primary",
+                                                    #              direction = "vertical"),
+                                                    uiOutput(outputId = "select_tiemposD")
+                                                    # radioGroupButtons("slaD",
+                                                    #                   label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #                   choices    = tiempos,
+                                                    #                   selected   = "TR",
+                                                    #                   direction  = "vertical",
+                                                    #                   individual = FALSE,
+                                                    #                   checkIcon  = list(
+                                                    #                     yes      = tags$i(class = "fa fa-circle",
+                                                    #                                       style    = "color: #009ACB"),
+                                                    #                     no       = tags$i(class = "fa fa-circle-o",
+                                                    #                                       style    = "color: #009ACB")))
+                                                  ),
+                                                  mainPanel(
+                                                    tabsetPanel(
+                                                      tabPanel(
+                                                        "Gráfica",
+                                                        tags$head(
+                                                          tags$style(type = "text/css", "a{color: #fff}")
+                                                        ),
+                                                        style = "color: #fff",
+                                                        plotOutput(outputId = "graficaD") %>% withSpinner(color="#F89438") )
+                                                    )
+                                                  )
+                                                )
+                                       ),
+                                       
+# tab: modelado -----------------------------------------------------------
+                                       tabPanel("Modelado",icon = icon("tools"),
+                                                sidebarLayout(
+                                                  sidebarPanel(
+                                                    uiOutput(outputId = "select_rutas2"),
+                                                    # selectInput("ruta2",
+                                                    #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #             choices = rutas,
+                                                    #             multiple = FALSE,
+                                                    #             selected = "JALISCO"),
+                                                    uiOutput(outputId = "select_frecuencias2"),
+                                                    # radioGroupButtons("frecuencia2",
+                                                    #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #              choices = frecuencias,
+                                                    #              selected = "Mensual",
+                                                    #              status = "primary",
+                                                    #              direction = "vertical"),
+                                                    # uiOutput(outputId = "select_modelos2")
+                                                    selectInput("modelo2",
+                                                                label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                                choices = names(modelos),
+                                                                multiple = TRUE,
+                                                                selected = names(modelos))
+                                                  ),
+                                                  mainPanel(
+                                                    tabsetPanel(
+                                                      tabPanel(
+                                                        "Gráfica",
+                                                        tags$head(
+                                                          tags$style(type = "text/css", "a{color: #fff}")
+                                                        ),
+                                                        style = "color: #fff",
+                                                        plotOutput("grafica2") %>% withSpinner(color="#F89438")),
+                                                      tabPanel(
+                                                        "Análisis",
+                                                        tags$head(
+                                                          tags$style(type = "text/css", "a{color: #fff}")
+                                                        ),
+                                                        style = "color: #fff",
+                                                        splitLayout(
+                                                          uiOutput(outputId = "select_sla2"),
+                                                          # radioGroupButtons("sla2",
+                                                          #              label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                          #              choices    = tiempos,
+                                                          #              selected   = "TR",
+                                                          #              direction  = "vertical",
+                                                          #              individual = TRUE,
+                                                          #              checkIcon  = list(
+                                                          #                yes      = tags$i(class = "fa fa-circle",
+                                                          #                style    = "color: #F89438"),
+                                                          #                no       = tags$i(class = "fa fa-circle-o",
+                                                          #                style    = "color: #F89438"))
+                                                          #                ),
+                                                          radioGroupButtons("modelresidual2",
+                                                                            label      = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                                            choices    = names(modelos),
+                                                                            selected   = "STLF ARIMA",
+                                                                            direction  = "vertical",
+                                                                            individual = TRUE,
+                                                                            checkIcon  = list(
+                                                                              yes      = tags$i(class = "fa fa-square",
+                                                                                                style    = "color: #F89438"),
+                                                                              no       = tags$i(class = "fa fa-square-o",
+                                                                                                style    = "color: #F89438"))
+                                                          )
+                                                        ),
+                                                        verticalLayout(
+                                                          h4("Accuracy", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                          tableOutput(outputId = "reporte1") %>% withSpinner(color="#F89438"),
+                                                          h4("Reporte", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                          verbatimTextOutput(outputId = "reporte2") %>% withSpinner(color="#F89438"),
+                                                          h4("Residuales", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                                                          plotOutput(outputId = "reporte3") %>% withSpinner(color="#F89438")
+                                                        )
+                                                      )
+                                                    )
+                                                  )
+                                                )
+                                                
+                                       ),
+                                       
+# tab: pronósticos --------------------------------------------------------
+                                       tabPanel("Pronósticos",icon = icon("chart-line"),
+                                                sidebarLayout(
+                                                  sidebarPanel(
+                                                    uiOutput(outputId = "select_rutas3"),
+                                                    # selectInput("ruta3",
+                                                    #             label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #             choices = rutas,
+                                                    #             multiple = FALSE,
+                                                    #             selected = "JALISCO"),
+                                                    uiOutput(outputId = "select_frecuencias3"),
+                                                    # radioGroupButtons("frecuencia3",
+                                                    #              label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #              choices = frecuencias,
+                                                    #              selected = "Mensual",
+                                                    #              status = "primary",
+                                                    #              direction = "vertical"),
+                                                    selectInput("modelo3",
+                                                                label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                                choices = names(modelos),
+                                                                multiple = TRUE,
+                                                                selected = "Ingenuo Estacional"),
+                                                    uiOutput(outputId = "select_sla3"),
+                                                    # awesomeCheckboxGroup(
+                                                    #   inputId = "tiempos3",
+                                                    #   label = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                    #   choices = tiempos,
+                                                    #   selected = tiempos,
+                                                    #   inline = TRUE,
+                                                    #   status = "primary"
+                                                    # ),
+                                                    sliderInput("forecast3",
+                                                                label = h4("Rango de pronóstico según la periodicidad escogida", style="color:white; font-style:urw din italic; font-size:20px"),
+                                                                min = 1, max = 1000, value = 5)
+                                                  ),
+                                                  mainPanel(
+                                                    tabsetPanel(
+                                                      tabPanel(
+                                                        "Gráfica",
+                                                        tags$head(
+                                                          tags$style(type = "text/css", "a{color: #fff}")
+                                                        ),
+                                                        style = "color: #fff",
+                                                        plotOutput("grafica3") %>% withSpinner(color="#F89438"))
+                                                    )
+                                                  )
+                                                )
+                                       )
+                                       
+                            )
+                   ),#tabPanel SLA's
+                   
+# MAPA COBERTURA ----------------------------------------------------------
+                   tabPanel("Cursos", icon = icon("user-cog"), style = "color:#000033",
+                            tags$head(tags$style("#title{
+                                                 color: white;
+                                                text-align: center;
+                                             } ")),
+                            tags$div(class = "header",
+                                     titlePanel(
+                                       fluidRow(
+                                         column(5,"Cursos",style = "color:white; font-size: 60px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center"), 
+                                         column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "logo_blanco.png"))
+                                       )
+                                     )),
+                            dataTableOutput(outputId = "tablaprueba")
+                   ),
+                   
+# Menú Más ----------------------------------------------------------------
+                   navbarMenu("Más",
+                              tabPanel("Usuario",
+                                       tags$head(tags$style("#title{
+                                                 color: white;
+                                                text-align: center;
+                                             } ")),
+                                       tags$div(class = "header",
+                                                titlePanel(
+                                                  fluidRow(
+                                                    column(7,"Información de usuario",style = "color:white; font-size: 60px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center"), 
+                                                    column(5, uiOutput(outputId = "user_info"))
+                                                  )
+                                                )
+                                                #,style = "color:white; font-size: 60px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center"), 
+                                                    #column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "logo_blanco.png"))
+                                                ),
+                                       fluidRow(#align = "center",
+                                                      #uiOutput(outputId = "user_info"),
+                                                      column(12,actionButton("ask","Cambiar Contraseña",icon = icon("edit"), style = "color: #fff; background-color: #F89438; padding:20px; font-size:100%"),align = "center"),
+                                                      tags$div(id = "placeholder")
+                                       )
+                              )
+                   ), #menu mas
+                   widths=c(2,10)
+      ) #navlistPanel
+    ) #fluidPage
+  })
+  
+  # cambiar páneles ---------------------------------------------------------
   shinyjs::onclick("gif_slas",  updateTabsetPanel(session, inputId="TODO", selected="SLA's"))
   shinyjs::onclick("gif_cursos",  updateTabsetPanel(session, inputId="TODO", selected="Cursos"))                                                
   
-# user --------------------------------------------------------------------
-  user <- reactive({
-    #return(session$user)
-    # Sys.getenv()["USERNAME"]
-    return(check_credentials(credentials)("admin")$user_info)
-  })
+  # datos filtrados ---------------------------------------------------------
   
-  
-  
-  # is_admin <- reactive({
-  #   return(user() == "admin")
-  # })
-  
-  output$user <- renderPrint({
-    user()
-  })
-  
-# datos filtrados ---------------------------------------------------------
   datos_filtrados <- reactive({
-    if (user() == "admin"){
+    if (user()$user == "admin"){
       d <- datos
-    }else{
+    }else {#if (user()$user == "xerox"){
       d <- datos %>% 
         filter(
-          str_detect(Cliente, credentials %>% filter(user == user()) %>% pull(cliente))
+          str_detect(Cliente, users %>% filter(user == user()$user) %>% pull(cliente))
         )
+      # filter(
+      #     Cliente %like% as.character(user_info$user)
+      # )
     }
     return(d)
   })
@@ -492,7 +652,7 @@ server <- function(input, output, session) {
       pull()
   })
   
-# inputs ------------------------------------------------------------------
+  # inputs ------------------------------------------------------------------
   output$select_rutas1 <- renderUI({
     selectInput("ruta1",
                 label = h4("Ruta", style="color:white; font-style:urw din italic; font-size:20px"),
@@ -503,11 +663,11 @@ server <- function(input, output, session) {
   
   output$select_frecuencias1 <- renderUI({
     radioGroupButtons("frecuencia1",
-                 label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                 choices = frecuencias(),
-                 selected = "Mensual",
-                 status = "primary",
-                 direction = "vertical")
+                      label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                      choices = frecuencias(),
+                      selected = "Mensual",
+                      status = "primary",
+                      direction = "vertical")
   })
   
   output$select_rutasD <- renderUI({
@@ -520,17 +680,17 @@ server <- function(input, output, session) {
   
   output$select_frecuenciasD <- renderUI ({
     radioGroupButtons("frecuenciaD",
-                 label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                 choices = frecuencias(),
-                 selected = "Mensual",
-                 status = "primary",
-                 direction = "vertical")
+                      label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                      choices = frecuencias(),
+                      selected = "Mensual",
+                      status = "primary",
+                      direction = "vertical")
   })
   
   output$select_tiemposD <- renderUI({
     radioGroupButtons("slaD",
                       label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px"),
-                      choices    = tiempos,
+                      choices    = tiempos(),
                       selected   = "TR",
                       direction  = "vertical",
                       individual = FALSE,
@@ -551,26 +711,26 @@ server <- function(input, output, session) {
   
   output$select_frecuencias2 <- renderUI({
     radioGroupButtons("frecuencia2",
-                 label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                 choices = frecuencias(),
-                 selected = "Mensual",
-                 status = "primary",
-                 direction = "vertical")
+                      label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                      choices = frecuencias(),
+                      selected = "Mensual",
+                      status = "primary",
+                      direction = "vertical")
   })
   
   output$select_sla2 <- renderUI({
     radioGroupButtons("sla2",
-                 label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
-                 choices    = tiempos(),
-                 selected   = "TR",
-                 direction  = "vertical",
-                 individual = TRUE,
-                 checkIcon  = list(
-                   yes      = tags$i(class = "fa fa-circle",
-                   style    = "color: #F89438"),
-                   no       = tags$i(class = "fa fa-circle-o",
-                   style    = "color: #F89438"))
-                   )
+                      label      = h4("SLA", style="color:white; font-style:urw din italic; font-size:20px; font-weight: bold"),
+                      choices    = tiempos(),
+                      selected   = "TR",
+                      direction  = "vertical",
+                      individual = TRUE,
+                      checkIcon  = list(
+                        yes      = tags$i(class = "fa fa-circle",
+                                          style    = "color: #F89438"),
+                        no       = tags$i(class = "fa fa-circle-o",
+                                          style    = "color: #F89438"))
+    )
   })
   
   output$select_rutas3 <- renderUI({
@@ -583,11 +743,11 @@ server <- function(input, output, session) {
   
   output$select_frecuencias3 <- renderUI({
     radioGroupButtons("frecuencia3",
-                 label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
-                 choices = frecuencias(),
-                 selected = "Mensual",
-                 status = "primary",
-                 direction = "vertical")
+                      label = h4("Frecuencia", style="color:white; font-style:urw din italic; font-size:20px"),
+                      choices = frecuencias(),
+                      selected = "Mensual",
+                      status = "primary",
+                      direction = "vertical")
   })
   
   output$select_sla3 <- renderUI({
@@ -600,8 +760,8 @@ server <- function(input, output, session) {
       status = "primary"
     )
   })
-    
-# fit ---------------------------------------------------------------------
+  
+  # fit ---------------------------------------------------------------------
   
   modelos_fit <- reactive({
     train %>% 
@@ -623,21 +783,21 @@ server <- function(input, output, session) {
           )
       )
   })
-
-# forecast ----------------------------------------------------------------
-
+  
+  # forecast ----------------------------------------------------------------
+  
   modelos_fc <- reactive({
     modelos_fit() %>% 
       map(
         . %>% forecast(h = "1 year")
       )
   })
-
-# tab - visualización -----------------------------------------------------
-
+  
+  # tab - visualización -----------------------------------------------------
+  
   output$grafica1 <- renderPlotly({
-    tsbls[[input$frecuencia1]] %>% 
-      dplyr::filter(Ruta == as.name(input$ruta1)) %>%
+    tsbls()[[input$frecuencia1]] %>% 
+      dplyr::filter(Ruta == input$ruta1) %>%
       autoplot(Tiempos) + #aes(color = SLA) +
       facet_wrap(~ SLA, scales = "free_y") +
       ggtitle(paste("Tiempos de",input$ruta1, tolower(input$frecuencia1))) +
@@ -650,11 +810,11 @@ server <- function(input, output, session) {
       scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
   })
   
-
-# tab - descomposición  ---------------------------------------------------
-
-output$graficaD <- renderPlot({
-  tsbls[[input$frecuenciaD]] %>%  
+  
+  # tab - descomposición  ---------------------------------------------------
+  
+  output$graficaD <- renderPlot({
+    tsbls()[[input$frecuenciaD]] %>%  
       dplyr::filter(Ruta == input$rutaD) %>%
       filter(SLA %in% input$slaD) %>% 
       model(
@@ -663,18 +823,18 @@ output$graficaD <- renderPlot({
             robust = TRUE)) %>% 
       components() %>% 
       autoplot(colour = "#03B2ED") +
-    ggtitle(paste("Descomposición del",input$slaD,"de:",input$rutaD, tolower(input$frecuencia1))) +
+      ggtitle(paste("Descomposición del",input$slaD,"de:",input$rutaD, tolower(input$frecuencia1))) +
       theme_minimal() +
       theme(
         legend.position = "none",
         plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)
       ) +
       scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
-})
+  })
   
   
-# tab - modelado ----------------------------------------------------------
-
+  # tab - modelado ----------------------------------------------------------
+  
   
   output$grafica2 <- renderPlot({
     modelos_fc()[[input$frecuencia2]] %>% 
@@ -713,16 +873,16 @@ output$graficaD <- renderPlot({
                     input$sla2, "de", input$ruta2, 
                     tolower(input$frecuencia2)))
   })
-
-# tab - pronósticos -------------------------------------------------------
-
+  
+  # tab - pronósticos -------------------------------------------------------
+  
   future_fit <- reactive({
     modelos_fit() %>% 
       map2(tsbls, ~ .x %>% refit(.y)
       ) #%>% 
-      # mutate(
-      #   combinado = ()
-      # )
+    # mutate(
+    #   combinado = ()
+    # )
   })
   
   future_fc <- reactive({
@@ -735,7 +895,7 @@ output$graficaD <- renderPlot({
   output$grafica3 <- renderPlot({
     future_fc()[[input$frecuencia3]] %>% 
       dplyr::filter(SLA    %in% input$tiempos3,
-             .model %in% input$modelo3) %>% 
+                    .model %in% input$modelo3) %>% 
       autoplot(tsbls[[input$frecuencia3]], level = NULL) + 
       facet_wrap(~ SLA, scales = "free_y") +
       ggtitle(paste("Pronósticos SLA's de",input$ruta3,"a ",input$forecast3,"días")) +
@@ -745,42 +905,9 @@ output$graficaD <- renderPlot({
       labs(x = input$frecuencia3) +
       scale_colour_manual("Modelos", values = colores)
   })
-    
-# change password ---------------------------------------------------------
-  observeEvent(input$ask, {
-    insertUI(
-      selector = "body",
-      ui = tags$div(id = "module-pwd",
-                    actionButton("cancel","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%"),
-          pwd_ui(id = "pwd")
-          )
-        
-      )
-  })
-  pwd_out <- callModule(
-    module = pwd_server,
-    id = "pwd",
-    user = reactiveValues(user = "me"),
-    update_pwd = function(user, pwd) {
-      # store the password somewhere
-      list(result = TRUE)
-    }
-  )
-  observeEvent({
-    pwd_out$relog
-    input$cancel
-    }, {
-    removeUI(selector = "#module-pwd")
-  })
   
+  # tab - mapa cobertura ------------------------------------------------------------
   
-# tabla prueba ------------------------------------------------------------
-
-  output$tablaprueba <- renderDataTable({
-    datos_filtrados()
-  })  
 }
 
-# Run the application 
 shinyApp(ui = ui, server = server)
-

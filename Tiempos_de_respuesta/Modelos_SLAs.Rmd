@@ -46,6 +46,26 @@ El propósito de este proyecto es generar un modelo de regresión a partir de lo
 
 ```{r}
 datos <- datos
+clientes <- datos %>% 
+  distinct(Cliente) %>% 
+  pull()
+
+users <- data.frame(
+    user             = c("admin", "visita", "xerox"), # mandatory
+    password         = c("ExelPitss_ad21", "ExelPitss_vis21", "Xerox_21"), # mandatory
+    cliente          = c(NA, NA, "XEROX MEXICANA SA DE CV"),
+    start            = c("2021-01-01"), # optinal (all others)
+    expire           = c(NA, NA, NA),
+    admin            = c(TRUE, FALSE, FALSE),
+    comment          = "Simple and secure authentification mechanism 
+  for single ‘Shiny Exel Pitss’ applications.",
+  stringsAsFactors = FALSE
+)
+
+datos %>% 
+    filter(
+           str_detect(Cliente, users %>% filter(user == "xerox") %>% pull(cliente))
+                )
 ```
 
 
