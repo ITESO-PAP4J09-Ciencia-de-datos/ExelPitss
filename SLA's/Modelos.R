@@ -12,7 +12,7 @@ library(fable.prophet) # Modelo Prophet
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
 
-#source("SLA's/Limpieza.R", encoding = "utf-8")
+source("SLA's/Limpieza.R", encoding = "utf-8")
 
 # series de tiempo de RUta 
 Train_tsb <- tiempos_os_tidy_tbl %>%
@@ -42,9 +42,14 @@ lambda1 <- Train_tsb %>%
 ## Descomposicion SLT para modelos 
 dcmp <- Train_tsb %>%
   filter(Ruta == "JALISCO") %>% 
-  model(STL(box_cox(Tiempo_de_respuesta,lambda1) ~ trend(window = 7)+ season(window = "periodic") ,  robust=TRUE)) %>%
+  model(STL(box_cox(Tiempo_de_respuesta,lambda1) ~ trend(window = 7)+ season(window = "periodic")
+            ,  robust=TRUE)) %>%
   components() %>%
   select(-.model)
+
+dcmp_Jal_sem <- Train_tsb %>%
+  filter(Ruta == "JALISCO") %>% 
+  model(STL(Tiempo_de_respuesta ~ trend(window = 7)+ season(window = "periodic") ,  robust=TRUE))
 
 ## Modelos de predicción
 Modelos_fit <- Train_tsb %>% 
@@ -69,13 +74,6 @@ Modelos_fit <- Train_tsb %>%
     #   ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
     #   SNAIVE(season_year~ lag(44) + drift()),
     # )
-    "Com3_T7"  =  (decomposition_model(
-      STL(Tiempo_de_respuesta ~ trend(window = 7)+ season(window = "periodic") , robust = TRUE),
-      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
-      SNAIVE(season_year~ lag(44) + drift())) +
-        SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
-        RW(Tiempo_de_respuesta ~ drift())
-    )/3, 
     "Com3_T5"  =  (decomposition_model(
       STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
       ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
@@ -113,17 +111,6 @@ Modelos_fc <- Modelos_fit %>%
 Error_test <- accuracy(Modelos_fc, Train_tsb)
 
 
-# descomposicion por el modelo STL con transformacion Box Cox
-
-# Descomposicion
-dcmp_Jal_sem <- Train_tsb %>%
-  filter(Ruta == "JALISCO") %>% 
-  model(STL(Tiempo_de_respuesta ~ trend(window = 7)+ season(window = "periodic") ,  robust=TRUE))
-
-dcmp_Jal_semBC <- Train_tsb %>%
-  filter(Ruta == "JALISCO") %>% 
-  model(STL(box_cox(Tiempo_de_respuesta,lambda1) ~ trend(window = 7)+
-              season(window = "periodic") ,  robust=TRUE))
 # components(dcmp_Jal) %>% autoplot()+ xlab("Semanas")
 
 # ANALISIS DE RESIDUOS
@@ -138,10 +125,10 @@ dcmp_Jal_semBC <- Train_tsb %>%
 # #   gg_tsresiduals()+
 # #   ggtitle("Residuales ETS_BC")
 # 
-# Modelos_fit %>%
-#   select(ARIMA_BC) %>% 
-#   gg_tsresiduals()+
-#   ggtitle("Residuales ARIMA_BC")
+ # Modelos_fit %>%
+ #   select(Com3_T5) %>% 
+ #   gg_tsresiduals()+
+ #   ggtitle("Residuales Com3_T5")
 
 # Validacion Cruzada  -----------------------------------------------------
 # Time series cross-validation accuracy
@@ -237,4 +224,22 @@ Modelos_val_fc <- Modelos_Val_fit %>%
   forecast(h = "11 week")
 
 Error_Val <- accuracy(Modelos_val_fc, Train_tsb)
+
+
+# Prediccion final  -------------------------------------------------------
+
+MFinal_fit <- Train_tsb %>% 
+  filter(Ruta == "JALISCO", Fecha_recepion < yearweek("2021-01-21")) %>% 
+  model(
+    "Com3_T5"  =  (decomposition_model(
+      STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+      SNAIVE(season_year~ lag(44) + drift())) +
+        SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
+        RW(Tiempo_de_respuesta ~ drift())
+    )/3
+  )
+
+MFinal_fc <- MFinal_fit %>% 
+  forecast(h = "3 month")
 

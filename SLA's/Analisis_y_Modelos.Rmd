@@ -16,18 +16,19 @@ Tras el analisis exploratorio mediante la limpieza de los datos dados, se proced
  source("SLA's/Limpieza.R", 
         local = knitr::knit_global(),
         encoding = "utf-8")
+
  source("SLA's/limpieza_reporte_Tiempo_respuesta.R", 
         local = knitr::knit_global(),
         encoding = "utf-8")
+
  source("SLA's/Modelos.R", 
         local = knitr::knit_global(),
         encoding = "utf-8")
+
  source("SLA's/ModelosD.R", 
         local = knitr::knit_global(),
         encoding = "utf-8")
 ```
-
-
 
 # Desarrollo 
 ## EDA
@@ -229,7 +230,6 @@ plotly::ggplotly(RMSE1)
 ### Set de Validación  del 2020-11-08 al 2021-01-31
 ```{r}
 Modelos_val_fc %>% 
-  filter(.model %in% c( "SN_42_44", "Com3_T5", "Com3_T7" )) %>% 
   autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2021-01-31"), level = NULL) +
   ggtitle("Forecast") +
   xlab("Semanas") + ylab("horas") +
@@ -272,6 +272,19 @@ filter_index("2020-01-01" ~ "2020-12-06") %>%
 ```
 
 
+
+
+## Prediccion 
+
+```{r}
+ MFinal_fc %>% 
+   autoplot(filter_index(Train_tsb, "2020-01-01" ~ "2021-01-31")) +
+   ggtitle("Forecast") +
+   xlab("Semanas") + ylab("horas") +
+  geom_vline(xintercept = as.Date("2021-01-17"), color = "Red",
+             linetype = "dashed")
+
+```
 
 # Bibliografia / Referencias 
 
