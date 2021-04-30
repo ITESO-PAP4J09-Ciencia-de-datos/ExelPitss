@@ -12,7 +12,7 @@ library(fable.prophet) # Modelo Prophet
 # Datos  ------------------------------------------------------------------
 ## Datos de la limpieza de datos
 
-#source("SLA's/Limpieza.R", encoding = "utf-8")
+source("Limpieza.R", encoding = "utf-8")
 
 # series de tiempo de RUta 
 Train_tsb <- tiempos_os_tidy_tbl %>%
@@ -56,48 +56,74 @@ Modelos_fit <- Train_tsb %>%
   filter(Ruta == "JALISCO", Fecha_recepion < yearweek("2020-11-15")) %>% 
   model(
      # "ARIMA_BC"          = ARIMA(box_cox(Tiempo_de_respuesta,lambda1)),
-     # "ARIMA_fourier2"    = ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) + 
-     #                               fourier(K = 2)),
+      # "ARIMA_fourier2"    = ARIMA(Tiempo_de_respuesta ~ pdq(d = 1) + PDQ(0,0,0) + 
+      #                               fourier(K = 2)),
     # "ARIMA213"          = ARIMA(Tiempo_de_respuesta ~ pdq(2, 1, 3) + PDQ(0,0,0)),
     # "Prophet"           = prophet(Tiempo_de_respuesta ~ season(order = 2)),
    # "SN_42"              = SNAIVE(Tiempo_de_respuesta ~ lag(42)),
     #"SN_44"              = SNAIVE(Tiempo_de_respuesta ~ lag(44)),
-    #"Dr"                 = RW(Tiempo_de_respuesta ~ drift()),
+    # "Dr"                 = RW(Tiempo_de_respuesta ~ drift()),
+    
     # "SN_44"           = SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()),
-    # "SN_42"           = SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()),
-    "SN_42_44"            = (SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
-                         SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2 , 
-    #"ETS2"  = ETS(Tiempo_de_respuesta ~ error("A") + trend("N") + season("N")),
-    # "ETS1"  = ETS(Tiempo_de_respuesta ~ error("A") + trend("M") + season("N"))
+
+     "SN_42_44"            = (SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
+                          SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2 , 
+    # "ARMAFurierK2_SN44"   =  decomposition_model(
+    #      STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+    #      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+    #      SNAIVE(season_year~ lag(44) + drift())),
+     # "ARMAFurierK2_SN44"   =  decomposition_model(
+     #   STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+     #   ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+     #   SNAIVE(season_year~ lag(44) + drift())),
+    # "Drift_SN44"   =  decomposition_model(
+    #   STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+    #   RW(season_adjust ~ drift()),
+    #   SNAIVE(season_year~ lag(44) + drift())),
+    # "NAIVE_SN44"   =  decomposition_model(
+    #   STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+    #   NAIVE(season_adjust),
+    #   SNAIVE(season_year~ lag(44) + drift())),
+    # "ETS_Holt’sL_SN44"   =  decomposition_model(
+    #   STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+    #   ETS(season_adjust ~error("A") + trend("A") + season("N") ),
+    #   SNAIVE(season_year~ lag(44) + drift())),
+     # "SN_44"           = SNAIVE(Tiempo_de_respuesta~ lag(44) + drift()),
+     # "SN_42"           = SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()),
+     # "ETS"  = ETS(Tiempo_de_respuesta ~ error("A") + trend("A") + season("N"))
     # "Des_ARF2"  = decomposition_model(
     #   STL(Tiempo_de_respuesta ~ trend(window = 7)+ season(window = "periodic") , robust = TRUE),
     #   ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
     #   SNAIVE(season_year~ lag(44) + drift()),
     # )
-    "Com3_T5"  =  (decomposition_model(
-      STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
-      ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
-      SNAIVE(season_year~ lag(44) + drift())) +
-        SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
-        RW(Tiempo_de_respuesta ~ drift())
+     "Com3_T5"  =  (decomposition_model(
+       STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
+       ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
+       SNAIVE(season_year~ lag(44) + drift())) +
+         SNAIVE(Tiempo_de_respuesta ~ lag(42)) + 
+         RW(Tiempo_de_respuesta ~ drift())
     )/3
     
 
   ) %>% 
   mutate(
-     # SN_42_44 = (SN_42 + SN_44)/2,
+     # SN_44_42 = (SN_42 + SN_44)/2,
      # SN_Dr_ARBC = (SN_42_44+ Dr + ARIMA_BC)/3,
-     # SN_42_44_Dr = (SN_42 + SN_44+ Dr )/3,
+     # SN_44_42_Dr = (SN_42 + SN_44+ Dr )/3,
+     # SN_44_42_AFK2 = (SN_42 + SN_44+ ARIMA_fourier2 )/3,
+     # DSTLAFK2SN44L_SN42 = (ARMAFurierK2_SN44 + SN_42 )/2 ,
+     # DSTLAFK2SN44L_SN_44 = (ARMAFurierK2_SN44 +SN_44 )/2 , 
+     # DSTLAFK2SN44L_SN_42_44 = (ARMAFurierK2_SN44 + SN_44_42 )/2 ,
+     # DSTLAFK2SN44L_SN_42_44_Dr = (ARMAFurierK2_SN44 + SN_44_42 + Dr)/3 , #Casi el Com3_T5
      # SN_44_DR_Mean = (SN_44+Dr)/2,
      # SN_42_DR_Mean = (SN_42+Dr)/2,
      # SNB_Dr_ARF2 = (SN_42_44+ Dr + ARIMA_fourier2)/3,
      # SN_44_Dr_ARF2 = (SN_44+Dr+ARIMA_fourier2 )/3,
      # SN_44_Dr_ARBC = (SN_44+Dr+ ARIMA_BC)/3,
      # SN_42_44 = (SN_42 + SN_44)/2,
-     # Best_ARF2 = (SN_42_44+ ARIMA_fourier2)/2,
-     # Best_ARBC = (SN_42_44+ARIMA_BC)/2
-    # Com2 = (Des_ARF2 + SN_42)/2, 
-    # Com3 = (Com2 + Dr)/2
+     # SN_42_44_ARF2 = (SN_42_44+ ARIMA_fourier2)/2,
+     # SN_42_44_ARBC = (SN_42_44+ARIMA_BC)/2
+     # Com2 = (Des_ARF2 + SN_42)/2, 
   )
 
 
