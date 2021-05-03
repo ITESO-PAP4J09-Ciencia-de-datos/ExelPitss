@@ -83,6 +83,8 @@ modelos <- list(
 
 colores <- c("#E27831","#009ACB","#EEB422","#00008B","#8B4500","#EE4000")
 
+users <- read_csv("users.csv")
+
 # UI ----------------------------------------------------------------------
 
 ui <- fluidPage(
@@ -117,17 +119,7 @@ absolutePanel(
 
 server <- function(input, output, session) {
   
-  # user --------------------------------------------------------------------
-  users <- data.frame(
-      user             = c("admin", "seiton", "xerox"), # mandatory
-      password         = c("ExelPitss_ad21", "Seiton_21", "Xerox_21"), # mandatory
-      cliente          = c(NA, "Seiton de Mexico SA de CV", "XEROX MEXICANA SA DE CV"),
-      start            = c("2021-01-01"), # optinal (all others)
-      expire           = c(NA, NA, NA),
-      admin            = c(TRUE, FALSE, FALSE),
-      comment          = "Simple and secure authentification mechanism for single ‘Shiny Exel Pitss’ applications.",
-      stringsAsFactors = FALSE
-  )
+  # login & logout -------------------------------------------------------------------
   
   credentials <- callModule(shinyauthr::login, "login", 
                             data = users,
@@ -135,6 +127,12 @@ server <- function(input, output, session) {
                             pwd_col = password,
                             sodium_hashed = FALSE,
                             log_out = reactive(logout_init()))
+  
+  
+  # logout status managed by shinyauthr module and stored here
+  logout_init <- callModule(shinyauthr::logout, "logout", reactive(credentials()$user_auth))
+  
+  # user --------------------------------------------------------------------
   
   user <- reactive({
     credentials()$info
@@ -164,6 +162,7 @@ server <- function(input, output, session) {
   })
   
   # change password ---------------------------------------------------------
+  
   observeEvent(input$ask, {
     insertUI(
       selector = "#placeholder",
@@ -179,46 +178,17 @@ server <- function(input, output, session) {
     )
   })
   
-  observeEvent(input$submit,{
-    if (user()$user == "admin"){
-      #users[1,2] = input$nueva_pwd2
-      users <<- data.frame(
-        user             = c("admin", "seiton", "xerox"), # mandatory
-        password         = c(input$nueva_pwd2, "Seiton_21", "Xerox_21"), # mandatory
-        cliente          = c(NA, "Seiton de Mexico SA de CV", "XEROX MEXICANA SA DE CV"),
-        start            = c("2021-01-01"), # optinal (all others)
-        expire           = c(NA, NA, NA),
-        admin            = c(TRUE, FALSE, FALSE),
-        comment          = "Simple and secure authentification mechanism for single ‘Shiny Exel Pitss’ applications.",
-        stringsAsFactors = FALSE
-      )
-    } else if (user()$user == "seiton"){
-      #users[2,2] = input$nueva_pwd2
-      users <<- data.frame(
-        user             = c("admin", "seiton", "xerox"), # mandatory
-        password         = c("ExelPitss_ad21",input$nueva_pwd2, "Xerox_21"), # mandatory
-        cliente          = c(NA, "Seiton de Mexico SA de CV", "XEROX MEXICANA SA DE CV"),
-        start            = c("2021-01-01"), # optinal (all others)
-        expire           = c(NA, NA, NA),
-        admin            = c(TRUE, FALSE, FALSE),
-        comment          = "Simple and secure authentification mechanism for single ‘Shiny Exel Pitss’ applications.",
-        stringsAsFactors = FALSE
-      )
-    } else {
-      #users[3,1] = input$nueva_pwd2
-      users <<- data.frame(
-        user             = c("admin", "seiton", "xerox"), # mandatory
-        password         = c("ExelPitss_ad21", "Seiton_21", input$nueva_pwd2), # mandatory
-        cliente          = c(NA, "Seiton de Mexico SA de CV", "XEROX MEXICANA SA DE CV"),
-        start            = c("2021-01-01"), # optinal (all others)
-        expire           = c(NA, NA, NA),
-        admin            = c(TRUE, FALSE, FALSE),
-        comment          = "Simple and secure authentification mechanism for single ‘Shiny Exel Pitss’ applications.",
-        stringsAsFactors = FALSE
-      )
-    }
+  eventReactive(input$submit,{
     
-    removeUI(selector = "#module-pwd")
+    users <- #reactive({
+      users %>% 
+        mutate(password = replace(password, user == user()$user, input$nueva_pwd2))
+    #}) 
+    
+    write_csv(users, "users.csv")
+  
+    
+    #removeUI(selector = "#module-pwd")
   })
   
   observeEvent({
@@ -226,21 +196,6 @@ server <- function(input, output, session) {
   }, {
     removeUI(selector = "#module-pwd")
   })
-  
-  
-  # login -------------------------------------------------------------------
-  
-  credentials <- callModule(shinyauthr::login, "login", 
-                            data = users,
-                            user_col = user,
-                            pwd_col = password,
-                            sodium_hashed = FALSE,
-                            log_out = reactive(logout_init()))
-  
-  
-  # logout status managed by shinyauthr module and stored here
-  logout_init <- callModule(shinyauthr::logout, "logout", reactive(credentials()$user_auth))
-  
   
   # renderUI ----------------------------------------------------------------
   output$tab1_ui <- renderUI({
