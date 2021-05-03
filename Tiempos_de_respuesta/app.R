@@ -786,7 +786,7 @@ server <- function(input, output, session) {
   
   # forecast ----------------------------------------------------------------
   
-  modelos_fc <- reactive({
+  modelos_fc <- reactive({ 
     modelos_fit() %>% 
       map(
         . %>% forecast(h = "1 year")
