@@ -85,6 +85,13 @@ colores <- c("#E27831","#009ACB","#EEB422","#00008B","#8B4500","#EE4000")
 
 users <- read_csv("users.csv")
 
+logos <- tibble(
+  users = users %>% dplyr::distinct(user) %>% pull(),
+  logos = paste(users,".png")
+) %>% 
+  mutate(logos = gsub(" ", "", logos))
+
+
 # UI ----------------------------------------------------------------------
 
 ui <- fluidPage(
@@ -109,7 +116,7 @@ shinyjs::useShinyjs(),
 # shinyauthr login ui module here
 shinyauthr::loginUI("login"),
 absolutePanel(
-  div(class = "pull-right", shinyauthr::logoutUI(id = "logout")),
+  div(class = "push-right", shinyauthr::logoutUI(id = "logout")),
   uiOutput("tab1_ui")
 )
 )
@@ -138,27 +145,16 @@ server <- function(input, output, session) {
     credentials()$info
   })
   
+  logo <- reactive({
+    logos %>% filter(users == user()$user) %>% select(logos)
+  })
+  
   output$logo_user_header <- renderUI({
-    if (user()$user == "xerox"){
-      div(align = "right",img(height = 50, width = 91.17, src = "xerox.png"))
-    } else if (user()$user == "admin") {
-      div("Admin",align = "right", style = "color:white; font-size: 20px")
-    } else if (user()$user == "seiton"){
-      div(align = "right",img(height = 50, width = 400, src = "seiton.png"))
-    }
+    div(align = "right",img(style = "max-width: 100%; height: auto !important;", src = logo()))
   })
   
   output$user_info <- renderUI({
-    if (user()$user == "xerox"){
-      #div(align = "center",img(height = 105, width = 191.45, src = "xerox.png"))
-      tags$img(style = "max-width: 100%; height: auto !important;",src = "xerox.png")
-    } else if (user()$user == "admin") {
-      #div(align = "center",img(height = 105, width = 400, src = "logo_blanco.png"))
-      tags$img(style = "max-width: 100%; height: auto !important;",src = "logo_blanco.png")
-    } else if (user()$user == "seiton"){
-      #div(align = "center",img(height = 105, width = 191.45, src = "seiton.png"))
-      tags$img(style = "max-width: 100%; height: auto !important;",src = "seiton.png")
-    }
+    tags$img(style = "max-width: 100%; height: auto !important;",src = logo())
   })
   
   # change password ---------------------------------------------------------
@@ -167,28 +163,73 @@ server <- function(input, output, session) {
     insertUI(
       selector = "#placeholder",
       ui = tags$div(id = "module-pwd",
-                    textInput("nueva_pwd1",
+                    tags$head(tags$style("#bien{color: white;
+                             font-size: 12px;
+                         }"
+                    )
+                    ),
+                    tags$head(tags$style("#error{color: red;
+                             font-size: 12px;
+                         }"
+                    )
+                    ),
+                    textOutput(outputId = "bien"),
+                    textOutput(outputId = "error"),
+                    passwordInput("nueva_pwd1",
                               label = h3("New password", style="color:white; font-style:urw din italic;")),
-                    textInput("nueva_pwd2",
+                    passwordInput("nueva_pwd2",
                               label = h3("Confirm new password", style="color:white;")),
                     actionButton("cancel","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%"),
                     actionButton("submit","Actualizar contraseña", icon = icon("save"), style = "color: #fff; background-color: #009ACB; padding:10px; font-size:100%")
+                    
       )
       
     )
   })
   
-  eventReactive(input$submit,{
-    
-    users <- #reactive({
-      users %>% 
-        mutate(password = replace(password, user == user()$user, input$nueva_pwd2))
-    #}) 
-    
-    write_csv(users, "users.csv")
+  observe({
+    # input$nueva_pwd1
+    # input$nueva_pwd2
+    input1 <- input$nueva_pwd1
+    input2 <- input$nueva_pwd2
+    if (is.null(input2)){
+      output$error <- renderText({""})
+      output$bien <- renderText({""})
+    } else if(is.null(input1)){
+      output$error <- renderText({""})
+      output$bien <- renderText({""})
+    } else if (is.null(input2) & is.null(input1)){
+      output$error <- renderText({""})
+      output$bien <- renderText({""})
+    } else if (input2 == input1) {
+      output$bien <- renderText({"Las contraseñas coinciden"})
+      output$error <- renderText({""})
+    } else {
+      output$bien <- renderText({""})
+      output$error <- renderText({"Las contraseñas no coinciden"})
+    }
+  })
   
+  observeEvent(input$submit,{
     
-    #removeUI(selector = "#module-pwd")
+    if (input$nueva_pwd1 == input$nueva_pwd2){
+      users <- #reactive({
+        users %>% 
+        mutate(password = replace(password, user == user()$user, input$nueva_pwd2))
+      write_csv(users, "users.csv")
+      removeUI(selector = "#module-pwd")
+      shinyalert(title = "¡Contraseña actualizada!",
+                 text = "Por favor refresca la página para volver a ingresar con tu nueva contraseña.",
+                 type = "success",
+                 confirmButtonCol = "#F89438",
+                 animation = "pop",
+                 closeOnEsc = TRUE,
+                 )
+    }
+    #users <- read_csv("users.csv")
+    #credentials()
+    #shinyauthr::loginUI("login"),
+    
   })
   
   observeEvent({
@@ -219,6 +260,7 @@ server <- function(input, output, session) {
       # 
       #       }
       #                             "))),
+      useShinyalert(),
       tags$head(tags$style("#title{
                          color: white;
                         text-align: center;
@@ -226,8 +268,8 @@ server <- function(input, output, session) {
       tags$div(class = "header",
                titlePanel(
                  fluidRow(
-                   column(6,img(height = 50, width = 190.47, src = "logo_blanco.png")), 
-                   column(6, uiOutput(outputId = "logo_user_header"))
+                   column(10,img(height = 50, width = 190.47, src = "admin.png")), 
+                   column(2, "Usuario:",style = "color:white; font-size: 20px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center",uiOutput(outputId = "logo_user_header"))
                           )
                 )
               ),
@@ -235,7 +277,7 @@ server <- function(input, output, session) {
                    tabPanel("Inicio",icon = icon("house-user"), style = "color:#000033",
                             titlePanel(div("Aplicaciones",style = "color:white; font-size: 80px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center",
                                            tags$img(style = "max-width: 100%; height: auto !important;",
-                                                    src = "logo_blanco.png"))),
+                                                    src = "admin.png"))),
                             fluidRow(align = "center",
                                      column(6,
                                             div(style="display: inline-block;",img(id="gif_slas",src="slas.gif", height = 330,style="cursor:pointer;"))),
@@ -258,7 +300,7 @@ server <- function(input, output, session) {
                               titlePanel(
                                 fluidRow(
                                   column(5,"Modelos SLA's",style = "color:white; font-size: 60px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center"), 
-                                  column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "logo_blanco.png"))
+                                  column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "admin.png"))
                                 )
                               )),
                             navbarPage("Menú",
@@ -484,7 +526,7 @@ server <- function(input, output, session) {
                                      titlePanel(
                                        fluidRow(
                                          column(5,"Cursos",style = "color:white; font-size: 60px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center"), 
-                                         column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "logo_blanco.png"))
+                                         column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "admin.png"))
                                        )
                                      )),
                             dataTableOutput(outputId = "tablaprueba")
@@ -505,7 +547,7 @@ server <- function(input, output, session) {
                                                   )
                                                 )
                                                 #,style = "color:white; font-size: 60px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center"), 
-                                                    #column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "logo_blanco.png"))
+                                                    #column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "admin.png"))
                                                 ),
                                        fluidRow(#align = "center",
                                                       #uiOutput(outputId = "user_info"),
