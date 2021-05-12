@@ -723,7 +723,7 @@ server <- function(input, output, session) {
                                                                 label = h4("Modelo", style="color:white; font-style:urw din italic; font-size:20px"),
                                                                 choices = c("ARIMA","ETS","STLF ARIMA", "STLF SNAIVE", "STLF ETS", "COMBINADO"),
                                                                 multiple = TRUE,
-                                                                selected = "ETS"),
+                                                                selected = "COMBINADO"),
                                                     uiOutput(outputId = "select_sla3"),
                                                     sliderInput("forecast3",
                                                                 label = h4("Rango de pronóstico según la periodicidad escogida", style="color:white; font-style:urw din italic; font-size:20px"),
@@ -984,12 +984,6 @@ server <- function(input, output, session) {
       map(. %>% filter_index("2018-03-01" ~ "2020-03-10"))
   }) 
   
-  # tiempos <- c("TR","TST","TSP","TMO")
-  #             reactive({
-  #   datos_tsbl() %>% 
-  #     distinct(SLA) %>% 
-  #     pull()
-  # })
   
   # inputs sla's------------------------------------------------------------------
   output$select_rutas1 <- renderUI({
@@ -1235,12 +1229,25 @@ server <- function(input, output, session) {
   # tab - pronósticos -------------------------------------------------------
   
   future_fit <- reactive({
-    modelos_fit() %>% 
-      map2(tsbls(), ~ .x %>% refit(.y)
-      ) #%>% 
-    # mutate(
-    #   combinado = ()
-    # )
+    tsbls() %>% 
+      map(
+        . %>% dplyr::filter(Ruta == input$ruta3) %>% 
+          model(
+            #Media                     = MEAN(Tiempos),
+            #Ingenuo                   = NAIVE(Tiempos),
+            #SNAIVE              = SNAIVE(Tiempos),
+            #Drift                     = RW(Tiempos ~ drift()),
+            ETS            = ETS(Tiempos),
+            ARIMA          = ARIMA(Tiempos),
+            `STLF ARIMA`   = decomposition_model(
+              STL(Tiempos ~ trend(window = 13) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+            `STLF SNAIVE`  = decomposition_model(
+              STL(Tiempos ~ trend(window = 13) +season(window = "periodic"),robust = TRUE), SNAIVE(season_adjust)),
+            `STLF ETS`     = decomposition_model(
+              STL(Tiempos ~ trend(window = 13) +season(window = "periodic"),robust = TRUE), ETS(season_adjust))
+          ) %>% 
+          mutate(COMBINADO = (ETS + ARIMA + `STLF ARIMA` + `STLF SNAIVE` + `STLF ETS`) / 5)
+      )
   })
   
   future_fc <- reactive({
