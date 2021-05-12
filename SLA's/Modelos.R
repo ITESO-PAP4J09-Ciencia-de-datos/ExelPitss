@@ -169,7 +169,7 @@ ValCru_Ts <- Train_tsb_tr %>%
   model(
     "SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
            SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2,
-    "Com3_T5"  =  (decomposition_model(
+    "DSTLAFK2SN44L_SN_42_Dr"  =  (decomposition_model(
       STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
       ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
       SNAIVE(season_year~ lag(44) + drift())) +
@@ -186,7 +186,7 @@ ValCru_Tr <- Train_tsb %>%
   model( 
     "SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
                    SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2,
-    "Com3_T5"  =  (decomposition_model(
+    "DSTLAFK2SN44L_SN_42_Dr"  =  (decomposition_model(
       STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
       ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
       SNAIVE(season_year~ lag(44) + drift())) +
