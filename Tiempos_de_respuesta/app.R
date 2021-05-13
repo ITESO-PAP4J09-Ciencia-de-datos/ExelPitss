@@ -254,6 +254,7 @@ server <- function(input, output, session) {
   # change password ---------------------------------------------------------
   
   observeEvent(input$ask, {
+    removeUI(selector = "#module-pwd")
     insertUI(
       selector = "#placeholder",
       ui = tags$div(id = "module-pwd",
@@ -273,13 +274,23 @@ server <- function(input, output, session) {
                               label = h3("Confirm new password", style="color:white;")),
                     textOutput(outputId = "bien"),
                     textOutput(outputId = "error"),
-                    actionButton("cancel","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%"),
-                    actionButton("submit","Actualizar contraseña", icon = icon("save"), style = "color: #fff; background-color: #009ACB; padding:10px; font-size:100%")
+                    actionButton("cancel","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #009ACB; padding:10px; font-size:100%"),
+                    actionButton("submit","Actualizar contraseña", icon = icon("save"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%")
                     
       )
     )
     removeUI(selector = "#module-new-user")
     removeUI(selector = "#module-del-user")
+  })
+  
+  observeEvent(input$myMap_marker_click, {
+    click <- input$myMap_marker_click
+    proxy <- leafletProxy("myMap")
+    if(click$id == "Selected"){
+      proxy %>% removeMarker(layerId = "Selected")
+    }else{
+      proxy %>% addAwesomeMarkers(lat = click$lat, lng = click$lng,icon = icons2, layerId = "Selected")
+    }
   })
   
   observe({
@@ -353,6 +364,7 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$add_u,{
+    removeUI(selector = "#module-new-user")
     insertUI(
       selector = "#placeholder2",
       ui = tags$div(id = "module-new-user",
@@ -376,8 +388,8 @@ server <- function(input, output, session) {
                                         no       = tags$i(class = "fa fa-square-o",
                                                           style    = "color: #F89438"))
                     ),
-                    actionButton("cancel2","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%"),
-                    actionButton("submit2","Agregar user", icon = icon("save"), style = "color: #fff; background-color: #009ACB; padding:10px; font-size:100%")
+                    actionButton("cancel2","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #009ACB; padding:10px; font-size:100%"),
+                    actionButton("submit2","Agregar user", icon = icon("save"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%")
       )
     )
     removeUI(selector = "#module-pwd")
@@ -452,7 +464,7 @@ server <- function(input, output, session) {
       return()
     } else if (user()$user == "admin"){
       output$delete_user <- renderUI({
-        actionButton("del_u", "Eliminar un user", icon = icon("trash"), style = "color: #fff; background-color: #E27831; padding:20px; font-size:100%",align = "center")
+        actionButton("del_u", "Eliminar un user", icon = icon("eraser"), style = "color: #fff; background-color: #F89438; padding:20px; font-size:100%",align = "center")
       })
     } else {
       output$delete_user <- renderUI({
@@ -463,6 +475,7 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$del_u,{
+    removeUI(selector = "#module-del-user")
     insertUI(
       selector = "#placeholder3",
       ui = tags$div(id = "module-del-user",
@@ -478,8 +491,8 @@ server <- function(input, output, session) {
                                         no       = tags$i(class = "fa fa-circle-o",
                                                           style    = "color: #F89438"))
                     ),
-                    actionButton("cancel3","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%"),
-                    actionButton("submit3","Eliminar user", icon = icon("eraser"), style = "color: #fff; background-color: #009ACB; padding:10px; font-size:100%")
+                    actionButton("cancel3","Cancelar",icon = icon("window-close"), style = "color: #fff; background-color: #009ACB; padding:10px; font-size:100%"),
+                    actionButton("submit3","Eliminar user", icon = icon("eraser"), style = "color: #fff; background-color: #F89438; padding:10px; font-size:100%")
       )
     )
     removeUI(selector = "#module-pwd")
@@ -553,9 +566,9 @@ server <- function(input, output, session) {
                                                     src = "admin.png"))),
                             fluidRow(align = "center",
                                      column(6,
-                                            div(style="display: inline-block;",img(id="gif_slas",src="slas.gif", height = 330,style="cursor:pointer;"))),
+                                            div(style="display: inline-block;",img(id="gif_slas",src="slas.gif", height = 300,style="cursor:pointer;"))),
                                      column(6,
-                                            div(style="display: inline-block;",img(id="gif_cursos",src="cursos.gif", height = 330,style="cursor:pointer;"))
+                                            div(style="display: inline-block;",img(id="gif_cursos",src="cursos.gif", height = 300,style="cursor:pointer;"))
                                      )
                             ),
                             shinyauthr::logoutUI("logout"),
@@ -882,8 +895,23 @@ server <- function(input, output, session) {
                                                 #,style = "color:white; font-size: 60px; font-style:proxima nova; font-weight:bold; font-style:italic;",align = "center"), 
                                                     #column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "admin.png"))
                                                 ),
+                                       tags$head(tags$style(HTML("
+                                            .btn:hover{
+                                            font-weight: bold;
+                                            }
+                                            
+                                            .btn:focus{
+                                            font-weight: bold;
+                                            }
+                                            
+                                            .btn:active{
+                                            font-weight: bold;
+                                            }
+            
+                                            "))),
                                        fluidRow(#align = "center",
                                                       #uiOutput(outputId = "user_info"),
+                                                      conditionalPanel(condition = "input.ask > 0",uiOutput("textbox")),
                                                       column(4, actionButton("ask","Cambiar Contraseña",icon = icon("edit"), style = "color: #fff; background-color: #F89438; padding:20px; font-size:100%"),align = "center"),
                                                       column(4, uiOutput(outputId = "add_new_user")),
                                                       column(4, uiOutput(outputId = "delete_user")),
