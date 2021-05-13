@@ -33,11 +33,15 @@ library(DT)
 # visualización de datos
 library(ggplot2)
 library(data.table)
+library(tidyquant)
 
 #tbd
 library(Hmisc)
 library(skimr)
 library(dplyr)
+library(fpp3)
+library(tibble)
+library(fable.prophet)
 ```
 
 
@@ -145,7 +149,7 @@ ggplot(p_sig, aes(x=Freq, y=Var1)) +
 <br>
 <br>
 
-Se muestra un histograma de cómo se distribuyen los gastos por operaciones en sus subtotales MXN, la gran mayoría se comportan como gastos menores.
+Al seleccionar los proveedores significativos, en este caso aquellos que se encuentran por encima de la media, se puede observar un proveedor con mucha más presencia que los demás, y es precisamente "EXEL DEL NORTE SAPI DE CV", nuestra misma empresa.
 
 ```{r, message=FALSE,warning=FALSE, echo=FALSE}
 Subtotales <- data_clean[order(-data_clean$Subtotal_MXN),] %>% filter(Subtotal_MXN < max(Subtotal_MXN))
@@ -159,7 +163,8 @@ sum_catpro <- Subtotales %>%
 #dplyr::count(data_clean, Subt, sort = TRUE)
 
 ggplot(data = data_clean %>% filter(Subtotal_MXN<mean(Subtotal_MXN)+2*sd(Subtotal_MXN))) + 
-  geom_histogram(aes(x=Subtotal_MXN), bins=45,  color = az_os, fill = az_cl)
+  geom_histogram(aes(x=Subtotal_MXN), bins=45,  color = az_os, fill = az_cl) +
+  labs(title = "Subtotales de compras (MXN)")
 
 
 
@@ -196,25 +201,127 @@ ggplot(data.sum, aes(x=Group.date, y=Subtotal_MXN)) +
   geom_line( color = az_os, fill = az_cl) + 
   xlab("")
 ```
+<br>
+<hr>
+<br>
+
+Después agrupamos los datos por semana y los mostramos como una segunda serie de tiempo.
+A esta serie de tiempo se le añadió una primer regresión (lineal), es importante recalcar que un modelo de este estilo no nos sirve en series de tiempo como esta, por lo que se procederá a probar con modelos más avanzados.
+Además, 
+<br>
+
+```{r TS1, message=FALSE,warning=FALSE, echo=FALSE}
+fit.consMR <- as_tsibble(data.sum) %>%
+  model(tslm = TSLM(Subtotal_MXN))
+
+augment(fit.consMR) %>%
+  ggplot(aes(x = Group.date)) +
+  geom_line(aes(y = Subtotal_MXN, colour = "Data")) +
+  geom_line(aes(y = .fitted, colour = "Fitted")) +
+  labs(y = NULL,
+    title = "Subtotales de compras diarias Exel Pitss (MXN)"
+  ) +
+  scale_color_manual(values=c(Data="black",Fitted="#D55E00")) +
+  guides(colour = guide_legend(title = NULL))
+
+report(fit.consMR)
+
+```
+
+<br>
+<hr>
+<br>
 
 
 
+```{r TS_, message=FALSE,warning=FALSE, echo=FALSE}
+weekly <- data.sum %>%
+    tq_transmute(select     = Subtotal_MXN,
+                 mutate_fun = apply.weekly,
+                 FUN        = sum)
+
+ggplot(weekly, aes(x=Group.date, y=Subtotal_MXN)) +
+  geom_line( color = az_os, fill = az_cl) + 
+  xlab("") +
+  geom_smooth(method = "loess", se = FALSE)+
+  labs(y = NULL,
+    title = "Subtotales de compras semanales Exel Pitss (MXN)"
+  ) 
+```
+
+Se comenzaron a utilizar modelos más avanzados con el fin de crear mejores pronósticos que explicaran con menor error el comportamiento de los subtotales de compras en el año.
 
 
 
+```{r}
+weekly_tsibble <- weekly %>% 
+  mutate(Group.date = yearweek(Group.date)) %>% as_tsibble(index = Group.date) 
+
+#Partición datos train y test
+weekly_tsibble_train <- weekly_tsibble %>%
+  slice(0:10-n())
+
+weekly_tsibble_test <- weekly_tsibble %>%
+  slice(n()-10:01)
+
+```
+
+
+```{r TS_P, message=FALSE,warning=FALSE, echo=FALSE}
+
+forfit <- as_tsibble(as.ts(weekly))
+fit <-  weekly_tsibble_train %>% 
+  model( arima = ARIMA(forfit),
+    ets = ETS(forfit),
+    prophet = prophet(forfit ~ season(period = 4, order = 2,
+                                    type = "multiplicative"))
+  )
+
+
+```
+
+```{r TS_P2, message=FALSE,warning=FALSE, echo=FALSE}
+weekly_models <- weekly_tsibble_train %>% 
+  model(
+    "Prophet" = prophet(Subtotal_MXN ~ season(period = 4, order = 2,
+                                    type = "multiplicative")),
+    "ETS" = ETS(Subtotal_MXN ~ error("A") + trend("A") + season("N")),
+    "ARIMA" = ARIMA(sqrt(Subtotal_MXN)),
+    "NN" = NNETAR(sqrt(Subtotal_MXN))
+  )  
+
+```
+
+
+```{r TS_P3}
+weekly_models %>% 
+  accuracy()
+
+```
 
 
 
+```{r TS_P4}
+weekly_fc <- weekly_models %>%
+  forecast(h = "11 weeks")
 
 
 
+```
 
 
 
-
-
-
-
+```{r}
+weekly_fc %>% 
+  autoplot(weekly_tsibble) +
+  facet_wrap(~ .model, ncol = 2) +
+  labs(y = "Subtotal MXN",
+    title = "Gráfica Pronósticos de Subtotales a 10 semanas") +
+   theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.5))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) +
+  theme(axis.text.x = element_text(angle=45))
+```
 
 
 
