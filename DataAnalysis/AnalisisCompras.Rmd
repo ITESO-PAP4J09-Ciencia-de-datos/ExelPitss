@@ -63,7 +63,7 @@ data[cols_num] <- sapply(data[cols_num],as.numeric)
 
 data_clean <- data[, c('Proveedor','Categoria_Proveedor','Fecha','Nombre_producto','Tipo_documento',
                        'Cantidad_ordenada','Cantidad_recibida','Moneda','Subtotal_MXN')] %>% 
-  filter(Subtotal_MXN<max(Subtotal_MXN))
+  filter(Subtotal_MXN<mean(Subtotal_MXN)+2*sd(Subtotal_MXN))
 #categoria -> data %>% distinct(Categoria_Proveedor)
 
 tipos <- sapply(data_clean,class)
@@ -286,8 +286,10 @@ weekly_models <- weekly_tsibble_train %>%
     "Prophet" = prophet(Subtotal_MXN ~ season(period = 4, order = 2,
                                     type = "multiplicative")),
     "ETS" = ETS(Subtotal_MXN ~ error("A") + trend("A") + season("N")),
-    "ARIMA" = ARIMA(sqrt(Subtotal_MXN)),
-    "NN" = NNETAR(sqrt(Subtotal_MXN))
+    "STLF ARIMA"   = decomposition_model(STL(Subtotal_MXN ~ trend(window = 4)
+                                             +season(window = "periodic"),robust =
+                                               TRUE), ARIMA(season_adjust)),
+    "NN" = NNETAR(Subtotal_MXN)
   )  
 
 ```
