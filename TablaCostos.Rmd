@@ -1,0 +1,876 @@
+---
+title: "CostoPorTecnico"
+author: "Maria J Macias"
+date: "22/3/2021"
+output:
+  html_document:
+    theme: cerulean
+    toc: yes
+    df_print: paged
+  html_notebook:
+    theme: cerulean
+    highlight: tango
+    toc: yes
+    toc_float: yes
+---
+
+## COSTO POR TÉCNICO
+
+```{r Librerias, message=FALSE,warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(readxl)
+library(tidyquant)
+library(cellranger)
+library(sf)
+library(leaflet)
+#library(raster)
+library(spData)
+library(tmap)
+library(shiny)
+library(lubridate)
+library(prettydoc)
+library(moments)
+library(tsibble)
+library(feasts)
+library(fable)
+library(fable.prophet)
+```
+```{r Colores, message=FALSE,warning=FALSE,echo=FALSE}
+# COLORES
+az_os <- rgb(0,0,51/255)
+az_cl <- rgb(0,154/255,203/255)
+negro <- rgb(51/255,51/255,51/255)
+n_os <- rgb(226/255,120/255,49/255)
+n_cl <- rgb(248/255,148/255,56/255)
+```
+
+```{r Tabla, message=FALSE,warning=FALSE, echo=FALSE}
+tabla <- read_xlsx("CostoPorTecnico.xlsx")
+tabla <- rename(tabla, Tecnico=Técnico)
+tabla <- na.omit(tabla)
+tabla <- mutate(tabla, Fecha_Instal=as.Date(as.numeric(Fecha_Instal), origin="1899-12-30"))
+```
+
+### Descripción
+Esta tabla muestra información de los trabajos o reparaciones realizadas por cada uno de los tecnicos de ExelPitss con el costo de cada uno de ellos. Contiene información desde `r min(tabla$Fecha_sol)` hasta `r max(tabla$Fecha_sol)`.
+
+### Formato
+
+Es una tabla con `r nrow(tabla)` filas y `r ncol(tabla)` columnas.
+
+* **Sucursal**
+
+  Es la sucursal donde se solicitó el trabajo o reparación.
+
+* **Técnico**
+
+  Nombre del técnico que realizó el trabajo.
+
+* **Tipo**
+  
+  Tipo de contrato que tienen.
+
+* **Clave**
+
+  Clave del producto.
+
+* **Nombre**
+
+  Nombre de los trabajos y reparaciones que se realizaron.
+
+* **Categoria**
+  
+  Categoria del trabajo.
+
+* **Fac/Doc**
+
+  Número de facturacion del documento.
+
+* **Fecha_sol**
+
+  Fecha en la que se solicitó el trabajo.
+
+* **Fecha_Instal**
+
+  Fecha en la que se realizó el trabajo.
+
+* **Cantidad_Instal**
+
+  Cantidad de trabajo realizado.
+
+* **Costo**
+
+  Costo del trabajo realizado.
+
+```{r,  message=FALSE,warning=FALSE, echo=FALSE}
+tabla
+```
+
+## ANALISIS
+
+### Análisis Sucursal
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+sucursales <- dplyr::count(tabla, Sucursal, sort = TRUE)
+sucursales
+```
+
+Hay `r nrow(sucursales)` sucursales.
+
+### Análisis Técnico
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+Tecnicos <- dplyr::count(tabla, Tecnico, sort = TRUE) %>% 
+  mutate(grupo=rep(1:8,each = 9))
+Tecnicos
+```
+
+Hay un total de `r nrow(Tecnicos)` técnicos los cuales estan ordenados de mayor a menor por el total de instalaciones que llevan realizadas hasta el momento.
+
+### Análisis Tipo
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+tipo <- dplyr::count(tabla, Tipo, sort = TRUE)
+tipo
+```
+
+Hay `r nrow(tipo)` tipos de contratos, los cuales son Renta y Taller. Se observa que Renta es el tipo predominante.
+
+### Análisis Categoria
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+categoria <- dplyr::count(tabla, Categoria, sort = TRUE)
+categoria
+```
+
+Los trabajos realizados por los técnicos estan divididos en `r nrow(categoria)` categorias y estan ordenadas de mayor a menor por el total de trabajos realizados de cada una.
+
+* **/REM** : Remasterizado
+
+### Análisis Cantidad Instalada
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+dplyr::summarise(tabla, Total_Instalaciones= sum(Cantidad_Instal), Media = mean(Cantidad_Instal), Mediana = median(Cantidad_Instal), Varianza = var(Cantidad_Instal), Máximo = max(Cantidad_Instal), Mínimo = min(Cantidad_Instal), Simetria = skewness(Cantidad_Instal), Kurtosis = kurtosis(Cantidad_Instal))
+dplyr::count(tabla, Cantidad_Instal, sort = TRUE)
+# ggplot(data = tabla) + geom_histogram(aes(x=Cantidad_Instal), bins=10) +
+#   ggtitle("Cantidades Instaladas") +
+#   theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2))) +
+#   theme(axis.title.x = element_text(face="bold", vjust=-0.5, colour=az_cl)) +
+#     theme(axis.title.y = element_text(face="bold", vjust=1.5, colour=az_cl)) 
+```
+
+### Análisis Costo
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+dplyr::summarise(tabla, Total_Costo= sum(Costo), Media = mean(Costo), Mediana = median(Costo), Varianza = var(Costo), Máximo = max(Costo), Mínimo = min(Costo), Simetria = skewness(Costo))
+
+ggplot(data = tabla) + geom_histogram(aes(x=Costo), bins=10, fill = az_os) +
+  ggtitle("Gráfica de Costos") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+    theme(axis.title.y = element_text(vjust=1.5, colour=az_cl))
+```
+
+#### Análisis Costo por Técnico
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE,  fig.height=8, fig.width=10}
+Tecnico_Costo <- tabla %>%  
+  group_by(Tecnico) %>% 
+  summarize(Suma = sum(Costo), Media = mean(Costo))
+Tecnico_Costo
+
+dplyr::summarise(Tecnico_Costo, Maximo=max(Suma), Minimo=min(Suma), Media=mean(Suma), Mediana=median(Suma))
+
+ggplot(Tecnico_Costo, aes(x = Tecnico, y = Suma)) +
+  geom_col(fill = az_os) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("Costos por Técnico") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+    theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+```
+
+#### Análisis Costo por Categoria
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+Categoria_Costo <- tabla %>%  
+  group_by(Categoria) %>% 
+  summarize(Suma = sum(Costo), Media = mean(Costo), Maximo = max(Costo), Minimo = min(Costo))
+Categoria_Costo
+
+ggplot(Categoria_Costo, aes(x = Categoria, y = Suma)) +
+  geom_col(bins=10, fill = az_os) +
+  ggtitle("Costos por Categoria") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.text.x = element_text(angle = 90)) +
+    theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+```
+
+Se puede observar que la categoría con mayor costo es la de Consumible Original.
+
+### Análisis por Fecha de Instalación
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+datosFI <- tabla %>%  
+  group_by(Fecha_Instal) %>% 
+  summarize(Instalaciones = sum(Cantidad_Instal), Costos = sum(Costo))
+
+datosFI
+```
+
+### Análisis por Fecha de Solicitud
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+datosFS <- tabla %>%  
+  group_by(Fecha_sol) %>% 
+  summarize(Solicitudes = sum(Cantidad_Instal), Costos = sum(Costo))
+datosFS
+```
+
+## SERIES DE TIEMPO Y PRONOSTICOS
+
+### Costos por Fecha de Instalación
+
+Gráfica de la Serie de tiempo de los costos totales por día.
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+FI_Costo <- aggregate(x = tabla[c("Costo")],
+                      FUN = sum,
+                      by = list(Fecha = tabla$Fecha_Instal)) %>% 
+  mutate(Fecha = as.Date(Fecha, format = "%d/%m/%Y")) %>% 
+  as_tsibble(index = Fecha) %>% 
+  fill_gaps(.full = TRUE, Costo = mean(Costo))
+
+FI_Costo %>% 
+  autoplot(Costo) +
+  labs(y = "Costos",
+    title = "Serie de Tiempo de Costos Diaria",
+    subtitle = "Por Fecha de Instalación") +
+  geom_line( color = n_os) +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2)))+
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+
+
+#Partición
+FI_Costo_train <- FI_Costo %>% slice(0:4-n())
+FI_Costo_test <- FI_Costo %>% slice(n()-4:0)
+
+```
+
+```{r}
+FI_Costo_semanal <- FI_Costo %>% 
+  group_by_key() %>% 
+  index_by(Semana = yearweek(Fecha)) %>% 
+  summarise(Costo = mean(Costo), .groups = "drop")
+#FI_Costo_mensual
+
+FI_Costo_semanal %>% 
+  autoplot(Costo) +
+  labs(y = "Costos",
+    title = "Serie de Tiempo de Costos Semanal",
+    subtitle = "Por Fecha de Instalación") +
+  geom_line( color = n_os) +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2)))+
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+
+
+#Partición
+FI_Costo_train_semanal <- FI_Costo_semanal %>% slice(0:15-n())
+FI_Costo_test_semanal <- FI_Costo_semanal %>% slice(n()-15:0)
+```
+
+
+
+### Modelos
+
+
+```{r}
+FI_Costo_train_semanal %>% 
+  model(STL(Costo ~ trend(window = 13) + season(window = "periodic"),robust = TRUE)) %>% 
+  components() %>% 
+  autoplot()
+```
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+Costo_fit <- FI_Costo_train_semanal %>% 
+  model(
+    "Drift" = RW(Costo ~ drift()),
+    "Media" = MEAN(Costo),
+    "ETS" = ETS(Costo ~ error("A") + trend("A") +
+season("N")),
+    "ARIMA" = ARIMA(Costo),
+    "Naïve" = NAIVE(Costo),
+    "NN" = NNETAR(sqrt(Costo))
+  )
+Costo_fit
+```
+
+Ajuste de los modelos con métricas de error :
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+Costo_fit %>% 
+  accuracy()
+```
+
+Diagnóstico de residuos:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+  Costo_fit %>% 
+    select(ARIMA) %>% 
+    gg_tsresiduals()
+```
+
+### Pronósticos
+
+Tabla de pronósticos
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+Costo_fc <- Costo_fit %>%
+  forecast(h = "16 weeks")
+
+Costo_fc
+```
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+accuracy(Costo_fc, FI_Costo_test_semanal)
+```
+
+Gráfica de pronósticos
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=15, fig.width=18}
+Costo_fc %>% 
+  autoplot(FI_Costo_semanal) +
+  facet_wrap(~ .model, ncol = 2) +
+  labs(y = "Costos",
+    title = "Gráfica Pronósticos de Costos a 4 meses") +
+   theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.5))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+```
+
+
+Lo siguiente es un nuevo modelo llamado "ModelosM", que es la combinación entre los 6 modelos anteriormente creados al cual tambien se le hace un pronóstico a 16 semanas.
+
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=10, fig.width=15}
+Costo_fit %>% 
+  mutate(
+    ModelosM = (Drift + Media + ETS + ARIMA + Naïve + NN)/6
+    ) %>% 
+  forecast(h = "16 weeks") %>% 
+  autoplot(FI_Costo_semanal, level = NULL) +
+  labs(y = "Costos",
+    title = "Pronósticos de Costos a 4 meses con Combinación de Modelos") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.2))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+```
+
+
+### Instalaciones realizadas por Fecha de Instalación
+
+Gráfica de la Serie de tiempo de las instalaciones realizadas por día.
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+FI_Instal <- aggregate(x = tabla[c("Cantidad_Instal")],
+                      FUN = sum,
+                      by = list(Fecha = tabla$Fecha_Instal)) %>% 
+  mutate(Fecha = as.Date(Fecha, format = "%d/%m/%Y")) %>% 
+  as_tsibble(index = Fecha) %>% 
+  fill_gaps(.full = TRUE, Cantidad_Instal = mean(Cantidad_Instal))
+
+# ggplot(FI_Instal, aes(x=Fecha, y=Cantidad_Instal)) +
+#   geom_line( color = n_os) +
+#   xlab("")
+
+
+FI_Instal %>% 
+  autoplot(Cantidad_Instal) +
+  labs(y = "Instalaciones",
+    title = "Serie de Tiempo de Instalaciones",
+    subtitle = "Por Fecha de Instalación") +
+  geom_line( color = n_os) +
+   theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+
+#Partición
+# FI_Instal_train <- FI_Instal %>% slice(0:60-n())
+# FI_Instal_test <- FI_Instal %>% slice(n()-60:0)
+
+```
+
+```{r}
+FI_Instal_semanal <- FI_Instal %>% 
+  group_by_key() %>% 
+  index_by(Semana = yearweek(Fecha)) %>% 
+  summarise(Cantidad_Instal = mean(Cantidad_Instal), .groups = "drop")
+
+FI_Instal_semanal %>% 
+  autoplot(Cantidad_Instal) +
+  labs(y = "Instalaciones",
+    title = "Serie de Tiempo de Instalaciones Semanal",
+    subtitle = "Por Fecha de Instalación") +
+  geom_line( color = n_os) +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2)))+
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+
+
+#Partición
+FI_Instal_train_semanal <- FI_Instal_semanal %>% slice(0:15-n())
+FI_Instal_test_semanal <- FI_Instal_semanal %>% slice(n()-15:0)
+```
+
+```{r}
+FI_Instal_train_semanal %>% 
+  model(STL(Cantidad_Instal ~ trend(window = 13) + season(window = "periodic"),robust = TRUE)) %>% 
+  components() %>% 
+  autoplot()
+```
+
+### Modelos
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+CI_fit <- FI_Instal_train_semanal %>% 
+  model(
+    "Drift" = RW(Cantidad_Instal ~ drift()),
+    "Media" = MEAN(Cantidad_Instal),
+    "ETS" = ETS(Cantidad_Instal ~ error("A") + trend("A") +
+season("N")),
+    "ARIMA" = ARIMA(Cantidad_Instal),
+    "Naïve" = NAIVE(Cantidad_Instal),
+    "NN" = NNETAR(sqrt(Cantidad_Instal))
+  )
+CI_fit
+```
+
+Ajuste de los modelos con métricas de error:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+CI_fit %>% 
+  accuracy()
+```
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+# CI_fit %>%
+#   gg_tsresiduals()
+
+ CI_fit %>%
+  select(ARIMA) %>%
+  gg_tsresiduals()
+
+```
+
+### Pronósticos
+
+Tabla de pronósticos:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+CI_fc <- CI_fit %>%
+  forecast(h = "16 weeks")
+CI_fc
+```
+
+Gráfica de pronósticos:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=15, fig.width=18}
+CI_fc %>% 
+  autoplot(FI_Instal_semanal) +
+  facet_wrap(~ .model, ncol = 2) +
+  labs(y = "Instalaciones",
+    title = "Gráfica Pronósticos de Instalaciones a 4 meses") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.5))) +
+    theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+  
+```
+
+
+Lo siguiente es un nuevo modelo llamado "ModelosM", que es la combinación entre los 6 modelos anteriormente creados al cual tambien se le hace un pronóstico a 16 semanas.
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=10, fig.width=15}
+CI_fit %>% 
+  mutate(
+    ModelosM = (Drift + Media + ETS + ARIMA + Naïve + NN)/6
+    ) %>% 
+  forecast(h = "16 weeks") %>% 
+  autoplot(FI_Instal_semanal, level = NULL) +
+  labs(y = "Instalaciones",
+    title = "Pronósticos de Instalaciones a 4 meses con Combinación de Modelos") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.2))) +
+    theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+```
+
+
+### Instalaciones realizadas por Fecha de Solicitud
+
+
+Gráfica de la Serie de tiempo de las instalaciones realizadas por día por fecha de solicitud.
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+FS_Instal <- aggregate(x = tabla[c("Cantidad_Instal")],
+                      FUN = sum,
+                      by = list(Fecha = tabla$Fecha_sol)) %>% 
+  mutate(Fecha = as.Date(Fecha, format = "%d/%m/%Y")) %>% 
+  as_tsibble(index = Fecha) %>% 
+  fill_gaps(.full = TRUE, Cantidad_Instal = mean(Cantidad_Instal))
+
+# ggplot(FI_Instal, aes(x=Fecha, y=Cantidad_Instal)) +
+#   geom_line( color = n_os) +
+#   xlab("")
+
+
+FS_Instal %>% 
+  autoplot(Cantidad_Instal) +
+  labs(y = "Instalaciones",
+    title = "Serie de Tiempo de Instalaciones", 
+    subtitle = "Por Fecha de Solicitud") +
+  geom_line( color = n_os) +
+   theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+
+#Partición
+FS_Instal_train <- FS_Instal %>% slice(0:15-n())
+FS_Instal_test <- FS_Instal %>% slice(n()-15:0)
+
+```
+
+```{r}
+FS_Instal_semanal <- FS_Instal %>% 
+  group_by_key() %>% 
+  index_by(Semana = yearweek(Fecha)) %>% 
+  summarise(Cantidad_Instal = mean(Cantidad_Instal), .groups = "drop")
+#FI_Costo_mensual
+
+FS_Instal_semanal %>% 
+  autoplot(Cantidad_Instal) +
+  labs(y = "Instalaciones",
+    title = "Serie de Tiempo de Instalaciones Semanal",
+    subtitle = "Por Fecha de Solicitud") +
+  geom_line( color = n_os) +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2)))+
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+
+
+#Partición
+FS_Instal_train_semanal <- FS_Instal_semanal %>% slice(0:15-n())
+FS_Instal_test_semanal <- FS_Instal_semanal %>% slice(n()-15:0)
+```
+
+```{r}
+FS_Instal_train_semanal %>% 
+  model(STL(Cantidad_Instal ~ trend(window = 13) + season(window = "periodic"),robust = TRUE)) %>% 
+  components() %>% 
+  autoplot()
+```
+
+### Modelos
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+CIS_fit <- FS_Instal_train_semanal %>% 
+  model(
+    "Drift" = RW(Cantidad_Instal ~ drift()),
+    "Media" = MEAN(Cantidad_Instal),
+    "ETS" = ETS(Cantidad_Instal ~ error("A") + trend("A") +
+season("N")),
+    "ARIMA" = ARIMA(Cantidad_Instal),
+    "Naïve" = NAIVE(Cantidad_Instal)
+  )
+CIS_fit
+```
+
+Ajuste de los modelos con métricas de error:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+CIS_fit %>% 
+  accuracy()
+```
+
+Diagnóstico de residuos:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+ CIS_fit %>%
+  select(ARIMA) %>% 
+  gg_tsresiduals()
+
+```
+
+### Pronósticos
+
+Tabla de pronósticos:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+CIS_fc <- CIS_fit %>%
+  forecast(h = "16 weeks")
+CIS_fc
+```
+
+
+Gráfica de pronósticos:
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=15, fig.width=18}
+CIS_fc %>% 
+  autoplot(FS_Instal_semanal) +
+  facet_wrap(~ .model, ncol = 2) +
+  labs(y = "Instalaciones",
+    title = "Gráfica Pronósticos de Instalaciones a 4 meses") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.5))) +
+    theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+  
+```
+
+
+Lo siguiente es un nuevo modelo llamado "ModelosM", que es la combinación entre los 5 modelos anteriormente creados al cual tambien se le hace un pronóstico a 16 semanas.
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=10, fig.width=15}
+CIS_fit %>% 
+  mutate(
+    ModelosM = (Drift + Media + ETS + ARIMA + Naïve)/5
+    ) %>% 
+  forecast(h = "16 weeks") %>% 
+  autoplot(FS_Instal_semanal, level = NULL) +
+  labs(y = "Instalaciones",
+    title = "Pronósticos de Instalaciones a 4 meses con Combinación de Modelos") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.2))) +
+    theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+```
+
+## Costos por Fecha de Solicitud
+
+Gráfica de la Serie de tiempo de los costos por día por fecha de solicitud.
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+FS_Costo <- aggregate(x = tabla[c("Costo")],
+                      FUN = sum,
+                      by = list(Fecha = tabla$Fecha_sol)) %>% 
+  mutate(Fecha = as.Date(Fecha, format = "%d/%m/%Y")) %>% 
+  as_tsibble(index = Fecha) %>% 
+  fill_gaps(.full = TRUE, Costo = mean(Costo))
+
+# ggplot(FI_Instal, aes(x=Fecha, y=Cantidad_Instal)) +
+#   geom_line( color = n_os) +
+#   xlab("")
+
+
+FS_Costo %>% 
+  autoplot(Costo) +
+  labs(y = "Costos",
+    title = "Serie de Tiempo de Costos", 
+    subtitle = "Por Fecha de Solicitud") +
+  geom_line( color = n_os) +
+   theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+
+#Partición
+FS_Costo_train <- FS_Costo %>% slice(0:15-n())
+FS_Costo_test <- FS_Costo %>% slice(n()-15:0)
+
+```
+
+```{r}
+FS_Costo_semanal <- FS_Costo %>% 
+  group_by_key() %>% 
+  index_by(Semana = yearweek(Fecha)) %>% 
+  summarise(Costo = mean(Costo), .groups = "drop")
+#FI_Costo_mensual
+
+FS_Costo_semanal %>% 
+  autoplot(Costo) +
+  labs(y = "Costos",
+    title = "Serie de Tiempo de Costos Semanal",
+    subtitle = "Por Fecha de Solicitud") +
+  geom_line( color = n_os) +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(2)))+
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+
+
+#Partición
+FS_Costo_train_semanal <- FS_Costo_semanal %>% slice(0:15-n())
+FS_Costo_test_semanal <- FS_Costo_semanal %>% slice(n()-15:0)
+```
+
+```{r}
+FS_Costo_train_semanal %>% 
+  model(STL(Costo ~ trend(window = 13) + season(window = "periodic"),robust = TRUE)) %>% 
+  components() %>% 
+  autoplot()
+```
+
+### Modelos
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+CostS_fit <- FS_Costo_train_semanal %>% 
+  model(
+    "Drift" = RW(Costo ~ drift()),
+    "Media" = MEAN(Costo),
+    "ETS" = ETS(Costo ~ error("A") + trend("A") +
+season("N")),
+    "ARIMA" = ARIMA(Costo),
+    "Naïve" = NAIVE(Costo)
+  )
+CostS_fit
+```
+
+Ajuste de los modelos con métricas de error:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+CostS_fit %>% 
+  accuracy()
+```
+
+Diagnóstico de residuos:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+ CostS_fit %>%
+  select(ARIMA) %>% 
+  gg_tsresiduals()
+
+```
+
+### Pronósticos
+
+Tabla de pronósticos:
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+CostS_fc <- CostS_fit %>%
+  forecast(h = "16 weeks")
+CostS_fc
+```
+
+
+Gráfica de pronósticos:
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=15, fig.width=18}
+CostS_fc %>% 
+  autoplot(FS_Costo_semanal) +
+  facet_wrap(~ .model, ncol = 2) +
+  labs(y = "Costos",
+    title = "Gráfica Pronósticos de Instalaciones a 4 meses") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.5))) +
+    theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+  
+```
+
+
+Lo siguiente es un nuevo modelo llamado "ModelosM", que es la combinación entre los 5 modelos anteriormente creados al cual tambien se le hace un pronóstico a 16 semanas.
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=10, fig.width=15}
+CostS_fit %>% 
+  mutate(
+    ModelosM = (Drift + Media + ETS + ARIMA + Naïve)/5
+    ) %>% 
+  forecast(h = "16 weeks") %>% 
+  autoplot(FS_Costo_semanal, level = NULL) +
+  labs(y = "Costos",
+    title = "Pronósticos de Instalaciones a 4 meses con Combinación de Modelos") +
+  theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.2))) +
+    theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) 
+```
+
+
+
+## Instalaciones y Costo por Técnico por Fecha de Solicitud
+
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=15, fig.width=18}
+Tecnico_FechaSol <- tabla %>%  
+  group_by(Fecha_sol, Tecnico) %>% 
+  summarize(Costo = sum(Costo), Instalaciones = sum(Cantidad_Instal))
+Tecnico_FechaSol
+
+Tecnico_FechaSol %>% 
+    ggplot(aes(x=Fecha_sol, y=log(Instalaciones))) +
+    geom_line(aes(colour=Tecnico)) +
+    labs(x = "Fecha de Solicitud", y = "Num de Instalaciones")+
+    theme(legend.position = "none")+
+    facet_wrap(~Tecnico, scales = "free_y")
+
+Tecnico_FechaSol %>% 
+    ggplot(aes(x=Fecha_sol, y=log(Costo))) +
+    geom_line(aes(colour=Tecnico)) +
+    labs(x = "Fecha de Solicitud", y = "Costo")+
+    theme(legend.position = "none")+
+    facet_wrap(~Tecnico, scales = "free_y")
+
+# ggplot(data = p, aes(x=Fecha_sol, y=Instalaciones)) +
+#     geom_line(aes(colour=Tecnico)) +
+#     #geom_point() +
+#     labs(x = "Fecha de Solicitud", y = "Num de Instalaciones")
+# 
+# ggplot(data = Tecnico_FechaSol, aes(x=Fecha_sol, y=Costo)) +
+#     geom_line(aes(colour=Tecnico)) +
+#     labs(x = "Fecha de Solicitud", y = "Costo")
+```
+
+## Instalaciones y Costo por Técnico por Fecha de Instalación
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE, fig.height=15, fig.width=18}
+Tecnico_FechaIns <- tabla %>%  
+  left_join(Tecnicos,by="Tecnico") %>% 
+  group_by(Fecha_Instal, Tecnico) %>% 
+  summarize(Costo = sum(Costo), Instalaciones = sum(Cantidad_Instal), grupo=mean(grupo))
+  # mutate(Fecha = as.Date(Fecha, format = "%d/%m/%Y")) %>% 
+  # as_tsibble(index = Fecha)
+  # as_tsibble(index = Fecha_Instal) %>% 
+  # fill_gaps(.full = TRUE, Instalaciones = mean(Cantidad_Instal))
+Tecnico_FechaIns
+
+#Tecnico_FechaIns <- as_tsibble(index = Fecha)
+
+Tecnico_FechaIns %>%
+  #filter(grupo==1) %>%
+    ggplot(aes(x=Fecha_Instal, y=log(Instalaciones))) +
+    geom_line(aes(colour=Tecnico)) +
+    labs(x = "Fecha de Instalación", y = "Num de Instalaciones")+
+    theme(legend.position = "none")+
+    facet_wrap(~Tecnico, scales = "free_y")
+
+Tecnico_FechaIns %>%
+  #filter(grupo==1) %>%
+    ggplot(aes(x=Fecha_Instal, y=log(Costo))) +
+    geom_line(aes(colour=Tecnico)) +
+    labs(x = "Fecha de Instalación", y = "Costo")+
+    theme(legend.position = "none")+
+    facet_wrap(~Tecnico, scales = "free_y")
+
+# Tecnico_FechaIns %>% 
+#   filter(grupo==1) %>% 
+#     ggplot(aes(x=Fecha_Instal, y=log(Instalaciones))) + 
+#     geom_line(aes(colour=Tecnico)) +
+#     labs(x = "Fecha de Instalación", y = "Num de Instalaciones")+
+#     theme(legend.position = "none")+
+#     facet_wrap(~Tecnico, scales = "free_y")
+
+# ggplot(data = Tecnico_FechaIns, aes(x=Fecha_Instal, y=Costo)) + 
+#     geom_line(aes(colour=Tecnico)) +
+#     labs(x = "Fecha de Instalación", y = "Costo")
+```
+
+
