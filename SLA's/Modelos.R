@@ -177,7 +177,7 @@ ValCru_Ts <- Train_tsb_tr %>%
         RW(Tiempo_de_respuesta ~ drift())
     )/3
     ) %>%
-  forecast(h = "11 week") %>%
+  forecast(h = "4 week") %>%
   accuracy(Train_tsb)
 
 # Training set accuracy
@@ -238,7 +238,9 @@ RMSE2 <- fc2 %>%
 Modelos_Val_fit <- Train_tsb %>% 
   filter(Ruta == "JALISCO", Fecha_recepion < yearweek("2020-11-15")) %>% 
   model(
-    "Com3_T5"  =  (decomposition_model(
+    "SN_44_42"=(SNAIVE(Tiempo_de_respuesta~ lag(44) + drift())+
+                  SNAIVE(Tiempo_de_respuesta~ lag(42) + drift()))/2,
+    "DSTLAFK2SN44L_SN_42_Dr"  =  (decomposition_model(
       STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
       ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
       SNAIVE(season_year~ lag(44) + drift())) +
@@ -257,7 +259,7 @@ Error_Val <- accuracy(Modelos_val_fc, Train_tsb)
 MFinal_fit <- Train_tsb %>% 
   filter(Ruta == "JALISCO", Fecha_recepion < yearweek("2021-01-21")) %>% 
   model(
-    "Com3_T5"  =  (decomposition_model(
+    "DSTLAFK2SN44L_SN_42_Dr"  =  (decomposition_model(
       STL(Tiempo_de_respuesta ~ trend(window = 5)+ season(window = "periodic") , robust = TRUE),
       ARIMA(season_adjust ~ pdq(d = 1) + PDQ(0,0,0) + fourier(K = 2)),
       SNAIVE(season_year~ lag(44) + drift())) +

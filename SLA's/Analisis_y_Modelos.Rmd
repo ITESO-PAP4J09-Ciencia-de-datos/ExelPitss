@@ -238,7 +238,7 @@ Modelos_val_fc %>%
              linetype = "dashed")+
   geom_vline(xintercept = as.Date("2020-12-01"), color = "Red",
              linetype = "dashed")+
-  annotate("label", x = c(as.Date("2020-08-01"),as.Date("2020-12-01"),as.Date("2021-01-15")),
+  annotate("label", x = c(as.Date("2020-08-01"),as.Date("2020-11-20"),as.Date("2021-01-15")),
            y = 3.5, label = c("Train set", "Test set","Val set"),
            color = c("black","blue", "green"))
 ```
