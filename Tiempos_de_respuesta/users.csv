@@ -1,0 +1,4 @@
+user,password,cliente,start,expire,admin
+admin,hola3,NA,01/01/2021,NA,TRUE
+seiton,Seiton_21,Seiton de Mexico SA de CV,01/01/2021,NA,FALSE
+xerox,Xerox_21,XEROX MEXICANA SA DE CV,01/01/2021,NA,FALSE
