@@ -1,0 +1,13 @@
+name: Mapa_Cobertura
+title: Mapa_Cobertura
+username:
+account: danielabenavides
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3957523
+bundleId: 4467000
+url: https://danielabenavides.shinyapps.io/Mapa_Cobertura/
+when: 1618339503.40234
+lastSyncTime: 1618339503.40234
+asMultiple: FALSE
+asStatic: FALSE

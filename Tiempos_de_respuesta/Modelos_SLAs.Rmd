@@ -1,0 +1,537 @@
+---
+title: "Modelo de Regresión SLA's"
+author: "Daniela Benavides Herrera"
+date: "25/3/2021"
+output: 
+  html_notebook:
+    theme: cerulean
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r, message=FALSE}
+library(tidyverse)
+library(readxl)
+library(tsibble)
+library(feasts)
+library(fable)
+library(fpp3)
+library(patchwork)
+```
+
+```{r}
+source("eda_TR.R", local = knitr::knit_global(),encoding = "utf-8")
+```
+
+<center>
+![](logo.png)
+</center>
+
+# Introducción
+
+<div style="text-align: justify">
+
+El propósito de este proyecto es generar un modelo de regresión a partir de los SLA's (Service Level Agreements), los cuales vamos a dividir principalmente en:
+
+- **TR**: Tiempos de Respuesta 
+- **TST**: Tiempos de Solución Total para el cliente
+- **TMO**: Tiempos de Mano de Obra
+- **TSP**: Tiempo de Solución Total para Exel Pitss
+
+<div/>
+
+```{r}
+datos <- datos
+clientes <- datos %>% 
+  distinct(Cliente) %>% 
+  pull()
+
+users <- data.frame(
+    user             = c("admin", "visita", "xerox"), # mandatory
+    password         = c("ExelPitss_ad21", "ExelPitss_vis21", "Xerox_21"), # mandatory
+    cliente          = c(NA, NA, "XEROX MEXICANA SA DE CV"),
+    start            = c("2021-01-01"), # optinal (all others)
+    expire           = c(NA, NA, NA),
+    admin            = c(TRUE, FALSE, FALSE),
+    comment          = "Simple and secure authentification mechanism 
+  for single ‘Shiny Exel Pitss’ applications.",
+  stringsAsFactors = FALSE
+)
+
+datos %>% 
+    filter(
+           str_detect(Cliente, users %>% filter(user == "xerox") %>% pull(cliente))
+                )
+```
+
+
+# Modelo de Regresión
+
+<div style="text-align: justify">
+
+El modelo de regresión lineal nos permite crear una relación entre 2 variables:
+
+- La variable de previsión $y$ o dependiente
+- La variable predictora $x$ o regresora
+
+Por lo tanto, a partir de esto es como vamos a realizar pronósticos. A continuación podemos ver un sencillo ejemplo de cómo ajustamos 2 variables, en este caso, el tiempo de solución total de Exel Pitss (TSP) y el tiempo de respuesta (TR).
+
+<div/>
+
+```{r}
+datos %>% ggplot(aes(x = TR, y = TSP)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+<div style="text-align: justify">
+
+Por otra parte, para poder realizar los pronósticos, fue necesario agrupar los datos según la fecha de Recepción, seguido de la Ruta. La primera tabla a continuación, muestra los datos agrupados diariamente, la segunda los muestra agrupados semanalmente, y por último, la tercera, los muestra mensualmente.
+
+<div/>
+
+# Series de Tiempo
+  
+  * Diariamente
+
+```{r}
+datos_tsbl <- datos %>% filter(
+         Estatus   == "RESUELTA",
+         Categoría == "CORRECTIVO") %>% 
+  group_by(Recepcion, Ruta) %>% 
+  summarise(across(.cols = c(TR, TSP, TMO, TST), mean),
+            .groups = "drop") %>% 
+  pivot_longer(
+    cols      = starts_with("T"),
+    names_to  = "SLA", 
+    values_to = "Tiempos"
+  ) %>% 
+  as_tsibble(
+    # index : la variable temporal
+    index = Recepcion,
+    # key : la(s) variable(s) que identifican a cada serie de tiempo
+    key   = c(Ruta, SLA) 
+  ) %>% 
+  fill_gaps(.full = TRUE, Tiempos = mean(Tiempos)) %>% 
+  filter_index("2018-02-01" ~ "2021-03-10")
+
+datos_tsbl
+```
+
+  * Semanalmente
+
+```{r}
+datos_week_tsbl <- datos_tsbl %>% 
+  group_by_key() %>% 
+  index_by(Semana = yearweek(Recepcion)) %>% 
+  summarise(Tiempos = mean(Tiempos), .groups = "drop")
+datos_week_tsbl
+```
+  * Mensualmente
+
+```{r}
+datos_month_tsbl <- datos_tsbl %>% 
+  group_by_key() %>% 
+  index_by(Mes = yearmonth(Recepcion)) %>% 
+  summarise(Tiempos = mean(Tiempos), .groups = "drop")
+datos_month_tsbl
+```
+## Visualización
+
+<div style="text-align: justify">
+
+A continuación se muestran los datos de la ruta utilizada como ejemplo, siendo la de Jalisco.
+
+<div/>
+
+```{r}
+datos_tsbl %>%
+  filter(Ruta == "JALISCO") %>% 
+  autoplot(Tiempos) + #aes(color = Ruta) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme(legend.position = "none")
+
+datos_week_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
+  autoplot(Tiempos) + #aes(color = Ruta) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme(legend.position = "none")
+
+datos_month_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
+  autoplot(Tiempos) + #aes(color = Ruta) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme(legend.position = "none")
+```
+
+## Descomposición STL
+
+"Seasonal and Trend decomposition using Loess" o STL, por sus siglas en inglés, es un método versátil y robusto para descomponer series de tiempo.
+
+- `t.window` es el número de observaciones consecutivas usadas para estimar el ciclo de tendencia.
+- `s.window` es el número de años consecutivos para usar en la estimación de cada valor en el componente estacional.
+
+```{r}
+datos_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  filter(SLA == "TR") %>% 
+  model(
+    STL(Tiempos ~ trend(window = 15) +
+             season(window = "periodic"),
+        robust = TRUE)) %>% 
+  components() %>% 
+  autoplot(colour = "#F89438")+
+      theme_minimal() +
+      theme(
+        legend.position = "none",
+        plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)
+      ) +
+      scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+```
+
+
+```{r}
+datos_week_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  filter(SLA == "TR") %>% 
+  model(
+    STL(Tiempos ~ trend(window = 15) +
+             season(window = "periodic"),
+        robust = TRUE)) %>% 
+  components() %>% 
+  autoplot(colour = "#F89438")+
+      theme_minimal() +
+      theme(
+        legend.position = "none",
+        plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)
+      ) +
+      scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+#season_adjust = trend + remainder
+```
+```{r}
+datos_month_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  filter(SLA == "TR") %>% 
+  model(
+    STL(Tiempos ~ trend(window = 15) +
+             season(window = "periodic"),
+        robust = TRUE)) %>% 
+  components() %>% 
+  autoplot(colour = "#F89438")+
+      theme_minimal() +
+      theme(
+        legend.position = "none",
+        plot.title = element_text(family = '', colour="#000033", size=17, hjust = 0.5, vjust = 1)
+      ) +
+      scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+```
+
+
+# Modelado
+
+<div style="text-align: justify">
+
+En esta sección se analizaron distintos modelos, los cuales se explican brevemente a continuación, para realizar pronósticos de los SLA's, utilizando como ejemplo los tiempos de la ruta de Jalisco.
+
+- **MEDIA**: En este método, los pronósticos son equivalentes a la media de los datos históricos.
+$$\hat{y}_{T+h \mid T}=\bar{y}=\left(y_{1}+\cdots+y_{T}\right) / T$$
+
+- **INGENUO**: En este método, los pronósticos se basan en la última observación.
+$$\hat{y}_{T+h \mid T}=y_{T}$$
+
+- **INGENUO ESTACIONAL**: los pronósticos se basan en el último valor observado de cada periodo o estación del año.
+$$\begin{equation}
+\hat{y}_{T+h \mid T}=y_{T+h-m(k+1)},
+\end{equation}$$
+donde $m$ es el periodo estacional.
+
+- **DRIFT**: Este modelo permite que los pronósticos aumenten o disminuyan con el tiempo, a diferencia del método Ingenuo, el cual está dado por:
+$$\begin{equation}
+\hat{y}_{T+h \mid T}=y_{T}+\frac{h}{T-1} \sum_{t=2}^{T}\left(y_{t}-y_{t-1}\right)=y_{T}+h\left(\frac{y_{T}-y_{1}}{T-1}\right)
+\end{equation}$$
+
+- **SUAVIZACIÓN EXPONENCIAL**: Este método utiliza los promedios históricos de una variable en un período para intentar predecir su comportamiento futuro.
+$$\hat{y}_{t+1 \mid t} = \ell_{t-1} + \alpha \left(y_{t}-\ell_{t-1}\right)$$
+- **ARIMA**: En los modelos de autoregresión, pronosticamos la variable de interés usando una combinación lineal de valores pasados de la variable. Entonces, un modelo autorregresivo de orden $p$ se puede escribir como:
+$$y_{t}=c+\phi_{1} y_{t-1}+\phi_{2} y_{t-2}+\cdots+\phi_{p} y_{t-p}+\varepsilon_{t}$$
+donde $\varepsilon_{t}$ es ruido blanco. Por otra parte, un modelo de promedio móvil, en lugar de usar valores pasados de la variable de pronóstico en una regresión, usa errores de pronósticos pasados en un modelo similar a la regresión:
+$$y_{t}=c+\varepsilon_{t}+\theta_{1} \varepsilon_{t-1}+\theta_{2} \varepsilon_{t-2}+\cdots+\theta_{q} \varepsilon_{t-q}$$
+Entonces, si combinamos la diferenciación con la autorregresión y un modelo de media móvil, obtenemos un modelo ARIMA (Auto Regressive Integrated Moving Average) no estacional. El modelo completo, entonces se escribe de la siguiente manera:
+$$y_{t}^{\prime}=c+\phi_{1} y_{t-1}^{\prime}+\cdots+\phi_{p} y_{t-p}^{\prime}+\theta_{1} \varepsilon_{t-1}+\cdots+\theta_{q} \varepsilon_{t-q}+\varepsilon_{t}$$
+
+- **DESCOMPOSICIÓN**: En este caso, utilizaremos las series de tiempo descompuestas que se mostraron en el punto anterior, para poder generar modelos a partir de esto mismo y comparar cuál es mejor.
+
+<div/>
+
+```{r}
+tiempos_daily_fit <- datos_tsbl %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_year)
+        )
+  )
+```
+
+```{r}
+tiempos_week_fit <- datos_week_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_year)
+        )
+  )
+```
+
+```{r}
+tiempos_month_fit <- datos_month_tsbl %>%
+  filter(Ruta == "JALISCO") %>%
+  model(Mean = MEAN(Tiempos),
+        `Naïve` = NAIVE(Tiempos),
+        `Seasonal naïve` = SNAIVE(Tiempos),
+        Drift = RW(Tiempos ~ drift()),
+        ETS = ETS(Tiempos),
+        ARIMA = ARIMA(Tiempos),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        stlf = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_year)
+        )
+  )
+```
+
+
+
+En las siguientes tablas, se observan cada uno de los reportes de los modelados.
+
+- Diariamente:
+
+```{r}
+tiempos_daily_fit %>%  
+  report()
+```
+
+- Semanalmente:
+
+```{r}
+tiempos_week_fit %>% 
+  report()
+```
+
+- Mensualmente:
+
+```{r}
+tiempos_month_fit %>% 
+  select(`Mean`) %>% 
+  report()
+```
+
+### Exactitud y Errores
+
+<div style="text-align: justify">
+
+En nuestro proyecto es de suma importancia evaluar nuestros pronósticos, por lo que para realizar esto, utilizamos la información de nuestros datos hasta el año 2020, nombrando a estos datos como *datos de entrenamiento*, para de esta manera poder comparar los verdaderos tiempos contra los resultados de los modelos, a los que llamaremos como *datos de prueba*.
+
+En las siguientes gráficas podemos observar los distintos pronósticos realizados según la periodicidad, tomando los datos desde $2018-01-11$ hasta $2020-03-10$, y realizando pronósticos hasta un año después, que es la fecha de nuestro último dato $2021-03-10$.
+
+<div/>
+
+```{r}
+tiempos_dtrain <- datos_tsbl %>% 
+  filter_index("2018-02-01" ~ "2020-03-10")
+
+tiempos_wtrain <- datos_week_tsbl %>% 
+  filter_index("2018-02-01" ~ "2020-03-10")
+
+tiempos_mtrain <- datos_month_tsbl %>% 
+  filter_index("2018-01-11" ~ "2020-03-10")
+```
+
+```{r}
+datos_month_tsbl %>% 
+  filter(Ruta == "JALISCO") %>%
+  autoplot(Tiempos) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  ggtitle("Tiempos de JALISCO mensualmente") +
+  theme_minimal() +
+  theme(legend.position = "none") + 
+  geom_vline(xintercept = as.Date("2020-03-10"), linetype = "longdash", size = 1) +
+  scale_colour_manual(values = c("#F89438","#009ACB","#03B2ED","#E27831"))
+
+```
+
+```{r}
+tiempos_dtrain_fit <- tiempos_dtrain %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(#Mean = MEAN(Tiempos),
+        # `Naïve` = NAIVE(Tiempos),
+        # `Seasonal naïve` = SNAIVE(Tiempos),
+        # Drift = RW(Tiempos ~ drift()),
+        # ETS = ETS(Tiempos),
+        # ARIMA = ARIMA(Tiempos),
+        `STLF arima adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        `STLF snaive adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_adjust)),
+        `STLF ets y snaive` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ETS(season_adjust), SNAIVE(season_year)
+        )
+  )
+
+tiempos_dtrain_fc <- tiempos_dtrain_fit %>% 
+  forecast(h = "1 year") 
+
+tiempos_dtrain_fc %>% 
+  autoplot(datos_tsbl, level = NULL) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme_minimal() +
+  labs(x = "Días",title = "Pronósticos SLA's") +
+  guides(colour = guide_legend(title = "Pronóstico"))
+```
+
+```{r}
+tiempos_wtrain_fit <- tiempos_wtrain %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(#Mean = MEAN(Tiempos),
+        # `Naïve` = NAIVE(Tiempos),
+        # `Seasonal naïve` = SNAIVE(Tiempos),
+        # Drift = RW(Tiempos ~ drift()),
+        # ETS = ETS(Tiempos),
+        # ARIMA = ARIMA(Tiempos),
+        `STLF arima adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        `STLF snaive adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_adjust)),
+        `STLF ets y snaive` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ETS(season_adjust), SNAIVE(season_year))#,
+        # `STLF ets adjust` = decomposition_model(
+        #   STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ETS(season_year))
+        )
+
+tiempos_wtrain_fc <- tiempos_wtrain_fit %>% 
+  forecast(h = "1 year") 
+
+tiempos_wtrain_fc %>% 
+  autoplot(datos_week_tsbl, level = NULL, size = 1) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme_minimal() +
+  labs(x = "Semanas",title = "Pronósticos SLA's") +
+  guides(colour = guide_legend(title = "Pronóstico"))
+
+```
+
+```{r}
+tiempos_mtrain_fit <- tiempos_mtrain %>% 
+  filter(Ruta == "JALISCO") %>% 
+  model(#Mean = MEAN(Tiempos),
+        # `Naïve` = NAIVE(Tiempos),
+        # `Seasonal naïve` = SNAIVE(Tiempos),
+        # Drift = RW(Tiempos ~ drift()),
+        # ETS = ETS(Tiempos),
+        # ARIMA = ARIMA(Tiempos),
+        `STLF arima adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ARIMA(season_adjust)),
+        `STLF snaive adjust` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), SNAIVE(season_adjust)),
+        `STLF ets y snaive` = decomposition_model(
+          STL(Tiempos ~ trend(window = 15) +season(window = "periodic"),robust = TRUE), ETS(season_adjust), SNAIVE(season_year))
+        )
+
+tiempos_mtrain_fc <- tiempos_mtrain_fit %>% 
+  forecast(h = "1 year") 
+
+tiempos_mtrain_fc %>% 
+  autoplot(datos_month_tsbl, level = NULL) +
+  facet_wrap(~ SLA, scales = "free_y") +
+  theme_minimal() +
+  labs(x = "Meses",title = "Pronósticos SLA's") +
+  guides(colour = guide_legend(title = "Pronóstico"))
+```
+
+> Aunque las conclusiones puedan ser algo claras gracias a las gráficas, con la función `accuracy()` podemos observar de una manera más clara, los resultados de cuál modelo es el mejor ajustado, según cada periodicidad distinta.
+
+- **Accuracy diariamente:**
+
+```{r}
+ acc_daily <- accuracy(tiempos_dtrain_fc, datos_tsbl)
+ acc_daily
+ 
+ acc_daily %>% 
+  group_by(SLA) %>% 
+  slice_min(RMSE)
+```
+- **Accuracy semanalmente:**
+
+```{r}
+acc_week <- accuracy(tiempos_wtrain_fc, datos_week_tsbl)
+acc_week
+acc_week %>% 
+  group_by(SLA) %>% 
+  slice_min(RMSE)
+```
+
+- **Accuracy mensualmente:**
+
+```{r}
+acc_month <- accuracy(tiempos_mtrain_fc, datos_month_tsbl)
+acc_month
+acc_month %>% 
+  group_by(SLA) %>% 
+  slice_min(RMSE)
+```
+
+### Diagnóstico de Residuos
+
+- **Diariamente**
+
+```{r}
+tiempos_dtrain_fit %>% 
+  filter(SLA == "TST") %>% 
+  select("ETS") %>% 
+  gg_tsresiduals()
+```
+> Aunque es un poco difícil de notarlo, en la primera gráfica podemos observar que los residuales varían en torno al 0, y que, al igual que en el histograma, parecen ser que los datos no son normales, ya que la cola derecha parece ser demasiado larga, inclusive si excluyéramos los outliers o datos atípicos. En conlcusión, podemos decir que el modelo es bastante bueno ya que en la segunda gráfica los datos no salen de los límites.
+
+- **Semanalmente**
+
+```{r}
+tiempos_wtrain_fit %>%  
+  filter(SLA == "TMO") %>% 
+  select("Mean") %>% 
+  gg_tsresiduals()
+```
+> Para este segundo resultado los daos son un poco diferentes, ya que los datos sí sobrepasan los límites, y el histograma nos muestra claramente que los datos no son normales, quizás sería bueno analizar los resultados de otro modelo.
+
+- **Mensualmente**
+
+```{r}
+tiempos_mtrain_fit %>%  
+  filter(SLA == "TR") %>% 
+  select("Seasonal naïve") %>% 
+  gg_tsresiduals()
+```
+> Por último, aunque parecen ser pocos datos, debido que los pronósticos se realizaron únicamente por un año (12 meses), parece ser que es un modelo bastante bueno para este análisis, aunque los datos tampoco distribuyen de una manera normal.
+
+# Pronósticos
+
+```{r}
+
+```
+

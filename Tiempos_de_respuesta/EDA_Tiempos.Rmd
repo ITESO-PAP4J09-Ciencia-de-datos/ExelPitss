@@ -1,0 +1,250 @@
+---
+title: "Análisis Órdenes de servicio"
+author: "Daniela Benavides Herrera"
+date: "18/3/2021"
+output: 
+  html_notebook:
+    theme: cerulean
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+source("eda_TR.R", local = knitr::knit_global(),encoding = "utf-8")
+```
+
+```{r}
+# compresión de listas
+library(comprehenr)
+
+# EDA
+library(psych)
+library(dlookr)
+```
+
+
+<center>
+![](logo.png)
+</center>
+
+# Introducción
+
+<div style="text-align: justify">
+
+El propósito de este proyecto es realizar un Análisis Exploratorio de datos (EDA por sus siglas en inglés) de los distintos tipos de tiempos de las órdenes de servicio de la empresa Exel Pitss.
+
+<div/>
+
+# Datos
+
+<div style="text-align: justify">
+
+Nuestro dataset contiene información de todas las órdenes de servicio resueltas de la categoría de correctivos desde enero 2018 hasta febrero 2021. Esta información se encuentra disponible en el software de la empresa llamado Santii, en la pestaña de Servicio, luego en la sección de Monitores y por último, se selecciona el reporte llamado **Tiempos de Respuesta**.
+
+<div/>
+
+## Formato
+
+<div style="text-align: justify">
+
+El data set se conforma de `r nrow(datos)` filas y de `r ncol(datos)` variables. 
+
+- **`r names(datos)[1]`** es el número de la orden de servicio.
+
+- **`r names(datos)[2]`** es el número de serie del equipo atendido.
+
+- **`r names(datos)[3]`** es el modelo del equipo atendido.
+
+- **`r names(datos)[4]`** es el número del equipo atendido. 
+
+- **`r names(datos)[5]`** es el número de cliente atendido.
+
+- **`r names(datos)[6]`** es el nivel de servicio.
+
+- **`r names(datos)[7]`** es la fecha y hora en que se recibe la orden de servicio.
+
+- **`r names(datos)[8]`** es el estatus de la orden de servicio.
+
+- **`r names(datos)[9]`** es la referencia de la orden por parte del cliente.
+
+- **`r names(datos)[10]`** es la prioridad asignada a la orden de servicio.
+
+- **`r names(datos)[11]`** es la categoría o tipo de la orden de servicio.
+
+- **`r names(datos)[12]`** es la ruta o zona de la orden de servicio.
+
+- **`r names(datos)[13]`** es la cantidad de visitas realizadas.
+
+- **`r names(datos)[14]`** es la fecha en la que se cerró o concluyó la orden de servicio.
+
+- **`r names(datos)[15]`** es el tiempo de solución total que el cliente toma en cuenta.
+
+- **`r names(datos)[16]`** es el tiempo de mano de obra.
+
+- **`r names(datos)[17]`** es el tiempo de respuesta, lo que tarda el ingeniero en llegar a atender la orden desde que esta fue levantada.
+
+- **`r names(datos)[18]`** es el tiempo límite de respuesta.
+
+- **`r names(datos)[19]`** es el tiempo restante con respecto del tiempo de respuesta menos su límite.
+
+- **`r names(datos)[20]`** es el tiempo de solución total para Exel Pitss.
+
+- **`r names(datos)[21]`** es el tiempo límite de solución.
+
+- **`r names(datos)[22]`** es el tiempo restante con respecto del tiempo de solución total menos su límite.
+
+- **`r names(datos)[23]`** es la clasificación de si se cumplió con el Límite del Tiempo de Respuesta, 1 = sí y 0 = no.
+
+A continuación se puede observar una vista anticipada de los datos.
+
+<div/>
+
+```{r}
+head(datos)
+```
+
+# EDA
+
+<div style="text-align: justify">
+
+Antes de comenzar, cabe mencionar nuestras variables se distinguen en 2 grandes grupos o clasificaciones: categóricas y númericas. Es importante distingarlas ya que nuestro análisis exploratorio de datos no puede realizarse de la misma manera para todas las variables. 
+
+<div/>
+
+## Variables Categóricas
+
+<div style="text-align: justify">
+
+Las variables categóricas son aquellas que en este caso, se utilizan para asignar un valor no-numérico o cualitativo a algún aspecto de la orden de servicio, por ejemplo, el nombre del cliente, el Ingeniero de Servicio, el nivel, estatus, entre otros. 
+
+En las siguiente tablas podemos observar un sencillo reporte de calidad de datos de nuestras variables categóricas.
+
+<div/>
+
+```{r}
+categoricos <- datos %>% 
+  select_if(is.character) 
+dqr_categoricos <- tibble(
+  Variables = colnames(categoricos),
+  Tipo = as.character(as_tibble(sapply(categoricos, class))[1,]),
+  Presentes = to_vec(for(i in 1:ncol(categoricos)) sum(!is.na(categoricos[,i])) ),
+  Faltantes = to_vec(for(i in 1:ncol(categoricos)) sum(is.na(categoricos[,i])) ),
+  Unicos = to_vec(for(i in 1:ncol(categoricos)) count(distinct(categoricos[,i])))
+) 
+
+dqr_categoricos
+diagnosis_categoricos <- diagnose_category(datos)
+diagnosis_categoricos
+```
+- **Representación gráfica**
+
+```{r}
+ggplot(drop_na(categoricos), aes(x = Ruta)) +
+  geom_bar(fill = "blue", width = 0.5) +
+  xlab("Ruta") + ylab("Observaciones") +
+  coord_flip()
+```
+<div style="text-align: justify">
+
+> Las variables categóricas son muy importantes para analizar, en este caso, cuáles rutas son a las que más les caen órdenes de servicio, qué tipo de orden es, la cantidad de órdenes que atiende cada ingeniero, los clientes que levantan más órdenes de servicio, etc. 
+
+<div/>
+
+## Variables Numéricas
+
+<div style="text-align: justify">
+
+Al contrario de las variables categóricas, las variables numéricas son aquellas que representan números y con las cuales podemos realizar operaciones artiméticas, unos ejemplos de este caso serían: el tiempo de respuesta, el tiempo de solución total, los tiempos límites, etc. 
+
+En las siguiente tablas podemos observar un sencillo reporte de calidad de datos de nuestras variables numéricas.
+
+<div/>
+
+```{r}
+dqr_numericos <-
+  mutate(dlookr::describe(datos)) %>%
+  mutate(dlookr::normality(datos)) %>% 
+  dplyr::select(everything(), -c(p00,p01,p05,p10,p20,p30,p40,p60,p70,p80,p100,vars))
+
+dqr_numericos
+diagnosis_numericos <- diagnose_numeric(datos)
+diagnosis_numericos
+```
+### Prueba de Normalidad Shapiro-Wilk
+
+<div style="text-align: justify">
+
+Esta prueba nos ayudará a determinar si la variable que seleccionemos se ajusta o se modela correctamente por una distribución normal. En este caso, se utilizará la prueba de *Shapiro-Wilks*, eligiendo un nivel de confianza de $\alpha = 0.01$ definiendo la hipótesis nula:
+
+<div/>
+
+$$
+\begin{equation}
+\begin{array}{l}
+H_{0}: X \sim \mathcal{N}\left(\mu, \sigma^{2}\right) \\
+H_{0}: p> \alpha \\
+\end{array}
+\end{equation}
+$$
+Y la hipótesis alternativa:
+
+$$
+\begin{equation}
+\begin{array}{l}
+H_{1}: X \nsim \mathcal{N}\left(\mu, \sigma^{2}\right) \\
+H_{1}: p \leq \alpha 
+\end{array}
+\end{equation}
+$$
+<div style="text-align: justify">
+
+En pocas palabras, la hipótesis nula plantea que la muestra proviene de una distribución normal, y la hipótesis alternativa sostiene que no es así.
+
+<div/>
+
+```{r}
+datos %>% 
+  normality(TMO, TR, TST, TSP)
+```
+<div style="text-align: justify">
+
+> Como podemos observar, rechazamos la hipótesis nula para cualquiera de las variables seleccionadas, por lo tanto podemos decir que no distribuyen de manera normal.
+
+De todas maneras, visualizaremos el ajuste de la distribución normal en nuestras variables.
+
+<div/>
+
+```{r}
+datos %>% 
+  plot_normality(TMO, TR, TST, TSP)
+```
+<div style="text-align: justify">
+
+> Como podemos observar, efectivamente nuestros datos no se ajustan a una distribución normal, y analizando la curtosis de cada variable mostrada en el reporte de calidad, para todos los casos, el coeficiente es positivo, esto quiere decir que existe una mayor concentración de los datos en torno a la media.
+ 
+<div/>
+ 
+### Outliers
+
+<div style="text-align: justify">
+
+Para fines de este proyecto, es importante analizar si nuestras variables contienen outliers o valores atípicos, los cuales son valores númericamente distantes del resto de los datos. Por lo que graficaremos ciertas variables con y sin sus outliers para poder verificar que exista algún cambio significativo.
+
+<div/>
+
+```{r}
+# OUTLIERS: tiempos de respuesta, de mano de obra, de solución pitss y solución total
+datos %>% 
+  plot_outlier(TR,TMO,TSP,TST) 
+```
+<div style="text-align: justify">
+
+> Cada una de las variables cambia notablemente cuando a esta se le excluyen los outliers, y esto tiene sentido, ya que Exel Pitss no cuenta con cobertura en algunos estados de la República Mexicana, por lo que, en esos casos especiales, un IS de la ruta más cercana, debe acudir a ese lugar, haciendo que el tiempo de respuesta y de solución total, sea mucho mayor a lo que normalmente suele hacer.
+
+<div/>
+
+

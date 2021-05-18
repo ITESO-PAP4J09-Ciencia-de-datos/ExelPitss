@@ -28,6 +28,7 @@ library(shinythemes)
 library(shinyWidgets)
 library(shinydashboard)
 library(shinyjs)
+library(shinycssloaders)
 
 
 
@@ -118,35 +119,17 @@ state_popup <- paste0("<strong>Estado: </strong>",
 # Define UI for application that draws a histogram
 ui <- fluidPage(
     title = "Cobertura Exel Pitss",
-    setBackgroundColor(
-        color = c(az_cl, az_os),
-        gradient = "linear",
-        direction = "bottom")
-    #setBackgroundColor("ghostwhite")
-    # setBackgroundColor(
-    #     color = c("#F7FBFF", "#2171B5"),
-    #     gradient = "radial",
-    #     direction = c("top", "left")
-    #),
-    ,
+    setBackgroundImage(src="fondo.png"),
     useShinyjs(),
     #Assign Dasbhoard title
-    #tags$head(tags$style('h1 {color:red;}')),
-    #tags$head(tags$style('Cobertura ExelPitss {color:red; font-style:copperplate; font-size:40px; font-weight:bold}')),
-    #titlePanel(h1("Cobertura ExelPitss", align="center", size="40px")),
     titlePanel(div("COBERTURA",style = "color:white; font-size: 70px; font-style:proxima nova; font-weight:bold; font-style:italic",align = "center",
                    img(height = 105, width = 400, src = "exel pitss logo final_RGB-04.png"))),
-    # titlePanel(h1("Cobertura ", 
-    #                 span("ExelPitss", 
-    #                         style = "color: dodgerblue4; font-size: 50px; font-weight:bold",
-    #                         align = "center"))),
-    
     sidebarPanel(#alpha('white', 0.1),
                 #tags$head(tags$style(".well {background-color: #fff;  opacity: 0.8;}")),
       width = 3,
                 div(
             id = "form",
-            style = "text-align:center; color: #FFFFFF24; fill:transparent", #rgb(0,0,51/255);",
+            style = "text-align:center; color: #000033; fill:transparent", #rgb(0,0,51/255);",
             uiOutput(outputId = "select_marcas"),
             uiOutput(outputId = "select_models"),
             uiOutput(outputId = "select_zonas"),
@@ -154,13 +137,10 @@ ui <- fluidPage(
             uiOutput(outputId = "select_fechas")
         ),
         actionButton(
-                     #div(
                        "reset_input",
-                       label = "Reestablecer todo",
-                       icon = icon( name = "eraser"),
+                       label = "Reestablecer opciones",
+                       icon = icon( name = "redo"),
                        style = "color: #fff; background-color: #F89438; border-color: #E27831"
-                     
-                     #style = "color: #fff; background-color: #D75453; border-color: #C73232"
                     )
         
     ),
@@ -173,21 +153,21 @@ ui <- fluidPage(
                     title = "MAPA",
                     
                     # separate the box by a column
-                    column(width = 9, 
+                    column(width = 10, 
                         shiny::actionButton( inputId = "clearMap"
-                                               , icon = icon( name = "eraser")
+                                               , icon = icon(name = "redo")
                                                , label = "Reestablecer mapa"
                                                , style = "color: #fff; background-color: #F89438; border-color: #E27831"
                         ),
                         leaflet::leafletOutput( outputId = "myMap",
-                                                height = 500,
-                                                width = 600
-                        )
+                                                #height = 400,
+                                                #width = 900
+                        ) %>% withSpinner(color="#F89438")
                     ), 
-                    column(width = 3,
+                    column(width = 2,
                       div(style="text-align:center;
                           width:250px;
-                          height:100px;
+                          height:50px;
                           padding-top:50px;
                           position:relative;
                           color:white;
@@ -195,8 +175,17 @@ ui <- fluidPage(
                           font-style: bold",
                       textOutput(outputId = "text")
                       ),
-                      style = "color: #fff",
-                      tableOutput(outputId = "tabla_is")
+                      #style = "color: #fff",
+                      div(style="text-align:center;
+                          width:250px;
+                          height:50px;
+                          padding-top:50px;
+                          position:relative;
+                          color:white;
+                          font-size: 15px",
+                          tableOutput(outputId = "tabla_is")
+                      )
+                      
                     )
                     # , column(
                     #   width = 1,
@@ -210,7 +199,7 @@ ui <- fluidPage(
                   tags$style(type = "text/css", "a{color: #fff}")
                   ),
                 style = "color: #fff",
-                dataTableOutput(outputId = "tabla1", width = "120%")
+                dataTableOutput(outputId = "tabla1")  %>% withSpinner(color="#F89438")# width = "120%")
                 #código para devolver tabla
             )
             
@@ -257,7 +246,7 @@ server <- function(input, output, session) {
     
     output$select_marcas <- renderUI({
         pickerInput(inputId  = "marcas",
-                    label    = h4("Marca", style="color:#70476F; font-style:urw din italic; font-size:20px"),
+                    label    = h4("Marca", style="color:#E27831; font-style:urw din italic; font-size:20px"),
                     choices  = marcas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -275,7 +264,7 @@ server <- function(input, output, session) {
     
     output$select_models <- renderUI({
         pickerInput(inputId  = "modelos",
-                    label = h4("Modelo", style="color:#70476F; font-style:urw din italic;font-size:20px"),
+                    label = h4("Modelo", style="color:#E27831; font-style:urw din italic;font-size:20px"),
                     choices = modelos(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -292,7 +281,7 @@ server <- function(input, output, session) {
     
     output$select_zonas <- renderUI({
         pickerInput(inputId  = "zonas",
-                    label = h4("Zona", style="color:#70476F; font-style:urw din italic; font-size:20px"),
+                    label = h4("Zona", style="color:#E27831; font-style:urw din italic; font-size:20px"),
                     choices = zonas(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -310,7 +299,7 @@ server <- function(input, output, session) {
     
     output$select_is <- renderUI({
         pickerInput(inputId  = "is",
-                    label = h4("Ingeniero de Servicio", style="color:#70476F; font-style:urw din italic; font-size:20px"),
+                    label = h4("Ingeniero de Servicio", style="color:#E27831; font-style:urw din italic; font-size:20px"),
                     choices = is(),
                     options  = list(`actions-box`=TRUE,`live-search`=TRUE),
                     multiple = TRUE,
@@ -406,14 +395,11 @@ server <- function(input, output, session) {
       input$modelos
       input$zonas
       input$is},{
-        nombres_fil <- datos_filtrados() %>% 
-          dplyr::select(Zonas)
-      leafletProxy("myMap") %>% 
+          #dplyr::select(Zonas)
+      leafletProxy("myMap") %>%
           addAwesomeMarkers(
             lng = datos_filtrados()$Longitud,
             lat = datos_filtrados()$Latitud,
-            layerId = datos_filtrados()$zonas,
-            label = datos_filtrados()$zonas,
             icon = icons
           )
     })
@@ -429,8 +415,9 @@ server <- function(input, output, session) {
         if (is.null(click)){
           output$text <- renderText({"Selecciona alguna zona"})
         } else {
-        texto1 <- paste("Ingenieros en ",click$id,":")
-        tabla <- datos %>% filter(Zonas==click$id) %>% distinct(IS)
+        estado <- datos %>% filter(Latitud==click$lat,Longitud==click$lng) %>% distinct(Zonas)
+        texto1 <- paste("Ingenieros en ",estado,":")
+        tabla <- datos_filtrados() %>% filter(Latitud==click$lat,Longitud==click$lng) %>% distinct(IS)
         output$text <- renderText({texto1})
         output$tabla_is <- renderTable(tabla,spacing='xs',align='l',colnames=FALSE)
         }
@@ -463,6 +450,7 @@ server <- function(input, output, session) {
               label = ,
               icon = icons
             )
+          reset("form")
           output$text <- renderText({"Selecciona alguna zona"})
           tabla <- tibble(vacio=c(""))
           output$tabla_is <- renderTable(tabla,spacing='xs',align='l',colnames=FALSE)
