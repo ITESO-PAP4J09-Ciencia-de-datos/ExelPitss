@@ -1,0 +1,335 @@
+
+---
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_float: yes
+---
+<h1 style="color:rgb(0,154/255,203/255);"> AnalisisCompras </h1>
+
+```{r Colores,message=FALSE, warning=FALSE, include=FALSE}
+az_os <- rgb(0,0,51/255)
+az_cl <- rgb(0,154/255,203/255)
+negro <- rgb(51/255,51/255,51/255)
+n_os <- rgb(226/255,120/255,49/255)
+n_cl <- rgb(248/255,148/255,56/255)
+```
+
+
+
+
+
+
+```{r Libraries,message=FALSE, warning=FALSE, include=FALSE}
+# Libraries ---------------------------------------------------------------
+# importación y lectura de datos
+library(readxl)
+library(rgdal)
+library(DT)
+
+# visualización de datos
+library(ggplot2)
+library(data.table)
+library(tidyquant)
+
+#tbd
+library(Hmisc)
+library(skimr)
+library(dplyr)
+library(fpp3)
+library(tibble)
+library(fable.prophet)
+```
+
+
+```{r RawData,message=FALSE, warning=FALSE, include=FALSE}
+data <- read.csv(file = 'ComprasDetallado.csv')
+colnames(data)<-c('Proveedor','Categoria_Proveedor','Empresa','Sucursal','Fecha',
+                  'Tipo_documento','Folio','Recepcion','Almacen','Referencia_orden_compra',
+                  'Referencia_recepcion_compra','Clave_producto','Serial','Categoria','Notas',
+                  'Nombre_producto','Cantidad_ordenada','Cantidad_recibida','Unidad_de_medida',
+                  'Precio_unitario_por_moneda','Subtotal_por_moneda','Moneda','Tipo_Cambio',
+                  'Precio_unitario_MXN','Subtotal_MXN','Total_MXN')
+
+#data <- mutate(data, Fecha=as.Date(Fecha), format="%Y/%m/%d")
+data[] <- Map(gsub, "[$,]", "", data)
+cols_num <- c('Cantidad_ordenada','Cantidad_recibida',
+              'Precio_unitario_por_moneda','Precio_unitario_MXN','Subtotal_por_moneda',
+              'Subtotal_MXN')
+data[cols_num] <- sapply(data[cols_num],as.numeric)
+
+data_clean <- data[, c('Proveedor','Categoria_Proveedor','Fecha','Nombre_producto','Tipo_documento',
+                       'Cantidad_ordenada','Cantidad_recibida','Moneda','Subtotal_MXN')] %>% 
+  filter(Subtotal_MXN<mean(Subtotal_MXN)+2*sd(Subtotal_MXN))
+#categoria -> data %>% distinct(Categoria_Proveedor)
+
+tipos <- sapply(data_clean,class)
+```
+
+
+<h2> Descripción </h2>
+Esta tabla muestra a detalle las compras efectuadas por ExelPitss en el periodo del `r min(data$Fecha)` y hasta el `r max(data$Fecha)`.
+
+<h2> Formato </h2>
+
+Inicialmente contamos con una tabla compuesta de `r nrow(data)` filas y `r ncol(data)` columnas.
+Después de hacer la limpieza y observar los datos entregados, así como la limpieza de aquellos innecesarios y repetitivos, se procede a crear una segunda tabla con `r nrow(data_clean)` filas y `r ncol(data_clean)` columnas.
+
+Partiendo de aquí, tenemos columnas con valores de tipo:
+`r tipos`
+
+* **Proveedor**
+
+  Indica el nombre del proveedor de la compra.
+
+* **Categoría_Proveedor**
+
+  Indica la categoría de los productos que brinda el proveedor.
+
+* **Fecha**
+  
+  Fecha en que tuvo lugar la compra.
+
+* **Tipo documento**
+
+  Categoría a la que pertenece la compra.
+
+* **Cantidad_ordenada**
+
+  Indica la cantidad ordenada del producto (dependiendo de su unidad de medida).
+
+* **Cantidad_recibida**
+  
+  Indica la cantidad recibida del producto ordenado.
+
+* **Moneda**
+
+  Moneda en que se realizó la compra.
+
+* **Subtotal_MXN**
+
+  Equivale al dinero en MXN que se utilizó en la compra.
+
+
+
+<h2 style="color:rgb(0,154/255,203/255);"> ANÁLISIS </h2>
+
+### Proveedores
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+p_sig <- data.frame(table(data_clean$Proveedor)) %>% filter(Freq > mean(Freq, na.rm = TRUE))
+
+sorted_prov <- p_sig[order(-p_sig$Freq),]
+```
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+Proveedores <- data_clean %>% 
+  distinct(Proveedor)
+
+dplyr::count(data_clean, Proveedor, sort = TRUE)
+
+```
+
+<br>
+<br>
+
+### Proveedores Significativos vs Frecuencia de aparición
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+
+ggplot(p_sig, aes(x=Freq, y=Var1)) + 
+  geom_bar(stat = "identity", color = az_os, fill = az_cl) +
+  coord_flip() + theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) + ylab('Proveedores Significativos')
+
+```
+<br>
+<br>
+
+Al seleccionar los proveedores significativos, en este caso aquellos que se encuentran por encima de la media, se puede observar un proveedor con mucha más presencia que los demás, y es precisamente "EXEL DEL NORTE SAPI DE CV", nuestra misma empresa.
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+Subtotales <- data_clean[order(-data_clean$Subtotal_MXN),] %>% filter(Subtotal_MXN < max(Subtotal_MXN))
+
+sum_catpro <- Subtotales %>%
+  group_by(Categoria_Proveedor) %>%
+  summarise(
+    Size_Sum = sum(Subtotal_MXN)
+  ) 
+
+#dplyr::count(data_clean, Subt, sort = TRUE)
+
+ggplot(data = data_clean %>% filter(Subtotal_MXN<mean(Subtotal_MXN)+2*sd(Subtotal_MXN))) + 
+  geom_histogram(aes(x=Subtotal_MXN), bins=45,  color = az_os, fill = az_cl) +
+  labs(title = "Subtotales de compras (MXN)")
+
+
+
+
+```
+
+También, se crea un análisis mediante skim, el cual nos muestra las medias y cuartiles de nuestros datos numéricos, haciendo notar 
+
+<br>
+<br>
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+numeric.data <- dplyr::select_if(data_clean %>% filter(Subtotal_MXN<max(Subtotal_MXN)), is.numeric)
+skim(numeric.data)
+```
+
+
+<br>
+<br>
+
+Se muestra una gráfica de los subtotales de compras por día a lo largo del 2020. A partir de ello se procederá a crear pronósticos que puedan ayudar a la empresa a conocer mejor sus gastos con el fin de tener una herramienta que pueda complementar su buena administración de capital.
+
+<br>
+
+### Serie de tiempo Fecha (diaria) vs Subtotales MXN
+
+```{r, message=FALSE,warning=FALSE, echo=FALSE}
+data.sum <- aggregate(x = data_clean[c("Subtotal_MXN")],
+                     FUN = sum,
+                     by = list(Group.date = data_clean$Fecha)) %>% 
+  mutate(Group.date=as.Date(Group.date, format = "%d/%m/%Y"))
+
+ggplot(data.sum, aes(x=Group.date, y=Subtotal_MXN)) +
+  geom_line( color = az_os, fill = az_cl) + 
+  xlab("")
+```
+<br>
+<hr>
+<br>
+
+Después agrupamos los datos por semana y los mostramos como una segunda serie de tiempo.
+A esta serie de tiempo se le añadió una primer regresión (lineal), es importante recalcar que un modelo de este estilo no nos sirve en series de tiempo como esta, por lo que se procederá a probar con modelos más avanzados.
+Además, 
+<br>
+
+```{r TS1, message=FALSE,warning=FALSE, echo=FALSE}
+fit.consMR <- as_tsibble(data.sum) %>%
+  model(tslm = TSLM(Subtotal_MXN))
+
+augment(fit.consMR) %>%
+  ggplot(aes(x = Group.date)) +
+  geom_line(aes(y = Subtotal_MXN, colour = "Data")) +
+  geom_line(aes(y = .fitted, colour = "Fitted")) +
+  labs(y = NULL,
+    title = "Subtotales de compras diarias Exel Pitss (MXN)"
+  ) +
+  scale_color_manual(values=c(Data="black",Fitted="#D55E00")) +
+  guides(colour = guide_legend(title = NULL))
+
+report(fit.consMR)
+
+```
+
+<br>
+<hr>
+<br>
+
+
+
+```{r TS_, message=FALSE,warning=FALSE, echo=FALSE}
+weekly <- data.sum %>%
+    tq_transmute(select     = Subtotal_MXN,
+                 mutate_fun = apply.weekly,
+                 FUN        = sum)
+
+ggplot(weekly, aes(x=Group.date, y=Subtotal_MXN)) +
+  geom_line( color = az_os, fill = az_cl) + 
+  xlab("") +
+  geom_smooth(method = "loess", se = FALSE)+
+  labs(y = NULL,
+    title = "Subtotales de compras semanales Exel Pitss (MXN)"
+  ) 
+```
+
+Se comenzaron a utilizar modelos más avanzados con el fin de crear mejores pronósticos que explicaran con menor error el comportamiento de los subtotales de compras en el año.
+
+
+
+```{r}
+weekly_tsibble <- weekly %>% 
+  mutate(Group.date = yearweek(Group.date)) %>% as_tsibble(index = Group.date) 
+
+#Partición datos train y test
+weekly_tsibble_train <- weekly_tsibble %>%
+  slice(0:10-n())
+
+weekly_tsibble_test <- weekly_tsibble %>%
+  slice(n()-10:01)
+
+```
+
+
+```{r TS_P, message=FALSE,warning=FALSE, echo=FALSE}
+
+forfit <- as_tsibble(as.ts(weekly))
+fit <-  weekly_tsibble_train %>% 
+  model( arima = ARIMA(forfit),
+    ets = ETS(forfit),
+    prophet = prophet(forfit ~ season(period = 4, order = 2,
+                                    type = "multiplicative"))
+  )
+
+
+```
+
+```{r TS_P2, message=FALSE,warning=FALSE, echo=FALSE}
+weekly_models <- weekly_tsibble_train %>% 
+  model(
+    "Prophet" = prophet(Subtotal_MXN ~ season(period = 4, order = 2,
+                                    type = "multiplicative")),
+    "ETS" = ETS(Subtotal_MXN ~ error("A") + trend("A") + season("N")),
+    "STLF ARIMA"   = decomposition_model(STL(Subtotal_MXN ~ trend(window = 4)
+                                             +season(window = "periodic"),robust =
+                                               TRUE), ARIMA(season_adjust)),
+    "NN" = NNETAR(Subtotal_MXN)
+  )  
+
+```
+
+
+```{r TS_P3}
+weekly_models %>% 
+  accuracy()
+
+```
+
+
+
+```{r TS_P4}
+weekly_fc <- weekly_models %>%
+  forecast(h = "11 weeks")
+
+
+
+```
+
+
+
+```{r}
+weekly_fc %>% 
+  autoplot(weekly_tsibble) +
+  facet_wrap(~ .model, ncol = 2) +
+  labs(y = "Subtotal MXN",
+    title = "Gráfica Pronósticos de Subtotales a 10 semanas") +
+   theme (plot.title = element_text(face="bold", vjust=2, colour=az_os, size = rel(1.5))) +
+  theme(axis.title.x = element_text(vjust=-0.5, colour=az_cl)) +
+  theme(axis.title.y = element_text(vjust=1.5, colour=az_cl)) +
+  theme(axis.text.x = element_text(angle=45))
+```
+
+
+
+
+
+
+
+
+

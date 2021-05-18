@@ -226,6 +226,16 @@ server <- function(input, output, session) {
           IS %in% input$is
         )
     })
+    
+    datos_filtrados2 <- reactive({
+      datos %>%
+        filter(
+          Marca == input$marcas,
+          Modelo == input$modelos,
+          Zonas == input$zonas,
+          IS == input$is
+        )
+    })
   
     # OPCIONES MARCAS
     marcas <- reactive({
@@ -390,7 +400,6 @@ server <- function(input, output, session) {
           addAwesomeMarkers(
             lng = datos_filtrados()$Longitud,
             lat = datos_filtrados()$Latitud,
-            layerId = datos$Zonas,
             icon = icons
           )
     })
