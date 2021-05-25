@@ -244,7 +244,8 @@ server <- function(input, output, session) {
   })
   
   output$logo_user_header <- renderUI({
-    div(align = "right",img(style = "max-width: 100%; height: auto !important;", src = logo()))
+    user()$user
+    #div(align = "right",img(style = "max-width: 100%; height: auto !important;", src = logo()))
   })
   
   output$user_info <- renderUI({
@@ -547,6 +548,7 @@ server <- function(input, output, session) {
       #       }
       #                             "))),
       useShinyalert(),
+      shinyjs::useShinyjs(),
       tags$head(tags$style("#title{
                          color: white;
                         text-align: center;
@@ -589,7 +591,10 @@ server <- function(input, output, session) {
                                   column(7, tags$img(style = "max-width: 100%; height: auto !important;",src = "admin.png"))
                                 )
                               )),
-                            navbarPage("Menú",
+                            # tags$head(tags$style(HTML("#menu li a[data-value = 'mytab2'], #menu li a[data-value = 'mytab3'], #menu li a[data-value = 'mytab4'] {
+                            #  display: none;
+                            #  }"))),
+                            navbarPage("Menú",id = "menu", 
                                        
 # tab: visualización ------------------------------------------------------
                                        tabPanel("Visualización de Datos",icon = icon("eye"),
@@ -625,8 +630,9 @@ server <- function(input, output, session) {
                                        ),
                                        
 # tab: descomposicion -----------------------------------------------------
-                                       
-                                       tabPanel("Descomposición", icon = icon("gear"),
+                                       #tabPanel("Descomposición", icon = icon("gear"),
+                                       conditionalPanel(condition = "output.logo_user_header == 'admin'",
+                                         
                                                 sidebarLayout(
                                                   sidebarPanel(
                                                     uiOutput(outputId = "select_rutasD"),
@@ -670,7 +676,7 @@ server <- function(input, output, session) {
                                        ),
                                        
 # tab: modelado -----------------------------------------------------------
-                                       tabPanel("Modelado",icon = icon("wrench"),#tools
+                                       tabPanel("Modelado",value = "mytab3",icon = icon("wrench"),#tools
                                                 sidebarLayout(
                                                   sidebarPanel(
                                                     uiOutput(outputId = "select_rutas2"),
@@ -727,7 +733,7 @@ server <- function(input, output, session) {
                                        ),
                                        
 # tab: pronósticos --------------------------------------------------------
-                                       tabPanel("Pronósticos",icon = icon("chart-line"),
+                                       tabPanel("Pronósticos",value = "mytab4",icon = icon("chart-line"),
                                                 sidebarLayout(
                                                   sidebarPanel(
                                                     uiOutput(outputId = "select_rutas3"),
@@ -924,6 +930,37 @@ server <- function(input, output, session) {
                    widths=c(2,10)
       ) #navlistPanel
     ) #fluidPage
+  })
+  
+  # hide/show tabs  ---------------------------------------------------------
+  # observe({
+  #   if (is.null(user()$user)){
+  #     return()
+  #   } else if (user()$user == "admin"){
+  #     show(selector = '#menu li a[data-value=mytab2]')
+  #     show(selector = '#menu li a[data-value=mytab3]')
+  #     show(selector = '#menu li a[data-value=mytab4]')
+  #   }
+  # })
+  
+  # observe({
+  #   if (is.null(user()$user)){
+  #     return()
+  #   } else if (user()$user != "admin") {
+  #     toggle(selector  = "#menu li a[data-value=mytab2], #menu li a[data-value = 'mytab3'], #menu li a[data-value = 'mytab4']")
+  #   }
+  # })
+  
+  observe({
+  if (is.null(user()$user)){
+    return()
+  } else if (user()$user != "admin"){
+      hideTab(inputId = "menu", target = "mytab2") 
+      #hide(selector = "#menu li a[data-value=mytab2], #menu li a[data-value = 'mytab3'], #menu li a[data-value = 'mytab4']")
+    } else {
+      # hideTab(inputId = "menu", target = "mytab2")
+      # toggle(selector = "#menu li a[data-value=mytab2], #menu li a[data-value = 'mytab3'], #menu li a[data-value = 'mytab4']")
+    }
   })
   
   # cambiar páneles ---------------------------------------------------------
