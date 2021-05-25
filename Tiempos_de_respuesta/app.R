@@ -630,8 +630,8 @@ server <- function(input, output, session) {
                                        ),
                                        
 # tab: descomposicion -----------------------------------------------------
-                                       #tabPanel("Descomposición", icon = icon("gear"),
-                                       conditionalPanel(condition = "output.logo_user_header == 'admin'",
+                                       tabPanel("Descomposición", icon = icon("gear"),
+                                       #conditionalPanel(condition = "output.logo_user_header == 'admin'",
                                          
                                                 sidebarLayout(
                                                   sidebarPanel(
